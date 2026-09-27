@@ -1,0 +1,31 @@
+{
+  "name": "catraders-studio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev",
+    "build": "sanity build",
+    "start": "sanity start",
+    "deploy": "sanity deploy",
+    "deploy-schema": "sanity schemas deploy",
+    "typegen": "sanity schemas extract --enforce-required-fields --force && sanity typegen generate",
+    "seed": "sanity exec scripts/seed.ts --with-user-token",
+    "validate": "sanity schemas validate"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "bun@1.4.2",
+  "dependencies": {
+    "@sanity/vision": "^6.16.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sanity": "^6.16.0",
+    "styled-components": "^6.1.15"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

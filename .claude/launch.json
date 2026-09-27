@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "studio",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "studio:dev"],
+      "port": 3333
+    }
+  ]
+}

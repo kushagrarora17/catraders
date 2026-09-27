@@ -1,0 +1,61 @@
+{
+  "name": "catraders",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "bun --env-file=.env.local test",
+    "db:up": "sh scripts/db-up.sh",
+    "db:down": "${CONTAINER_CLI:-podman} stop catraders-postgres",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "studio:dev": "cd studio && bun run dev",
+    "typegen": "cd studio && bun run typegen",
+    "seed": "cd studio && bun run seed"
+  },
+  "dependencies": {
+    "@azure/communication-email": "^1.1.0",
+    "@portabletext/react": "^8.0.1",
+    "@sanity/client": "^8.7.0",
+    "@sanity/image-url": "^2.1.1",
+    "@sanity/webhook": "^4.0.4",
+    "drizzle-orm": "^0.45.3",
+    "groq": "^6.16.0",
+    "next": "16.3.6",
+    "pg": "^8.23.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.5",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^24",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "packageManager": "bun@1.4.2",
+  "ignoreScripts": [
+    "sharp",
+    "unrs-resolver"
+  ],
+  "trustedDependencies": [
+    "sharp",
+    "unrs-resolver"
+  ],
+  "engines": {
+    "node": ">=24"
+  }
+}

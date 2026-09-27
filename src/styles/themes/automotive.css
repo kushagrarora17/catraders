@@ -1,0 +1,15 @@
+/*
+ * Automotive brand tokens. Scoped to [data-theme="automotive"] (not :root) so
+ * future verticals (baby/home) can ship their own theme file without clashing.
+ */
+[data-theme="automotive"] {
+  --theme-brand-primary: #d32f2f;      /* Automotive Sport Red */
+  --theme-brand-secondary: #1a1a1a;    /* Charcoal Black */
+  --theme-brand-accent: #f57c00;       /* Metallic Orange */
+  --theme-surface-bg: #0f1115;         /* Dark Industrial Mode default */
+  --theme-text-main: #f0f0f0;
+  --theme-text-muted: #9aa0a6;
+  --theme-border: #2a2e35;
+  --theme-radius-base: 4px;            /* Sharp corners for automotive feel */
+  --font-family-heading: var(--font-sora), sans-serif;
+}

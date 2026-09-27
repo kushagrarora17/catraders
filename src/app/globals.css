@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* Map the active vertical's theme variables to Tailwind utilities
+   (bg-brand, text-muted, border-line, rounded-base, font-heading, …). */
+@theme inline {
+  --color-brand: var(--theme-brand-primary);
+  --color-brand-secondary: var(--theme-brand-secondary);
+  --color-accent: var(--theme-brand-accent);
+  --color-surface: var(--theme-surface-bg);
+  --color-fg: var(--theme-text-main);
+  --color-muted: var(--theme-text-muted);
+  --color-line: var(--theme-border);
+  --radius-base: var(--theme-radius-base);
+  --font-heading: var(--font-family-heading);
+}
+
+body {
+  font-family: system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-family-heading, inherit);
+}
