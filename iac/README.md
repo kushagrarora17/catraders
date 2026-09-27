@@ -130,6 +130,8 @@ To tear the environment down, first remove `prevent_destroy` from the Postgres s
 
 ## Notes
 
+- GitHub issues OIDC tokens with the immutable subject `repo:OWNER@OWNER_ID/REPO@REPO_ID:environment:production`. The IDs come from `github_repository_owner_id` and `github_repository_id`. If you fork or move the repo, update them from `gh api repos/OWNER/REPO/actions/oidc/customization/sub`, otherwise Azure login fails with `AADSTS700213`.
+
 - The web app connects as the Postgres admin. For least privilege, create a dedicated app role and store its connection string in `database-url` instead.
 - The *Allow Azure services* firewall rule admits any Azure-hosted client. For a tighter setup, switch to VNet integration with private access.
 - Next's data cache is per instance. Before scaling the web app beyond one instance, add a shared cache handler (see the root README).

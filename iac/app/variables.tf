@@ -143,6 +143,18 @@ variable "github_repository" {
   default     = "kushagrarora17/catraders"
 }
 
+variable "github_repository_owner_id" {
+  description = "Numeric ID of the repository owner (`gh api repos/OWNER/REPO -q .owner.id`). Part of GitHub's immutable OIDC subject."
+  type        = number
+  default     = 18122348
+}
+
+variable "github_repository_id" {
+  description = "Numeric ID of the repository (`gh api repos/OWNER/REPO -q .id`). Part of GitHub's immutable OIDC subject."
+  type        = number
+  default     = 1390939079
+}
+
 variable "github_environment" {
   description = "GitHub Actions environment the deploy job runs in (part of the OIDC subject)."
   type        = string

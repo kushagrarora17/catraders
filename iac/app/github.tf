@@ -11,8 +11,16 @@ resource "azurerm_federated_identity_credential" "github_deploy" {
   user_assigned_identity_id = azurerm_user_assigned_identity.github_deploy.id
   issuer                    = "https://token.actions.githubusercontent.com"
   audience                  = ["api://AzureADTokenExchange"]
-  # Only jobs running in this repo's GitHub environment can assume the identity.
-  subject = "repo:${var.github_repository}:environment:${var.github_environment}"
+  # Only jobs running in this repo's GitHub environment can assume the identity. The repo uses
+  # GitHub's immutable subject format (owner@id/repo@id), so a deleted and re-created repo or
+  # account with the same name can't match. Check with:
+  #   gh api repos/OWNER/REPO/actions/oidc/customization/sub   -> sub_claim_prefix
+  subject = "repo:${local.github_owner}@${var.github_repository_owner_id}/${local.github_repo}@${var.github_repository_id}:environment:${var.github_environment}"
+}
+
+locals {
+  github_owner = split("/", var.github_repository)[0]
+  github_repo  = split("/", var.github_repository)[1]
 }
 
 resource "azurerm_role_assignment" "github_acr_push" {
