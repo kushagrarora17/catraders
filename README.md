@@ -121,7 +121,7 @@ The web app reads Sanity on the server only, so no CORS origin is needed for it.
 | `EMAIL_SENDER_ADDRESS` | prod | A verified ACS sender, e.g. `DoNotReply@<id>.azurecomm.net` |
 | `QUOTE_NOTIFICATION_EMAIL` | no | Internal inbox that gets new-RFQ notices |
 
-In Azure, set these as App Settings that use Key Vault references, e.g. `@Microsoft.KeyVault(SecretUri=https://<vault>.vault.azure.net/secrets/database-url/)`. Grant the web app's managed identity the *Key Vault Secrets User* role.
+In Azure, Terraform (`iac/app`) sets these as App Settings. The secrets are Key Vault references, e.g. `@Microsoft.KeyVault(SecretUri=https://<vault>.vault.azure.net/secrets/database-url)`, which the web app's managed identity resolves.
 
 ## Caching and revalidation
 
@@ -184,22 +184,28 @@ podman run --rm -p 3000:3000 --env-file .env.local automotive-site
 
 Inside a container, `localhost` in `DATABASE_URL` refers to the container itself. Use `host.containers.internal` (Podman) or `host.docker.internal` (Docker) to reach the database on the host.
 
+Azure infrastructure is defined in Terraform under [`iac/`](iac). It covers App Service, ACR, Postgres, Key Vault, Communication Services, Log Analytics and the GitHub OIDC identity. See [iac/README.md](iac/README.md) for first-time setup.
+
 GitHub Actions:
 
 - **`.github/workflows/ci.yml`** runs on PRs and pushes to `main`:
   - lint, typecheck, migrations and tests against a Postgres service, then the build;
-  - Studio schema validation, the Studio build, and a check that the committed TypeGen output is current.
-- **`.github/workflows/azure-deploy.yml`** runs after CI passes on `main`. It builds the image, pushes it to ACR, and deploys it to the `app-automotive-prod` Web App.
+  - Studio schema validation, the Studio build, and a check that the committed TypeGen output is current;
+  - `terraform fmt` and `validate` for both IaC stacks.
+- **`.github/workflows/azure-deploy.yml`** runs after CI passes on `main`. It logs in to Azure with **OIDC** (no stored secrets), builds the image, pushes it to ACR and deploys it to the Web App.
 
-  Required secrets: `AZURE_CREDENTIALS` (service principal JSON), `ACR_LOGIN_SERVER`, `ACR_USERNAME` and `ACR_PASSWORD`.
+  It needs two sets of values from Terraform (see [iac/README.md](iac/README.md)):
 
-Database migrations aren't part of the deploy workflow. Apply them before deploying code that needs them:
+  - **`production` environment secrets:** `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. They're masked in the public logs.
+  - **Repository variables:** `AZURE_RESOURCE_GROUP`, `AZURE_WEBAPP_NAME`, `ACR_NAME`, `ACR_LOGIN_SERVER`. The job is skipped until these are set.
+
+  Only pushes to this repository's `main` (or a manual run) can deploy. CI runs from fork pull requests never reach the deploy job.
+
+Database migrations aren't part of the deploy workflow. Apply them before deploying code that needs them. From the repo root, with your IP in `postgres_allowed_ip_ranges`:
 
 ```bash
-DATABASE_URL='postgres://…azure.com:5432/…?sslmode=verify-full' bun run db:migrate
+DATABASE_URL="$(terraform -chdir=iac/app output -raw database_url_command | sh)" bun run db:migrate
 ```
-
-The Azure Postgres firewall has to allow the machine that runs this.
 
 ## Known limitations / next steps
 

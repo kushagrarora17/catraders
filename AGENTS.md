@@ -17,3 +17,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Every GROQ query must filter `vertical == "automotive"`; catalog fetches go through `src/features/catalog/api.ts` so they carry the `automotive-products` cache tag.
 - DB schema lives in `src/server/db/schema.ts`; create migrations with `bun run db:generate` (never hand-edit applied migrations).
 - Local Postgres runs in Podman: `bun run db:up`.
+- Azure infra is Terraform in `iac/` (`bootstrap/` = state storage, `app/` = everything else; azurerm v5). Run `terraform fmt -recursive iac` after edits. Keep secrets out of state via ephemeral values + write-only (`*_wo`) arguments. Deploys use GitHub OIDC (repo variables, no secrets).

@@ -1,0 +1,9 @@
+subscription_id = "00000000-0000-0000-0000-000000000000"
+
+# Internal inbox for new-RFQ notifications.
+quote_notification_email = "sales@example.com"
+
+# Your public IP, to run `bun run db:migrate` against Azure Postgres.
+# postgres_allowed_ip_ranges = {
+#   admin-home = { start_ip_address = "203.0.113.10", end_ip_address = "203.0.113.10" }
+# }

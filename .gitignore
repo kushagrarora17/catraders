@@ -48,3 +48,21 @@ next-env.d.ts
 /studio/dist
 /studio/.sanity
 /studio/schema.json
+
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+# override files are local-only and may hold credentials
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+# CLI config (may contain registry tokens)
+.terraformrc
+terraform.rc

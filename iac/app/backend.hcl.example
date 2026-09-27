@@ -1,0 +1,6 @@
+# Copy to backend.hcl using the `backend_hcl` output of ../bootstrap.
+resource_group_name  = "rg-catraders-tfstate"
+storage_account_name = "stcatraderstfxxxxxx"
+container_name       = "tfstate"
+key                  = "catraders-prod.tfstate"
+use_azuread_auth     = true

@@ -67,3 +67,21 @@ jobs:
         run: |
           bun run typegen
           git diff --exit-code ../src/sanity/types.ts
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.16"
+
+      - run: terraform fmt -check -recursive iac
+
+      - name: Validate stacks
+        run: |
+          for stack in iac/bootstrap iac/app; do
+            terraform -chdir="$stack" init -backend=false -input=false
+            terraform -chdir="$stack" validate
+          done
