@@ -15,7 +15,7 @@ export function SiteFooter() {
           <p className="text-sm leading-relaxed text-muted-foreground">{DESCRIPTION}</p>
         </div>
         <nav aria-labelledby="footer-quick-links">
-          <h2 id="footer-quick-links" className="mb-4 text-sm font-bold uppercase tracking-eyebrow text-foreground">
+          <h2 id="footer-quick-links" className="mb-4 text-sm font-bold uppercase tracking-label text-foreground">
             Quick Links
           </h2>
           <ul className="flex flex-col gap-2.5">
@@ -34,7 +34,7 @@ export function SiteFooter() {
           </ul>
         </nav>
         <nav aria-labelledby="footer-products">
-          <h2 id="footer-products" className="mb-4 text-sm font-bold uppercase tracking-eyebrow text-foreground">
+          <h2 id="footer-products" className="mb-4 text-sm font-bold uppercase tracking-label text-foreground">
             Products
           </h2>
           <ul className="flex flex-col gap-2.5">

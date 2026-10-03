@@ -35,7 +35,7 @@ export function WhyUs() {
         </div>
         <ol className="grid gap-px bg-border sm:grid-cols-2 lg:col-span-3">
           {FEATURES.map((feature, i) => (
-            <li key={feature.title} className="flex flex-col gap-3 bg-card p-8">
+            <li key={feature.title} className="flex flex-col gap-3 border-b-3 border-transparent bg-card p-8 transition-colors duration-300 hover:border-primary">
               <span aria-hidden="true" className="font-heading text-5xl font-black leading-none text-primary/75">
                 {String(i + 1).padStart(2, "0")}
               </span>

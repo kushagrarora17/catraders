@@ -38,7 +38,7 @@ export function Testimonials() {
         </SectionHeading>
         <ul className="grid gap-px bg-border md:grid-cols-3">
           {TESTIMONIALS.map((t) => (
-            <li key={t.name} className="bg-card">
+            <li key={t.name} className="border-t-3 border-transparent bg-card transition-colors duration-300 hover:border-primary">
               <figure className="flex h-full flex-col gap-5 p-8">
                 <p className="text-highlight">
                   <span aria-hidden="true">★★★★★</span>

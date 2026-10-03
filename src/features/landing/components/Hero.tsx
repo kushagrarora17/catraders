@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
+import { Eyebrow } from "@/components/ui/section-heading";
 import { QUOTE_HREF } from "@/features/site/nav";
 import { Icon, type IconName } from "./icons";
 
@@ -23,14 +24,15 @@ export function Hero() {
       <div aria-hidden="true" className="absolute inset-0 -z-10 bg-grid" />
       <div
         aria-hidden="true"
-        className="absolute -top-40 -right-40 -z-10 size-160 rounded-full bg-radial from-primary/15 to-transparent to-70%"
+        className="absolute -top-50 -right-50 -z-10 size-175 rounded-full bg-radial from-primary/12 to-transparent to-70%"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute -bottom-75 -left-25 -z-10 size-150 rounded-full bg-radial from-secondary/80 to-transparent to-70%"
       />
       <Container className="grid items-center gap-12 py-16 sm:py-24 lg:min-h-hero lg:grid-cols-2 lg:gap-16">
         <div className="flex flex-col gap-6">
-          <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-eyebrow text-highlight">
-            <span aria-hidden="true" className="h-0.5 w-8 bg-current" />
-            B2B Wholesale Distributor
-          </p>
+          <Eyebrow>B2B Wholesale Distributor</Eyebrow>
           <h1
             id="hero-title"
             className="text-6xl font-black uppercase leading-none text-foreground sm:text-7xl xl:text-8xl"
@@ -60,10 +62,11 @@ export function Hero() {
         </div>
 
         <ul aria-label="Product categories" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-          {CATEGORIES.map((cat) => (
+          {CATEGORIES.map((cat, i) => (
             <li
               key={cat.title}
-              className="flex items-center gap-5 border border-border border-l-3 border-l-primary bg-card/70 p-5 backdrop-blur-sm"
+              style={{ animationDelay: `${(i + 1) * 100}ms` }}
+              className="flex items-center gap-5 border border-primary/20 bg-card p-5 transition-[border-color,translate] duration-300 hover:border-primary motion-safe:animate-slide-in motion-safe:hover:translate-x-1.5 lg:even:ml-8"
             >
               <span className="grid size-12 shrink-0 place-items-center bg-primary/10 text-highlight">
                 <Icon name={cat.icon} />

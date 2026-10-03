@@ -8,7 +8,7 @@ type Product = PRODUCT_LIST_QUERY_RESULT[number];
 
 export function ProductCard({ product }: { product: Product }) {
   return (
-    <article className="flex flex-col gap-2 rounded-xs border border-border p-3">
+    <article className="flex flex-col gap-2 rounded-xs border border-b-3 border-border p-3 transition-[border-color,box-shadow,translate] duration-250 hover:border-b-primary hover:shadow-xl motion-safe:hover:-translate-y-1">
       {product.image?.asset ? (
         <Image
           src={urlFor(product.image).width(400).height(300).fit("crop").url()}

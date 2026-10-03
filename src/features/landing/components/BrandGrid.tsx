@@ -38,13 +38,14 @@ export function BrandGrid() {
           {BRANDS.map((brand) => (
             <li
               key={brand.name}
-              className="grid aspect-4/3 place-items-center border border-border bg-card p-5 transition-shadow hover:shadow-lg"
+              className="relative aspect-4/3 border border-b-3 border-border bg-card transition-[border-color,box-shadow,translate] duration-250 hover:border-b-primary hover:shadow-xl motion-safe:hover:-translate-y-1"
             >
               <Image
                 src={brand.logo}
                 alt={brand.name}
+                fill
                 sizes="(width >= 64rem) 12rem, (width >= 40rem) 30vw, 45vw"
-                className="max-h-full w-auto object-contain"
+                className="object-contain p-5"
               />
             </li>
           ))}
