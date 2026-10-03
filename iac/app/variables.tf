@@ -62,7 +62,7 @@ variable "sanity_dataset" {
 }
 
 variable "quote_notification_email" {
-  description = "Internal inbox for new-RFQ notifications. Empty disables the internal email."
+  description = "Internal inbox for new RFQ and inquiry notifications. Empty disables the internal email."
   type        = string
   default     = ""
 }
