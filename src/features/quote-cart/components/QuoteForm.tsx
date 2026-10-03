@@ -88,9 +88,9 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable }: Quote
               autoComplete={field.autoComplete}
               required={field.required}
               aria-invalid={Boolean(message)}
-              className="w-full rounded-base border border-line bg-transparent px-2 py-1"
+              className="w-full rounded-xs border border-border bg-transparent px-2 py-1"
             />
-            {message && <p className="mt-1 text-brand">{message}</p>}
+            {message && <p className="mt-1 text-destructive">{message}</p>}
           </div>
         );
       })}
@@ -103,13 +103,13 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable }: Quote
           name="notes"
           rows={3}
           maxLength={2000}
-          className="w-full rounded-base border border-line bg-transparent px-2 py-1"
+          className="w-full rounded-xs border border-border bg-transparent px-2 py-1"
         />
-        {issueFor("notes") && <p className="mt-1 text-brand">{issueFor("notes")}</p>}
+        {issueFor("notes") && <p className="mt-1 text-destructive">{issueFor("notes")}</p>}
       </div>
 
       {(error || formIssues.length > 0) && (
-        <div role="alert" className="text-brand">
+        <div role="alert" className="text-destructive">
           {error && <p>{error}</p>}
           {formIssues.map((i) => (
             <p key={`${i.path}-${i.message}`}>{i.message}</p>
@@ -120,7 +120,7 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable }: Quote
       <button
         type="submit"
         disabled={disabled || pending}
-        className="rounded-base bg-brand px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-xs bg-primary px-4 py-2 text-primary-foreground hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? "Submitting…" : "Submit quote request"}
       </button>

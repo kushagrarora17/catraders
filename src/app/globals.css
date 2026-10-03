@@ -1,25 +1,104 @@
 @import "tailwindcss";
 
-/* Map the active vertical's theme variables to Tailwind utilities
-   (bg-brand, text-muted, border-line, rounded-base, font-heading, …). */
+/* Map the active vertical's theme variables to semantic Tailwind utilities
+   (bg-primary, text-muted-foreground, border-border, font-heading, …). */
 @theme inline {
-  --color-brand: var(--theme-brand-primary);
-  --color-brand-secondary: var(--theme-brand-secondary);
-  --color-accent: var(--theme-brand-accent);
-  --color-surface: var(--theme-surface-bg);
-  --color-fg: var(--theme-text-main);
-  --color-muted: var(--theme-text-muted);
-  --color-line: var(--theme-border);
-  --radius-base: var(--theme-radius-base);
-  --font-heading: var(--font-family-heading);
+  --color-background: var(--theme-background);
+  --color-foreground: var(--theme-foreground);
+  --color-card: var(--theme-card);
+  --color-card-foreground: var(--theme-card-foreground);
+  --color-secondary: var(--theme-secondary);
+  --color-secondary-foreground: var(--theme-secondary-foreground);
+  --color-muted-foreground: var(--theme-muted-foreground);
+  --color-subtle-foreground: var(--theme-subtle-foreground);
+  --color-primary: var(--theme-primary);
+  --color-primary-hover: var(--theme-primary-hover);
+  --color-primary-foreground: var(--theme-primary-foreground);
+  --color-highlight: var(--theme-highlight);
+  --color-border: var(--theme-border);
+  --color-input: var(--theme-input);
+  --color-ring: var(--theme-ring);
+  --color-success: var(--theme-success);
+  --color-destructive: var(--theme-destructive);
+  --color-destructive-foreground: var(--theme-destructive-foreground);
+
+  --font-sans: var(--font-barlow), system-ui, sans-serif;
+  --font-heading: var(--font-barlow-condensed), var(--font-barlow), system-ui, sans-serif;
 }
 
-body {
-  font-family: system-ui, sans-serif;
+@theme {
+  --header-height: 4.5rem;
+  --text-2xs: 0.625rem;
+  --tracking-eyebrow: 0.2em;
+  --tracking-tagline: 0.15em;
+
+  --animate-fade-in: fade-in 0.15s ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-0.25rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
-h1,
-h2,
-h3 {
-  font-family: var(--font-family-heading, inherit);
+/* Faint gold grid behind the hero. */
+@utility bg-grid {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--color-primary) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--color-primary) 6%, transparent) 1px, transparent 1px);
+  background-size: 3.75rem 3.75rem;
+}
+
+/* Full viewport minus the sticky header, capped for very tall screens. */
+@utility min-h-hero {
+  min-height: min(calc(100svh - var(--header-height)), 56rem);
+}
+
+/* Project container: centred, 16px gutter on phones. */
+@utility container-site {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 80rem;
+  padding-inline: 1rem;
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 64rem) {
+    padding-inline: 2rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-padding-top: calc(var(--header-height) + 1rem);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    @apply font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-heading;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
 }

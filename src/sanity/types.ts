@@ -429,6 +429,14 @@ export type QUOTE_PRODUCTS_QUERY_RESULT = Array<{
   }> | null;
 }>;
 
+// Source: ../src/features/catalog/queries.ts
+// Variable: SITEMAP_QUERY
+// Query: *[_type == "product" && vertical == "automotive" && defined(slug.current)] { "slug": slug.current, _updatedAt }
+export type SITEMAP_QUERY_RESULT = Array<{
+  slug: string;
+  _updatedAt: string;
+}>;
+
 // Query TypeMap
 declare global {
   interface SanityQueries {
@@ -439,6 +447,7 @@ declare global {
     '\n  *[_type == "product" && vertical == "automotive" && slug.current == $slug][0] {\n    _id,\n    title,\n    "slug": slug.current,\n    sku,\n    inStock,\n    images,\n    description,\n    "categoryPath": [\n  category->parent->parent->{ title, "slug": slug.current },\n  category->parent->{ title, "slug": slug.current },\n  category->{ title, "slug": slug.current }\n][defined(slug)],\n    "attributeValues": attributeValues[]->{\n  label,\n  sortOrder,\n  "attribute": attribute->{ _id, title, sortOrder }\n}\n  }\n': PRODUCT_BY_SLUG_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && _id in $ids] { _id, inStock }\n': PRODUCT_AVAILABILITY_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && _id in $ids] {\n    _id,\n    title,\n    sku,\n    inStock,\n    "categoryPath": [\n  category->parent->parent->{ title, "slug": slug.current },\n  category->parent->{ title, "slug": slug.current },\n  category->{ title, "slug": slug.current }\n][defined(slug)],\n    "attributeValues": attributeValues[]->{\n  label,\n  sortOrder,\n  "attribute": attribute->{ _id, title, sortOrder }\n}\n  }\n': QUOTE_PRODUCTS_QUERY_RESULT;
+    '\n  *[_type == "product" && vertical == "automotive" && defined(slug.current)] { "slug": slug.current, _updatedAt }\n': SITEMAP_QUERY_RESULT;
   }
 }
 // Lets @sanity/client releases that predate the global registry read it too

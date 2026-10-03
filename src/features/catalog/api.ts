@@ -8,6 +8,7 @@ import type {
   PRODUCT_BY_SLUG_QUERY_RESULT,
   PRODUCT_LIST_QUERY_RESULT,
   QUOTE_PRODUCTS_QUERY_RESULT,
+  SITEMAP_QUERY_RESULT,
 } from "@/sanity/types";
 import { type CatalogFilters, toAttributeFilter, toBaseParams } from "./filters";
 import {
@@ -18,6 +19,7 @@ import {
   PRODUCT_BY_SLUG_QUERY,
   PRODUCT_LIST_QUERY,
   QUOTE_PRODUCTS_QUERY,
+  SITEMAP_QUERY,
   productListQueryWithFilters,
 } from "./queries";
 
@@ -57,6 +59,11 @@ export function getProduct(slug: string) {
 
 export function getAvailability(ids: string[]) {
   return cachedFetch<PRODUCT_AVAILABILITY_QUERY_RESULT>(PRODUCT_AVAILABILITY_QUERY, { ids });
+}
+
+/** Product and category slugs for sitemap.xml. */
+export function getSitemapEntries() {
+  return cachedFetch<SITEMAP_QUERY_RESULT>(SITEMAP_QUERY);
 }
 
 /** Uncached: quote submission must see the latest stock status. */

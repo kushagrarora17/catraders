@@ -12,7 +12,7 @@ export function AddToQuote({ product, inStock }: { product: Omit<QuoteItem, "qua
 
   if (!inStock) {
     return (
-      <button type="button" disabled className="cursor-not-allowed rounded-base border border-line px-3 py-1 text-muted">
+      <button type="button" disabled className="cursor-not-allowed rounded-xs border border-border px-3 py-1 text-muted-foreground">
         Out of stock — cannot be quoted
       </button>
     );
@@ -35,14 +35,14 @@ export function AddToQuote({ product, inStock }: { product: Omit<QuoteItem, "qua
           max={MAX_ITEM_QUANTITY}
           value={quantity}
           onChange={(e) => setQuantity(Math.min(MAX_ITEM_QUANTITY, Math.max(1, Number(e.target.value) || 1)))}
-          className="w-20 rounded-base border border-line bg-transparent px-2 py-1"
+          className="w-20 rounded-xs border border-border bg-transparent px-2 py-1"
         />
       </label>
-      <button type="submit" className="rounded-base bg-brand px-3 py-1 text-white">
+      <button type="submit" className="rounded-xs bg-primary px-3 py-1 text-primary-foreground hover:bg-primary-hover">
         Add to quote
       </button>
       {added && (
-        <Link href="/quote" className="text-sm text-accent hover:underline">
+        <Link href="/quote" className="text-sm text-highlight hover:underline">
           Added — view quote
         </Link>
       )}

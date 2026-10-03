@@ -1,13 +1,13 @@
 # CA Traders — Automotive Marketplace & Quote Engine
 
-A content-driven catalog of automotive fluids (engine oils, coolants, …). Customers browse the catalog, add products to a quote cart and submit a Request for Quote (RFQ). The spec is in [TRD.md](TRD.md).
+A content-driven catalog of automotive fluids (engine oils, coolants, …). The landing page (`/`) markets the wholesale business and takes general inquiries; customers can also browse the catalog, add products to a quote cart and submit a Request for Quote (RFQ). The spec is in [TRD.md](TRD.md).
 
 | Layer | Tech |
 | --- | --- |
-| Web app | Next.js 16 (App Router, `standalone` output), React 19, Tailwind CSS 4 |
+| Web app | Next.js 16 (App Router, `standalone` output), React 19, Tailwind CSS 4 (semantic tokens + CVA) |
 | Content | Sanity (standalone Studio in [`studio/`](studio)), project `51ngrb7a`, dataset `production` |
 | Quote cart | Zustand + `persist` (localStorage key `automotive-quote-basket`) |
-| RFQ storage | PostgreSQL (Azure Database for PostgreSQL in prod) via Drizzle ORM |
+| RFQ + inquiry storage | PostgreSQL (Azure Database for PostgreSQL in prod) via Drizzle ORM |
 | Email | Azure Communication Services |
 | Tooling | Bun 1.4 (package manager / scripts / tests), Node ≥ 24 (runtime), Podman or Docker |
 
@@ -16,13 +16,21 @@ A content-driven catalog of automotive fluids (engine oils, coolants, …). Cust
 ```
 src/
   app/(automotive)/        # automotive route group: theme + pages (/, /products, /products/[slug], /quote)
-  app/api/                 # quotes, availability, webhooks/sanity, health
+  app/api/                 # quotes, inquiries, availability, webhooks/sanity, health
+  app/{robots,sitemap,opengraph-image}.ts(x)  # SEO metadata routes (use SITE_URL)
+  components/ui/           # design-system primitives (Button/buttonVariants, Container, Field, SectionHeading)
+  lib/                     # cn() and shared zod helpers
+  features/site/           # header, footer, nav, contact constants (phone/email/hours live in contact.ts)
+  features/landing/        # landing-page sections, brand logos, JSON-LD
+  features/inquiry/        # landing-page inquiry form + zod schema
   features/catalog/        # GROQ queries, cached fetchers, filter parsing, catalog UI
   features/quote-cart/     # Zustand store, zod request schema, cart + form components
   server/db/               # Drizzle schema + pg pool
   server/quotes/           # RFQ service, repository, reference numbers, emails
+  server/inquiries/        # inquiry repository + emails
+  server/email/            # shared Azure Communication Services sender
   sanity/                  # client, image URLs, generated types (TypeGen)
-  styles/themes/           # per-vertical CSS tokens
+  styles/themes/           # per-vertical CSS tokens (dark default + [data-surface="light"] sections)
 studio/                    # Sanity Studio (own package.json)
 drizzle/                   # SQL migrations (generated)
 docker/Dockerfile          # multi-stage standalone image
@@ -119,7 +127,8 @@ The web app reads Sanity on the server only, so no CORS origin is needed for it.
 | `DATABASE_URL` | yes | For Azure, append `?sslmode=verify-full` |
 | `AZURE_COMMUNICATION_CONNECTION_STRING` | prod | If unset, emails are logged and skipped |
 | `EMAIL_SENDER_ADDRESS` | prod | A verified ACS sender, e.g. `DoNotReply@<id>.azurecomm.net` |
-| `QUOTE_NOTIFICATION_EMAIL` | no | Internal inbox that gets new-RFQ notices |
+| `QUOTE_NOTIFICATION_EMAIL` | no | Internal inbox that gets new-RFQ and landing-page inquiry notices |
+| `SITE_URL` | prod | Public URL for canonical links, Open Graph, `sitemap.xml` and `robots.txt`. Defaults to `http://localhost:3000` |
 
 In Azure, Terraform (`iac/app`) sets these as App Settings. The secrets are Key Vault references, e.g. `@Microsoft.KeyVault(SecretUri=https://<vault>.vault.azure.net/secrets/database-url)`, which the web app's managed identity resolves.
 

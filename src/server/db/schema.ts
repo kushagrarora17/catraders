@@ -62,5 +62,23 @@ export const quoteItems = pgTable(
   ],
 );
 
+/** General inquiries from the landing-page contact form (no products attached). */
+export const inquiries = pgTable(
+  "inquiries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    referenceNumber: varchar("reference_number", { length: 20 }).notNull().unique(),
+    name: varchar("name", { length: 255 }).notNull(),
+    businessName: varchar("business_name", { length: 255 }).notNull(),
+    email: varchar("email", { length: 255 }).notNull(),
+    phone: varchar("phone", { length: 50 }),
+    category: varchar("category", { length: 100 }),
+    message: text("message"),
+    status: quoteStatus("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("idx_inquiries_created_at").on(table.createdAt)],
+);
+
 export type QuoteRequestRow = typeof quoteRequests.$inferSelect;
 export type NewQuoteItem = typeof quoteItems.$inferInsert;

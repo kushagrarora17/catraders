@@ -53,8 +53,11 @@ jobs:
         run: az acr login --name "${{ vars.ACR_NAME }}"
 
       - name: Build and Push Docker Image
+        env:
+          # Optional repo variable for a custom domain; defaults to the web app's hostname.
+          SITE_URL: ${{ vars.SITE_URL || format('https://{0}.azurewebsites.net', vars.AZURE_WEBAPP_NAME) }}
         run: |
-          docker build -f docker/Dockerfile -t "$IMAGE" .
+          docker build -f docker/Dockerfile --build-arg SITE_URL="$SITE_URL" -t "$IMAGE" .
           docker push "$IMAGE"
 
       - name: Deploy to Azure Web App for Containers

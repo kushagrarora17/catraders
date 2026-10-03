@@ -40,20 +40,20 @@ export function QuoteCart() {
         <p>
           Thanks! Your quote request <strong>{referenceNumber}</strong> has been submitted. We&apos;ll be in touch soon.
         </p>
-        <Link href="/products" className="text-brand hover:underline">
+        <Link href="/products" className="text-highlight hover:underline">
           Continue browsing
         </Link>
       </div>
     );
   }
 
-  if (!hydrated) return <p className="text-muted">Loading your quote…</p>;
+  if (!hydrated) return <p className="text-muted-foreground">Loading your quote…</p>;
 
   if (!items.length) {
     return (
-      <p className="text-muted">
+      <p className="text-muted-foreground">
         Your quote is empty.{" "}
-        <Link href="/products" className="text-brand hover:underline">
+        <Link href="/products" className="text-highlight hover:underline">
           Browse products
         </Link>
       </p>
@@ -73,7 +73,7 @@ export function QuoteCart() {
     <div className="space-y-8">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-line text-left text-muted">
+          <tr className="border-b border-border text-left text-muted-foreground">
             <th className="py-2">Product</th>
             <th className="py-2">SKU</th>
             <th className="py-2">Qty</th>
@@ -84,14 +84,14 @@ export function QuoteCart() {
           {items.map((item) => {
             const reason = unavailableReason(item.productId);
             return (
-              <tr key={item.productId} className="border-b border-line">
+              <tr key={item.productId} className="border-b border-border">
                 <td className="py-2">
-                  <Link href={`/products/${item.slug}`} className="hover:text-brand">
+                  <Link href={`/products/${item.slug}`} className="hover:text-highlight">
                     {item.title}
                   </Link>
-                  {reason && <span className="ml-2 text-brand">— {reason}, please remove</span>}
+                  {reason && <span className="ml-2 text-destructive">— {reason}, please remove</span>}
                 </td>
-                <td className="py-2 text-muted">{item.sku ?? "—"}</td>
+                <td className="py-2 text-muted-foreground">{item.sku ?? "—"}</td>
                 <td className="py-2">
                   <input
                     type="number"
@@ -105,11 +105,11 @@ export function QuoteCart() {
                         Math.min(MAX_ITEM_QUANTITY, Math.max(1, Number(e.target.value) || 1)),
                       )
                     }
-                    className="w-20 rounded-base border border-line bg-transparent px-2 py-1"
+                    className="w-20 rounded-xs border border-border bg-transparent px-2 py-1"
                   />
                 </td>
                 <td className="py-2 text-right">
-                  <button type="button" onClick={() => removeItem(item.productId)} className="text-muted hover:text-brand">
+                  <button type="button" onClick={() => removeItem(item.productId)} className="text-muted-foreground hover:text-highlight">
                     Remove
                   </button>
                 </td>
@@ -122,7 +122,7 @@ export function QuoteCart() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Your details</h2>
         {hasUnavailable && (
-          <p className="text-sm text-brand">Remove unavailable products before submitting.</p>
+          <p className="text-sm text-destructive">Remove unavailable products before submitting.</p>
         )}
         <QuoteForm
           items={items}

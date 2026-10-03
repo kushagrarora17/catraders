@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
+import { Container } from "@/components/ui/container";
 import { getProduct } from "@/features/catalog/api";
 import { groupAttributeValues } from "@/features/catalog/attributes";
 import { Breadcrumbs } from "@/features/catalog/components/Breadcrumbs";
@@ -28,7 +29,8 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
   const categoryPath = product.categoryPath.flatMap((c) => (c ? [c] : []));
 
   return (
-    <article>
+    <Container className="py-8">
+      <article>
       <Breadcrumbs
         items={[
           { title: "Home", href: "/" },
@@ -49,18 +51,18 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
                   alt={image.alt ?? product.title}
                   width={800}
                   height={600}
-                  className="w-full rounded-base"
+                  className="w-full rounded-xs"
                 />
               ) : null,
             )
           ) : (
-            <div className="aspect-[4/3] w-full rounded-base bg-brand-secondary" />
+            <div className="aspect-[4/3] w-full rounded-xs bg-card" />
           )}
         </div>
 
         <div className="space-y-4">
           <h1 className="text-2xl font-semibold">{product.title}</h1>
-          <div className="flex items-center gap-3 text-sm text-muted">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
             {product.sku && <span>SKU: {product.sku}</span>}
             <StockBadge inStock={product.inStock} />
           </div>
@@ -79,8 +81,8 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             <table className="w-full text-sm">
               <tbody>
                 {attributes.map((group) => (
-                  <tr key={group.attribute} className="border-b border-line">
-                    <th className="py-1 pr-4 text-left font-medium text-muted">{group.attribute}</th>
+                  <tr key={group.attribute} className="border-b border-border">
+                    <th className="py-1 pr-4 text-left font-medium text-muted-foreground">{group.attribute}</th>
                     <td className="py-1">{group.values.join(", ")}</td>
                   </tr>
                 ))}
@@ -95,6 +97,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           )}
         </div>
       </div>
-    </article>
+      </article>
+    </Container>
   );
 }

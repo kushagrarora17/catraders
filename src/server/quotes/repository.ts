@@ -1,5 +1,6 @@
 import "server-only";
 import type { Database } from "@/server/db";
+import { isUniqueViolation } from "@/server/db/errors";
 import { quoteItems, quoteRequests, type SpecificationsSnapshot } from "@/server/db/schema";
 import { generateReferenceNumber } from "./reference";
 
@@ -17,15 +18,6 @@ export interface NewQuote {
 
 const MAX_REFERENCE_ATTEMPTS = 5;
 const REFERENCE_CONSTRAINT = "quote_requests_reference_number_unique";
-
-function isReferenceCollision(error: unknown) {
-  // Drizzle wraps driver errors; the pg error may be the error itself or its cause.
-  for (let e: unknown = error; e; e = (e as { cause?: unknown }).cause) {
-    const pgError = e as { code?: string; constraint?: string };
-    if (pgError.code === "23505" && pgError.constraint === REFERENCE_CONSTRAINT) return true;
-  }
-  return false;
-}
 
 /** Inserts the request and its items atomically; retries on reference-number collisions. */
 export async function insertQuote(db: Database, quote: NewQuote) {
@@ -50,7 +42,7 @@ export async function insertQuote(db: Database, quote: NewQuote) {
         return request;
       });
     } catch (error) {
-      if (attempt < MAX_REFERENCE_ATTEMPTS && isReferenceCollision(error)) continue;
+      if (attempt < MAX_REFERENCE_ATTEMPTS && isUniqueViolation(error, REFERENCE_CONSTRAINT)) continue;
       throw error;
     }
   }

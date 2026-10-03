@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Container } from "@/components/ui/container";
 import { notFound } from "next/navigation";
 import { getCategory, getFacets, getProducts } from "@/features/catalog/api";
 import { Breadcrumbs, type Crumb } from "@/features/catalog/components/Breadcrumbs";
@@ -32,7 +33,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
   ];
 
   return (
-    <div>
+    <Container className="py-8">
       <Breadcrumbs items={crumbs} />
       <h1 className="mb-4 text-2xl font-semibold">{category?.title ?? "All products"}</h1>
 
@@ -40,7 +41,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
         <ul className="mb-6 flex flex-wrap gap-2 text-sm">
           {category.children.map((child) => (
             <li key={child._id}>
-              <Link href={categoryHref(child.slug)} className="rounded-base border border-line px-2 py-1 hover:border-brand">
+              <Link href={categoryHref(child.slug)} className="rounded-xs border border-border px-2 py-1 hover:border-primary">
                 {child.title}
               </Link>
             </li>
@@ -53,7 +54,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
           <FacetFilters facets={facets} filters={filters} />
         </aside>
         <section>
-          <p className="mb-3 text-sm text-muted">
+          <p className="mb-3 text-sm text-muted-foreground">
             {products.length} product{products.length === 1 ? "" : "s"}
           </p>
           {products.length ? (
@@ -63,10 +64,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
               ))}
             </div>
           ) : (
-            <p className="text-muted">No products match these filters.</p>
+            <p className="text-muted-foreground">No products match these filters.</p>
           )}
         </section>
       </div>
-    </div>
+    </Container>
   );
 }

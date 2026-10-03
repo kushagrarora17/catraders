@@ -12,7 +12,7 @@ function Branch({ nodes, depth }: { nodes: Node[]; depth: number }) {
         <li key={node._id}>
           <Link
             href={categoryHref(node.slug)}
-            className={depth === 0 ? "font-heading text-lg font-semibold hover:text-brand" : "hover:text-brand"}
+            className={depth === 0 ? "font-heading text-lg font-semibold hover:text-highlight" : "hover:text-highlight"}
           >
             {node.title}
           </Link>
@@ -25,7 +25,7 @@ function Branch({ nodes, depth }: { nodes: Node[]; depth: number }) {
 
 export function CategoryTree({ categories }: { categories: CATEGORY_TREE_QUERY_RESULT }) {
   if (!categories.length) {
-    return <p className="text-muted">No categories yet.</p>;
+    return <p className="text-muted-foreground">No categories yet.</p>;
   }
   return <Branch nodes={categories} depth={0} />;
 }

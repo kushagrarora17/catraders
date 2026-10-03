@@ -18,7 +18,7 @@ export function FacetFilters({ facets, filters }: { facets: FACETS_QUERY_RESULT;
           type="search"
           defaultValue={filters.q ?? ""}
           placeholder="Name or SKU"
-          className="w-full rounded-base border border-line bg-transparent px-2 py-1"
+          className="w-full rounded-xs border border-border bg-transparent px-2 py-1"
         />
       </div>
       <label className="flex items-center gap-2">
@@ -36,16 +36,16 @@ export function FacetFilters({ facets, filters }: { facets: FACETS_QUERY_RESULT;
                 value={value.key}
                 defaultChecked={filters.attributes[facet.key]?.includes(value.key) ?? false}
               />
-              {value.label} <span className="text-muted">({value.count})</span>
+              {value.label} <span className="text-muted-foreground">({value.count})</span>
             </label>
           ))}
         </fieldset>
       ))}
       <div className="flex items-center gap-3">
-        <button type="submit" className="rounded-base bg-brand px-3 py-1 text-white">
+        <button type="submit" className="rounded-xs bg-primary px-3 py-1 text-primary-foreground hover:bg-primary-hover">
           Apply
         </button>
-        <Link href={clearHref} className="text-muted hover:text-fg">
+        <Link href={clearHref} className="text-muted-foreground hover:text-foreground">
           Clear
         </Link>
       </div>

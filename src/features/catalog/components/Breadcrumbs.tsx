@@ -7,17 +7,17 @@ export interface Crumb {
 
 export function Breadcrumbs({ items }: { items: Crumb[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="mb-4 text-sm text-muted">
+    <nav aria-label="Breadcrumb" className="mb-4 text-sm text-muted-foreground">
       <ol className="flex flex-wrap gap-1">
         {items.map((item, i) => (
           <li key={`${item.title}-${i}`} className="flex gap-1">
             {i > 0 && <span aria-hidden>›</span>}
             {item.href ? (
-              <Link href={item.href} className="hover:text-fg">
+              <Link href={item.href} className="hover:text-foreground">
                 {item.title}
               </Link>
             ) : (
-              <span aria-current="page" className="text-fg">
+              <span aria-current="page" className="text-foreground">
                 {item.title}
               </span>
             )}

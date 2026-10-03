@@ -18,3 +18,10 @@ export function getDb(): Database {
   }
   return globalForDb.catradersDb;
 }
+
+/** Ends the shared pool so the next getDb() opens a fresh one (used by tests). */
+export async function closeDb() {
+  const db = globalForDb.catradersDb;
+  globalForDb.catradersDb = undefined;
+  await db?.$client.end();
+}

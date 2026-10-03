@@ -1,15 +1,63 @@
 /*
- * Automotive brand tokens. Scoped to [data-theme="automotive"] (not :root) so
- * future verticals (baby/home) can ship their own theme file without clashing.
+ * Automotive brand tokens (navy + gold). Scoped to [data-theme="automotive"]
+ * (not :root) so future verticals (baby/home) can ship their own theme file
+ * without clashing. globals.css maps these to semantic Tailwind utilities
+ * (bg-primary, text-muted-foreground, border-border, …).
+ *
+ * Contrast notes (WCAG AA): gold text only on dark surfaces; light surfaces
+ * swap --theme-highlight for a darker gold (5.5:1 on off-white).
  */
 [data-theme="automotive"] {
-  --theme-brand-primary: #d32f2f;      /* Automotive Sport Red */
-  --theme-brand-secondary: #1a1a1a;    /* Charcoal Black */
-  --theme-brand-accent: #f57c00;       /* Metallic Orange */
-  --theme-surface-bg: #0f1115;         /* Dark Industrial Mode default */
-  --theme-text-main: #f0f0f0;
-  --theme-text-muted: #9aa0a6;
-  --theme-border: #2a2e35;
-  --theme-radius-base: 4px;            /* Sharp corners for automotive feel */
-  --font-family-heading: var(--font-sora), sans-serif;
+  /* Brand palette */
+  --brand-navy-dark: oklch(22.6% 0.029 249);   /* #111d29 */
+  --brand-navy: oklch(29.1% 0.04 251);         /* #1c2d3f */
+  --brand-navy-mid: oklch(32% 0.04 253);       /* #243447 */
+  --brand-gold: oklch(77.5% 0.163 76);         /* #f0a500 */
+  --brand-gold-light: oklch(85.3% 0.162 85);   /* #ffc533 */
+  --brand-gold-dark: oklch(51% 0.108 74);      /* #8a5b00 */
+  --brand-off-white: oklch(97.6% 0.004 91);    /* #f8f7f4 */
+  --brand-ink: oklch(34.2% 0.035 249);         /* #2a3a4a */
+  --brand-slate: oklch(68.1% 0.037 256);       /* #8a9ab0 */
+  --brand-slate-light: oklch(80.4% 0.026 256); /* #b4c0d0 */
+}
+
+/* Semantic tokens. Dark surfaces are the default; [data-surface="dark"]
+   restores them inside a light section. */
+[data-theme="automotive"],
+[data-theme="automotive"] [data-surface="dark"] {
+  --theme-background: var(--brand-navy-dark);
+  --theme-foreground: var(--brand-off-white);
+  --theme-card: var(--brand-navy-mid);
+  --theme-card-foreground: var(--brand-off-white);
+  --theme-secondary: var(--brand-navy);
+  --theme-secondary-foreground: var(--brand-off-white);
+  --theme-muted-foreground: var(--brand-slate-light);
+  --theme-subtle-foreground: var(--brand-slate);
+  --theme-primary: var(--brand-gold);
+  --theme-primary-hover: var(--brand-gold-light);
+  --theme-primary-foreground: var(--brand-navy-dark);
+  --theme-highlight: var(--brand-gold);
+  --theme-border: oklch(37.2% 0.042 250);      /* #2f4256 */
+  --theme-input: var(--brand-navy-dark);
+  --theme-ring: var(--brand-gold);
+  --theme-success: oklch(79.4% 0.12 154);      /* #6fcf97 */
+  --theme-destructive: oklch(75.9% 0.144 26);  /* #ff8a80 */
+  --theme-destructive-foreground: var(--brand-navy-dark);
+}
+
+/* Light (off-white) sections: same semantic names, light values. */
+[data-theme="automotive"] [data-surface="light"] {
+  --theme-background: var(--brand-off-white);
+  --theme-foreground: var(--brand-navy-dark);
+  --theme-card: oklch(100% 0 0);
+  --theme-card-foreground: var(--brand-ink);
+  --theme-muted-foreground: oklch(52.1% 0.033 250); /* #5b6b7c */
+  --theme-subtle-foreground: oklch(52.1% 0.033 250);
+  --theme-highlight: var(--brand-gold-dark);
+  --theme-border: oklch(88.9% 0.013 256);     /* #d5dbe3 */
+  --theme-input: oklch(100% 0 0);
+  --theme-ring: var(--brand-gold-dark);
+  --theme-success: oklch(51.5% 0.12 152);     /* #1e7a46 */
+  --theme-destructive: oklch(54.3% 0.174 30); /* #c0392b */
+  --theme-destructive-foreground: oklch(100% 0 0);
 }

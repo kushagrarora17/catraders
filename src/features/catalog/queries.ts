@@ -125,3 +125,7 @@ export const QUOTE_PRODUCTS_QUERY = defineQuery(`
     "attributeValues": ${PRODUCT_ATTRIBUTE_VALUES_PROJECTION}
   }
 `);
+
+export const SITEMAP_QUERY = defineQuery(`
+  *[_type == "product" && vertical == "automotive" && defined(slug.current)] { "slug": slug.current, _updatedAt }
+`);

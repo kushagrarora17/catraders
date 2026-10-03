@@ -23,6 +23,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Baked into prerendered pages (canonical/Open Graph URLs); the runtime App Setting must match.
+ARG SITE_URL=http://localhost:3000
+ENV SITE_URL=${SITE_URL}
 RUN bun run build
 
 FROM base AS runner

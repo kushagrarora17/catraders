@@ -15,10 +15,14 @@ locals {
       acs_connection_string = azurerm_key_vault_secret.acs_connection_string
     } : key => "@Microsoft.KeyVault(SecretUri=${secret.versionless_id})"
   }
+
+  # Can't reference the web app's own default_hostname from its app_settings (cycle).
+  web_app_name = "app-${local.name}-${local.suffix}"
+  site_url     = coalesce(var.site_url, "https://${local.web_app_name}.azurewebsites.net")
 }
 
 resource "azurerm_linux_web_app" "main" {
-  name                = "app-${local.name}-${local.suffix}"
+  name                = local.web_app_name
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   service_plan_id     = azurerm_service_plan.main.id
@@ -60,6 +64,9 @@ resource "azurerm_linux_web_app" "main" {
     AZURE_COMMUNICATION_CONNECTION_STRING = local.key_vault_ref.acs_connection_string
     EMAIL_SENDER_ADDRESS                  = local.email_sender_address
     QUOTE_NOTIFICATION_EMAIL              = var.quote_notification_email
+
+    # Canonical URL for metadata, sitemap and robots.txt.
+    SITE_URL = local.site_url
   }
 
   logs {

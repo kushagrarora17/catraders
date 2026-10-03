@@ -160,3 +160,9 @@ variable "github_environment" {
   type        = string
   default     = "production"
 }
+
+variable "site_url" {
+  description = "Public site URL used for canonical links and the sitemap (e.g. https://caelitelube.com). Defaults to the web app's azurewebsites.net hostname."
+  type        = string
+  default     = null
+}

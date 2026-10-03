@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
-import { getDb } from "@/server/db";
+import { closeDb, getDb } from "@/server/db";
 import { quoteItems, quoteRequests } from "@/server/db/schema";
 import { REFERENCE_NUMBER_PATTERN } from "./reference";
 import { insertQuote } from "./repository";
@@ -12,7 +12,7 @@ describe.skipIf(!process.env.DATABASE_URL)("insertQuote (Postgres)", () => {
   afterAll(async () => {
     const db = getDb();
     for (const id of created) await db.delete(quoteRequests).where(eq(quoteRequests.id, id));
-    await db.$client.end();
+    await closeDb();
   });
 
   test("stores the request and its items in one transaction", async () => {

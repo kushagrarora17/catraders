@@ -1,15 +1,10 @@
 import { z } from "zod";
+import { type FieldIssue, optionalText, PHONE_PATTERN, toFieldIssues } from "@/lib/validation";
+
+export { type FieldIssue, toFieldIssues };
 
 export const MAX_QUOTE_ITEMS = 50;
 export const MAX_ITEM_QUANTITY = 10_000;
-
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .nullish()
-    .transform((value) => value || undefined);
 
 export const quoteItemSchema = z.object({
   productId: z
@@ -28,7 +23,7 @@ export const quoteRequestSchema = z.object({
     phone: z
       .string()
       .trim()
-      .regex(/^\+?[0-9 ()-]{7,20}$/, "Enter a valid phone number"),
+      .regex(PHONE_PATTERN, "Enter a valid phone number"),
     company: optionalText(255),
   }),
   items: z
@@ -44,15 +39,6 @@ export const quoteRequestSchema = z.object({
 
 export type QuoteRequestInput = z.input<typeof quoteRequestSchema>;
 export type QuoteRequest = z.output<typeof quoteRequestSchema>;
-
-export interface FieldIssue {
-  path: string;
-  message: string;
-}
-
-export function toFieldIssues(error: z.ZodError): FieldIssue[] {
-  return error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message }));
-}
 
 /** Response bodies of POST /api/quotes. */
 export type QuoteResponse =
