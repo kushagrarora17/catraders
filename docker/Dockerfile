@@ -22,6 +22,8 @@ COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# public/ may be empty (and so absent from git); the runner stage copies it.
+RUN mkdir -p public
 ENV NEXT_TELEMETRY_DISABLED=1
 # Baked into prerendered pages (canonical/Open Graph URLs); the runtime App Setting must match.
 ARG SITE_URL=http://localhost:3000
