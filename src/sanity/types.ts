@@ -15,6 +15,21 @@
 export declare const internalGroqTypeReferenceTo: unique symbol;
 
 // Source: schema.json
+export type Testimonial = {
+  _id: string;
+  _type: "testimonial";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  quote: string;
+  name: string;
+  role?: string;
+  city?: string;
+  rating: 5 | 4 | 3 | 2 | 1;
+  vertical: "automotive" | "baby" | "home";
+  sortOrder?: number;
+};
+
 export type AttributeReference = {
   _ref: string;
   _type: "reference";
@@ -249,6 +264,7 @@ export type Geopoint = {
 };
 
 export type AllSanitySchemaTypes =
+  | Testimonial
   | AttributeReference
   | AttributeValue
   | Slug
@@ -437,6 +453,18 @@ export type SITEMAP_QUERY_RESULT = Array<{
   _updatedAt: string;
 }>;
 
+// Source: ../src/features/landing/queries.ts
+// Variable: TESTIMONIALS_QUERY
+// Query: *[_type == "testimonial" && vertical == "automotive"] | order(sortOrder asc, _createdAt asc) {    _id,    quote,    name,    role,    city,    rating  }
+export type TESTIMONIALS_QUERY_RESULT = Array<{
+  _id: string;
+  quote: string;
+  name: string;
+  role: string | null;
+  city: string | null;
+  rating: 1 | 2 | 3 | 4 | 5;
+}>;
+
 // Query TypeMap
 declare global {
   interface SanityQueries {
@@ -448,6 +476,7 @@ declare global {
     '\n  *[_type == "product" && vertical == "automotive" && _id in $ids] { _id, inStock }\n': PRODUCT_AVAILABILITY_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && _id in $ids] {\n    _id,\n    title,\n    sku,\n    inStock,\n    "categoryPath": [\n  category->parent->parent->{ title, "slug": slug.current },\n  category->parent->{ title, "slug": slug.current },\n  category->{ title, "slug": slug.current }\n][defined(slug)],\n    "attributeValues": attributeValues[]->{\n  label,\n  sortOrder,\n  "attribute": attribute->{ _id, title, sortOrder }\n}\n  }\n': QUOTE_PRODUCTS_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && defined(slug.current)] { "slug": slug.current, _updatedAt }\n': SITEMAP_QUERY_RESULT;
+    '\n  *[_type == "testimonial" && vertical == "automotive"] | order(sortOrder asc, _createdAt asc) {\n    _id,\n    quote,\n    name,\n    role,\n    city,\n    rating\n  }\n': TESTIMONIALS_QUERY_RESULT;
   }
 }
 // Lets @sanity/client releases that predate the global registry read it too

@@ -20,6 +20,7 @@ describe.skipIf(!process.env.DATABASE_URL)("insertInquiry (Postgres)", () => {
     const result = await insertInquiry(db, {
       name: "Test Customer",
       business: "Test Garage",
+      city: "Windsor",
       email: "test@example.com",
       phone: undefined,
       category: "Coolant",
@@ -31,6 +32,7 @@ describe.skipIf(!process.env.DATABASE_URL)("insertInquiry (Postgres)", () => {
     const [row] = await db.select().from(inquiries).where(eq(inquiries.id, result.id));
     expect(row.status).toBe("pending");
     expect(row.businessName).toBe("Test Garage");
+    expect(row.city).toBe("Windsor");
     expect(row.phone).toBeNull();
     expect(row.message).toBeNull();
   });

@@ -1,6 +1,6 @@
 /**
- * Seeds sample automotive categories, attributes and products.
- * Idempotent: documents are matched by slug and only created when missing.
+ * Seeds sample automotive categories, attributes, products and reviews.
+ * Idempotent: documents are matched by slug (reviews by name) and only created when missing.
  *
  *   bunx sanity login          # once
  *   bun run seed
@@ -198,6 +198,48 @@ async function seedAttributes() {
   return valueIds
 }
 
+const TESTIMONIALS = [
+  {
+    quote:
+      'CA Traders has been our go-to supplier for engine oils and filters for over two years. The pricing is unbeatable and the product range is exactly what a busy shop needs.',
+    name: 'Ranjit K.',
+    role: 'Owner — Brampton Auto Service',
+    city: 'Brampton',
+  },
+  {
+    quote:
+      'I love that they carry Liqui Moly. My customers specifically ask for it, and CA Traders gives us the best wholesale price in the GTA. Always responsive and reliable.',
+    name: 'Sam M.',
+    role: 'Head Technician — Mississauga Lube Centre',
+    city: 'Mississauga',
+  },
+  {
+    quote:
+      'From ATF to refrigerants and shop rags — we get almost everything from CA Traders. The team is great to deal with, answers calls fast, and always has stock ready.',
+    name: 'Pavan D.',
+    role: 'Manager — Scarborough Automotive',
+    city: 'Scarborough',
+  },
+]
+
+async function seedTestimonials() {
+  for (const [index, testimonial] of TESTIMONIALS.entries()) {
+    const existing = await client.fetch<string | null>(
+      '*[_type == "testimonial" && name == $name][0]._id',
+      {name: testimonial.name},
+    )
+    if (existing) continue
+    await client.create({
+      _type: 'testimonial',
+      ...testimonial,
+      rating: 5,
+      vertical: 'automotive',
+      sortOrder: index + 1,
+    })
+    console.log(`created testimonial ${testimonial.name}`)
+  }
+}
+
 async function main() {
   const categoryIds = await seedCategories(CATEGORY_TREE, 1)
   const valueIds = await seedAttributes()
@@ -213,6 +255,7 @@ async function main() {
       description: paragraph(description),
     })
   }
+  await seedTestimonials()
   console.log('Seed complete.')
 }
 

@@ -5,6 +5,7 @@ import { inquirySchema } from "./schema";
 const valid = {
   name: "  Jane Smith ",
   business: "Smith Auto",
+  city: " Windsor ",
   email: "jane@smithauto.ca",
   phone: "",
   category: "",
@@ -16,6 +17,7 @@ test("accepts a minimal inquiry and normalises empty optionals to undefined", ()
   expect(result).toEqual({
     name: "Jane Smith",
     business: "Smith Auto",
+    city: "Windsor",
     email: "jane@smithauto.ca",
     phone: undefined,
     category: undefined,
@@ -36,10 +38,10 @@ test("keeps provided optional fields", () => {
 });
 
 test("reports field-level issues for missing and invalid values", () => {
-  const result = inquirySchema.safeParse({ ...valid, name: " ", email: "nope", phone: "abc", category: "Tyres" });
+  const result = inquirySchema.safeParse({ ...valid, name: " ", city: " ", email: "nope", phone: "abc", category: "Tyres" });
   expect(result.success).toBe(false);
   const paths = toFieldIssues(result.error!).map((i) => i.path);
-  expect(paths).toEqual(expect.arrayContaining(["name", "email", "phone", "category"]));
+  expect(paths).toEqual(expect.arrayContaining(["name", "city", "email", "phone", "category"]));
 });
 
 test("strips unknown keys such as the honeypot", () => {

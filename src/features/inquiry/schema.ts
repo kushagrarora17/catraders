@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { type FieldIssue, optionalText, PHONE_PATTERN } from "@/lib/validation";
+import { type FieldIssue, optionalText, PHONE_PATTERN, requiredCity } from "@/lib/validation";
 
 export const INQUIRY_CATEGORIES = [
   "Engine Oils",
@@ -20,6 +20,7 @@ export const MAX_MESSAGE_LENGTH = 2000;
 export const inquirySchema = z.object({
   name: z.string().trim().min(1, "Enter your name").max(255),
   business: z.string().trim().min(1, "Enter your business name").max(255),
+  city: requiredCity,
   email: z.string().trim().max(255).pipe(z.email("Enter a valid email address")),
   phone: z
     .string()

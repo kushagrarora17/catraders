@@ -18,7 +18,7 @@ describe.skipIf(!process.env.DATABASE_URL)("insertQuote (Postgres)", () => {
   test("stores the request and its items in one transaction", async () => {
     const db = getDb();
     const result = await insertQuote(db, {
-      customer: { name: "Test Customer", email: "test@example.com", phone: "+10000000000" },
+      customer: { name: "Test Customer", email: "test@example.com", phone: "+10000000000", city: "London" },
       items: [
         {
           sanityProductId: "test-product",
@@ -38,6 +38,7 @@ describe.skipIf(!process.env.DATABASE_URL)("insertQuote (Postgres)", () => {
     const [request] = await db.select().from(quoteRequests).where(eq(quoteRequests.id, result.id));
     expect(request.status).toBe("pending");
     expect(request.companyName).toBeNull();
+    expect(request.city).toBe("London");
     const items = await db.select().from(quoteItems).where(eq(quoteItems.quoteRequestId, result.id));
     expect(items).toHaveLength(1);
     expect(items[0].specificationsSnapshot?.attributes[0].values).toEqual(["5W-30"]);
@@ -46,7 +47,7 @@ describe.skipIf(!process.env.DATABASE_URL)("insertQuote (Postgres)", () => {
   test("rejects non-positive quantities at the database level", async () => {
     const db = getDb();
     const promise = insertQuote(db, {
-      customer: { name: "Test Customer", email: "test@example.com", phone: "+10000000000" },
+      customer: { name: "Test Customer", email: "test@example.com", phone: "+10000000000", city: "London" },
       items: [
         {
           sanityProductId: "test-product",

@@ -24,6 +24,7 @@ export function buildInquiryEmails(
     const details = [
       `Name: ${inquiry.name}`,
       `Business: ${inquiry.business}`,
+      `City: ${inquiry.city}`,
       `Email: ${inquiry.email}`,
       inquiry.phone && `Phone: ${inquiry.phone}`,
       inquiry.category && `Category: ${inquiry.category}`,

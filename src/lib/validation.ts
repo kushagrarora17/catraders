@@ -18,4 +18,6 @@ export const optionalText = (max: number) =>
     .nullish()
     .transform((value) => value || undefined);
 
+export const requiredCity = z.string().trim().min(1, "Enter your city").max(100);
+
 export const PHONE_PATTERN = /^\+?[0-9 ()-]{7,20}$/;

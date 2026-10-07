@@ -26,6 +26,8 @@ export const quoteRequests = pgTable("quote_requests", {
   customerName: varchar("customer_name", { length: 255 }).notNull(),
   customerEmail: varchar("customer_email", { length: 255 }).notNull(),
   customerPhone: varchar("customer_phone", { length: 50 }).notNull(),
+  // Nullable: rows from before the city field was added have none.
+  city: varchar("city", { length: 100 }),
   companyName: varchar("company_name", { length: 255 }),
   notes: text("notes"),
   status: quoteStatus("status").notNull().default("pending"),
@@ -70,6 +72,7 @@ export const inquiries = pgTable(
     referenceNumber: varchar("reference_number", { length: 20 }).notNull().unique(),
     name: varchar("name", { length: 255 }).notNull(),
     businessName: varchar("business_name", { length: 255 }).notNull(),
+    city: varchar("city", { length: 100 }),
     email: varchar("email", { length: 255 }).notNull(),
     phone: varchar("phone", { length: 50 }),
     category: varchar("category", { length: 100 }),

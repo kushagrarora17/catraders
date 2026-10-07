@@ -1,26 +1,6 @@
 import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
-
-const TESTIMONIALS = [
-  {
-    quote:
-      "CA Traders has been our go-to supplier for engine oils and filters for over two years. The pricing is unbeatable and the product range is exactly what a busy shop needs.",
-    name: "Ranjit K.",
-    role: "Owner — Brampton Auto Service",
-  },
-  {
-    quote:
-      "I love that they carry Liqui Moly. My customers specifically ask for it, and CA Traders gives us the best wholesale price in the GTA. Always responsive and reliable.",
-    name: "Sam M.",
-    role: "Head Technician — Mississauga Lube Centre",
-  },
-  {
-    quote:
-      "From ATF to refrigerants and shop rags — we get almost everything from CA Traders. The team is great to deal with, answers calls fast, and always has stock ready.",
-    name: "Pavan D.",
-    role: "Manager — Scarborough Automotive",
-  },
-] as const;
+import { getTestimonials } from "../api";
 
 const initials = (name: string) =>
   name
@@ -29,7 +9,10 @@ const initials = (name: string) =>
     .join("")
     .slice(0, 2);
 
-export function Testimonials() {
+export async function Testimonials() {
+  const testimonials = await getTestimonials();
+  if (!testimonials.length) return null;
+
   return (
     <section id="testimonials" aria-labelledby="testimonials-title" className="bg-background py-20 sm:py-28">
       <Container className="flex flex-col gap-12">
@@ -37,12 +20,12 @@ export function Testimonials() {
           What Shops Are Saying
         </SectionHeading>
         <ul className="grid gap-px bg-border md:grid-cols-3">
-          {TESTIMONIALS.map((t) => (
-            <li key={t.name} className="border-t-3 border-transparent bg-card transition-colors duration-300 hover:border-primary">
+          {testimonials.map((t) => (
+            <li key={t._id} className="border-t-3 border-transparent bg-card transition-colors duration-300 hover:border-primary">
               <figure className="flex h-full flex-col gap-5 p-8">
                 <p className="text-highlight">
-                  <span aria-hidden="true">★★★★★</span>
-                  <span className="sr-only">Rated 5 out of 5</span>
+                  <span aria-hidden="true">{"★".repeat(t.rating)}</span>
+                  <span className="sr-only">Rated {t.rating} out of 5</span>
                 </p>
                 <blockquote className="flex-1 text-base italic leading-relaxed text-muted-foreground">
                   <p>
@@ -61,7 +44,7 @@ export function Testimonials() {
                   </span>
                   <span className="flex flex-col">
                     <span className="font-heading font-bold uppercase tracking-wide text-foreground">{t.name}</span>
-                    <span className="text-xs text-muted-foreground">{t.role}</span>
+                    <span className="text-xs text-muted-foreground">{[t.role, t.city].filter(Boolean).join(" · ")}</span>
                   </span>
                 </figcaption>
               </figure>

@@ -20,6 +20,7 @@ export async function insertInquiry(db: Database, inquiry: NewInquiry) {
           referenceNumber: generateReferenceNumber(new Date(), "INQ"),
           name: inquiry.name,
           businessName: inquiry.business,
+          city: inquiry.city,
           email: inquiry.email,
           phone: inquiry.phone ?? null,
           category: inquiry.category ?? null,

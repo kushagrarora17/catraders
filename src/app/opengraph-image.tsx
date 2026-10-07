@@ -43,7 +43,7 @@ export default function Image() {
           <span>&amp; FLUIDS</span>
         </div>
         <div style={{ marginTop: 40, fontSize: 30, color: SLATE }}>
-          B2B wholesale for mechanics, auto shops &amp; dealerships across the GTA
+          B2B wholesale for mechanics, auto shops &amp; dealerships across Southwestern Ontario
         </div>
       </div>
     ),

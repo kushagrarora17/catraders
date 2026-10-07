@@ -3,10 +3,11 @@
 import { type FormEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { SERVICE_AREAS } from "@/features/site/contact";
 import { type FieldIssue, toFieldIssues } from "@/lib/validation";
 import { HONEYPOT_FIELD, INQUIRY_CATEGORIES, type InquiryResponse, inquirySchema, MAX_MESSAGE_LENGTH } from "../schema";
 
-const FIELD_ORDER = ["name", "business", "phone", "email", "category", "message"] as const;
+const FIELD_ORDER = ["name", "business", "city", "phone", "email", "category", "message"] as const;
 
 export function InquiryForm() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -94,7 +95,7 @@ export function InquiryForm() {
         </Field>
         <Field id="inquiry-phone" label="Phone Number" error={issueFor("phone")}>
           {(props) => (
-            <input {...props} name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(416) 555-0000" />
+            <input {...props} name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(519) 555-0000" />
           )}
         </Field>
         <Field id="inquiry-email" label="Email Address" required error={issueFor("email")}>
@@ -103,6 +104,23 @@ export function InquiryForm() {
           )}
         </Field>
       </div>
+      <Field id="inquiry-city" label="City" required error={issueFor("city")}>
+        {(props) => (
+          <input
+            {...props}
+            name="city"
+            type="text"
+            autoComplete="address-level2"
+            list="inquiry-city-options"
+            placeholder="Windsor"
+          />
+        )}
+      </Field>
+      <datalist id="inquiry-city-options">
+        {SERVICE_AREAS.map((city) => (
+          <option key={city} value={city} />
+        ))}
+      </datalist>
       <Field id="inquiry-category" label="Product Category" error={issueFor("category")}>
         {(props) => (
           <select {...props} name="category" defaultValue="">

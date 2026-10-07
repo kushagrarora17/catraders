@@ -1,10 +1,10 @@
 import {
-  AREA_SERVED,
   BUSINESS_NAME,
   DESCRIPTION,
   EMAIL,
   OPENING_HOURS,
   PHONE_E164,
+  SERVICE_AREAS,
 } from "@/features/site/contact";
 import { getSiteUrl } from "@/features/site/url";
 
@@ -24,14 +24,19 @@ export function StructuredData() {
     image: `${url}/opengraph-image`,
     telephone: PHONE_E164,
     email: EMAIL,
-    areaServed: { "@type": "AdministrativeArea", name: AREA_SERVED },
+    address: { "@type": "PostalAddress", addressRegion: "ON", addressCountry: "CA" },
+    areaServed: SERVICE_AREAS.map((name) => ({
+      "@type": "City",
+      name,
+      containedInPlace: { "@type": "State", name: "Ontario" },
+    })),
     openingHoursSpecification: {
       "@type": "OpeningHoursSpecification",
       dayOfWeek: OPENING_HOURS.days,
       opens: OPENING_HOURS.opens,
       closes: OPENING_HOURS.closes,
     },
-    brand: ["Mobil", "Castrol", "Liqui Moly", "Lucas Oil", "Benzol", "Emzone", "Star Fire", "GP"].map((name) => ({
+    brand: ["Mobil", "Castrol", "Liqui Moly", "Lucas Oil", "Benzol", "Emzone", "Star Fire", "GP", "Duracool"].map((name) => ({
       "@type": "Brand",
       name,
     })),

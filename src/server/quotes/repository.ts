@@ -5,7 +5,7 @@ import { quoteItems, quoteRequests, type SpecificationsSnapshot } from "@/server
 import { generateReferenceNumber } from "./reference";
 
 export interface NewQuote {
-  customer: { name: string; email: string; phone: string; company?: string };
+  customer: { name: string; email: string; phone: string; city: string; company?: string };
   notes?: string;
   items: {
     sanityProductId: string;
@@ -32,6 +32,7 @@ export async function insertQuote(db: Database, quote: NewQuote) {
             customerName: quote.customer.name,
             customerEmail: quote.customer.email,
             customerPhone: quote.customer.phone,
+            city: quote.customer.city,
             companyName: quote.customer.company ?? null,
             notes: quote.notes ?? null,
           })

@@ -20,6 +20,7 @@ const FIELDS = [
   { name: "name", label: "Name", type: "text", autoComplete: "name", required: true },
   { name: "email", label: "Email", type: "email", autoComplete: "email", required: true },
   { name: "phone", label: "Phone", type: "tel", autoComplete: "tel", required: true },
+  { name: "city", label: "City", type: "text", autoComplete: "address-level2", required: true },
   { name: "company", label: "Company (optional)", type: "text", autoComplete: "organization", required: false },
 ] as const;
 
@@ -36,7 +37,13 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable }: Quote
     const text = (key: string) => String(form.get(key) ?? "");
 
     const parsed = quoteRequestSchema.safeParse({
-      customer: { name: text("name"), email: text("email"), phone: text("phone"), company: text("company") },
+      customer: {
+        name: text("name"),
+        email: text("email"),
+        phone: text("phone"),
+        city: text("city"),
+        company: text("company"),
+      },
       items: items.map(({ productId, title, sku, quantity }) => ({ productId, title, sku, quantity })),
       notes: text("notes"),
     });

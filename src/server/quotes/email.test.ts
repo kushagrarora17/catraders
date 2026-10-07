@@ -3,7 +3,7 @@ import { buildQuoteEmails } from "./email";
 import type { NewQuote } from "./repository";
 
 const quote: NewQuote = {
-  customer: { name: "<script>alert(1)</script>", email: "jane@example.com", phone: "+19876543210" },
+  customer: { name: "<script>alert(1)</script>", email: "jane@example.com", phone: "+19876543210", city: "Sarnia" },
   notes: "Deliver <b>fast</b>",
   items: [
     {
@@ -28,6 +28,7 @@ test("builds a customer receipt and an internal notification with escaped HTML",
   expect(internal.recipients.to?.[0].address).toBe("sales@example.com");
   expect(internal.replyTo?.[0].address).toBe("jane@example.com");
   expect(internal.content.html).not.toContain("<b>");
+  expect(internal.content.plainText).toContain("City: Sarnia");
 });
 
 test("skips the internal notification when no recipient is configured", () => {

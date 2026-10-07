@@ -17,12 +17,12 @@ const barlowCondensed = Barlow_Condensed({
 });
 
 const description =
-  "Wholesale automotive lubricants, fluids, filters and shop supplies for mechanics, auto shops and dealerships across the GTA. Mobil, Castrol, Liqui Moly, Lucas and more at mechanic pricing.";
+  "Wholesale automotive lubricants, fluids, filters and shop supplies for mechanics, auto shops and dealerships across Southwestern Ontario — Windsor, London, Kitchener-Waterloo and everywhere between. Mobil, Castrol, Liqui Moly, Lucas and more at mechanic pricing.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: `${BUSINESS_NAME} — Wholesale Automotive Lubricants & Fluids in the GTA`,
+    default: `${BUSINESS_NAME} — Wholesale Automotive Lubricants & Fluids | Windsor to Kitchener, ON`,
     template: `%s | ${BUSINESS_NAME}`,
   },
   description,

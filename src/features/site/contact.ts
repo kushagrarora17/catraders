@@ -2,7 +2,7 @@
 export const BUSINESS_NAME = "CA Traders";
 export const TAGLINE = "Automotive Lubricants & Fluids";
 export const DESCRIPTION =
-  "Your trusted B2B wholesale partner for premium automotive lubricants, fluids, filters, and shop supplies. Serving mechanics, auto shops, and dealerships across the GTA and beyond.";
+  "Your trusted B2B wholesale partner for premium automotive lubricants, fluids, filters, and shop supplies. Serving mechanics, auto shops, and dealerships across Southwestern Ontario — from Windsor and Chatham-Kent through London to Kitchener-Waterloo.";
 
 export const PHONE_DISPLAY = "(647) 548-6042";
 export const PHONE_E164 = "+16475486042";
@@ -15,4 +15,28 @@ export const OPENING_HOURS = {
   closes: "18:00",
 } as const;
 
-export const AREA_SERVED = "Greater Toronto Area";
+export const REGION = "Southwestern Ontario";
+
+/** Cities we deliver to: the Windsor–Kitchener corridor plus the towns north and south of it. */
+export const SERVICE_AREAS = [
+  "Windsor",
+  "LaSalle",
+  "Tecumseh",
+  "Amherstburg",
+  "Leamington",
+  "Kingsville",
+  "Chatham-Kent",
+  "Sarnia",
+  "Strathroy",
+  "London",
+  "St. Thomas",
+  "Tillsonburg",
+  "Woodstock",
+  "Ingersoll",
+  "Stratford",
+  "Kitchener",
+  "Waterloo",
+  "Cambridge",
+  "Guelph",
+  "Brantford",
+] as const;

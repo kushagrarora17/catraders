@@ -40,6 +40,7 @@ export function buildQuoteEmails(
       `Name: ${customer.name}`,
       `Email: ${customer.email}`,
       `Phone: ${customer.phone}`,
+      `City: ${customer.city}`,
       customer.company && `Company: ${customer.company}`,
       quote.notes && `Notes: ${quote.notes}`,
     ].filter((line): line is string => Boolean(line));

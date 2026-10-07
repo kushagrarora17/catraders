@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { type FieldIssue, optionalText, PHONE_PATTERN, toFieldIssues } from "@/lib/validation";
+import { type FieldIssue, optionalText, PHONE_PATTERN, requiredCity, toFieldIssues } from "@/lib/validation";
 
 export { type FieldIssue, toFieldIssues };
 
@@ -24,6 +24,7 @@ export const quoteRequestSchema = z.object({
       .string()
       .trim()
       .regex(PHONE_PATTERN, "Enter a valid phone number"),
+    city: requiredCity,
     company: optionalText(255),
   }),
   items: z

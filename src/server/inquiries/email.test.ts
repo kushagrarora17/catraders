@@ -5,6 +5,7 @@ import type { NewInquiry } from "./repository";
 const inquiry: NewInquiry = {
   name: "<script>alert(1)</script>",
   business: "Smith & Sons",
+  city: "Kitchener",
   email: "jane@example.com",
   phone: undefined,
   category: "Engine Oils",
@@ -24,6 +25,7 @@ test("builds a customer receipt and an internal notification with escaped HTML",
   expect(internal.content.html).toContain("Smith &#38; Sons");
   expect(internal.content.html).not.toContain("<b>");
   expect(internal.content.plainText).toContain("Category: Engine Oils");
+  expect(internal.content.plainText).toContain("City: Kitchener");
   expect(internal.content.plainText).not.toContain("Phone:");
 });
 

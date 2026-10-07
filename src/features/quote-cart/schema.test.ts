@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { quoteRequestSchema } from "./schema";
 
 const valid = {
-  customer: { name: "  Jane Doe ", email: "jane@example.com", phone: "+19876543210", company: "Apex Tuning" },
+  customer: { name: "  Jane Doe ", email: "jane@example.com", phone: "+19876543210", city: "London", company: "Apex Tuning" },
   items: [{ productId: "abc123", title: "Synthetic 5W-30 Engine Oil 4 L", sku: "EO-5W30-4L", quantity: 4 }],
   notes: "Looking for bulk delivery timeline estimates.",
 };
@@ -29,6 +29,7 @@ describe("quoteRequestSchema", () => {
     ["missing name", { ...valid, customer: { ...valid.customer, name: " " } }, "customer.name"],
     ["bad email", { ...valid, customer: { ...valid.customer, email: "nope" } }, "customer.email"],
     ["bad phone", { ...valid, customer: { ...valid.customer, phone: "call me" } }, "customer.phone"],
+    ["missing city", { ...valid, customer: { ...valid.customer, city: " " } }, "customer.city"],
     ["no items", { ...valid, items: [] }, "items"],
     ["zero quantity", { ...valid, items: [{ ...valid.items[0], quantity: 0 }] }, "items.0.quantity"],
     ["fractional quantity", { ...valid, items: [{ ...valid.items[0], quantity: 1.5 }] }, "items.0.quantity"],
