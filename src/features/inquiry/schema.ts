@@ -22,11 +22,7 @@ export const inquirySchema = z.object({
   business: z.string().trim().min(1, "Enter your business name").max(255),
   city: requiredCity,
   email: z.string().trim().max(255).pipe(z.email("Enter a valid email address")),
-  phone: z
-    .string()
-    .trim()
-    .refine((value) => value === "" || PHONE_PATTERN.test(value), "Enter a valid phone number")
-    .transform((value) => value || undefined),
+  phone: z.string().trim().regex(PHONE_PATTERN, "Enter a valid phone number"),
   category: z
     .union([z.literal(""), z.enum(INQUIRY_CATEGORIES)], { error: "Choose a category from the list" })
     .transform((value) => value || undefined),

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { BUSINESS_NAME, DESCRIPTION, EMAIL, PHONE_DISPLAY, PHONE_E164 } from "../contact";
-import { NAV_LINKS, PRODUCT_LINKS, QUOTE_HREF } from "../nav";
+import { NAV_LINKS, PRODUCT_LINKS, CONTACT_HREF } from "../nav";
 import { Logo } from "./Logo";
 
 const linkClass = "text-sm text-muted-foreground transition-colors hover:text-highlight";
@@ -27,8 +27,8 @@ export function SiteFooter() {
               </li>
             ))}
             <li>
-              <Link href={QUOTE_HREF} className={linkClass}>
-                Get a Quote
+              <Link href={CONTACT_HREF} className={linkClass}>
+                Contact Us
               </Link>
             </li>
           </ul>

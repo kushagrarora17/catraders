@@ -22,7 +22,7 @@ describe.skipIf(!process.env.DATABASE_URL)("insertInquiry (Postgres)", () => {
       business: "Test Garage",
       city: "Windsor",
       email: "test@example.com",
-      phone: undefined,
+      phone: "(519) 555-0000",
       category: "Coolant",
       message: undefined,
     });
@@ -33,7 +33,7 @@ describe.skipIf(!process.env.DATABASE_URL)("insertInquiry (Postgres)", () => {
     expect(row.status).toBe("pending");
     expect(row.businessName).toBe("Test Garage");
     expect(row.city).toBe("Windsor");
-    expect(row.phone).toBeNull();
+    expect(row.phone).toBe("(519) 555-0000");
     expect(row.message).toBeNull();
   });
 });

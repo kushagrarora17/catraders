@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { InquiryForm } from "@/features/inquiry/components/InquiryForm";
@@ -46,9 +47,14 @@ export function Contact() {
           </dl>
         </div>
         <div className="flex flex-col gap-3">
-          <h3 className="text-3xl font-black uppercase text-foreground">Request a Quote</h3>
+          <h3 className="text-3xl font-black uppercase text-foreground">Send an Inquiry</h3>
           <p className="text-muted-foreground">
-            Fill out the form and we&apos;ll respond with wholesale pricing within 24 hours.
+            Fill out the form and we&apos;ll respond with wholesale pricing within 24 hours. Know exactly which products
+            you need?{" "}
+            <Link href="/products" className="text-highlight hover:underline">
+              Build a quote list from the catalog
+            </Link>{" "}
+            for itemized pricing.
           </p>
           <div className="mt-4">
             <InquiryForm />

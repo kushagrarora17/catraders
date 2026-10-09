@@ -15,8 +15,7 @@ describe("quoteRequestSchema", () => {
   });
 
   test("turns empty optional fields into undefined", () => {
-    const result = quoteRequestSchema.parse({ ...valid, customer: { ...valid.customer, company: "" }, notes: "   " });
-    expect(result.customer.company).toBeUndefined();
+    const result = quoteRequestSchema.parse({ ...valid, notes: "   " });
     expect(result.notes).toBeUndefined();
   });
 
@@ -27,6 +26,7 @@ describe("quoteRequestSchema", () => {
 
   test.each([
     ["missing name", { ...valid, customer: { ...valid.customer, name: " " } }, "customer.name"],
+    ["missing business", { ...valid, customer: { ...valid.customer, company: " " } }, "customer.company"],
     ["bad email", { ...valid, customer: { ...valid.customer, email: "nope" } }, "customer.email"],
     ["bad phone", { ...valid, customer: { ...valid.customer, phone: "call me" } }, "customer.phone"],
     ["missing city", { ...valid, customer: { ...valid.customer, city: " " } }, "customer.city"],

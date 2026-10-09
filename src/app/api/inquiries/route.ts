@@ -1,6 +1,6 @@
 import { after, type NextRequest, NextResponse } from "next/server";
 import { HONEYPOT_FIELD, type InquiryResponse, inquirySchema } from "@/features/inquiry/schema";
-import { toFieldIssues } from "@/lib/validation";
+import { IDEMPOTENCY_HEADER, parseIdempotencyKey, toFieldIssues } from "@/lib/validation";
 import { getDb } from "@/server/db";
 import { sendInquiryEmails } from "@/server/inquiries/email";
 import { insertInquiry } from "@/server/inquiries/repository";
@@ -44,9 +44,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const inquiry = parsed.data;
-    const { referenceNumber } = await insertInquiry(getDb(), inquiry);
-    after(() => sendInquiryEmails(referenceNumber, inquiry));
-    return respond({ success: true, referenceNumber, message: SUCCESS_MESSAGE }, 201);
+    const idempotencyKey = parseIdempotencyKey(req.headers.get(IDEMPOTENCY_HEADER));
+    const { referenceNumber, duplicate } = await insertInquiry(getDb(), inquiry, idempotencyKey);
+    if (!duplicate) after(() => sendInquiryEmails(referenceNumber, inquiry));
+    return respond({ success: true, referenceNumber, message: SUCCESS_MESSAGE }, duplicate ? 200 : 201);
   } catch (error) {
     console.error("[inquiries] Failed to store inquiry", error);
     return respond({ success: false, error: "INTERNAL_ERROR", message: "Something went wrong. Please try again." }, 500);

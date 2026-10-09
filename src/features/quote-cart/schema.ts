@@ -25,7 +25,7 @@ export const quoteRequestSchema = z.object({
       .trim()
       .regex(PHONE_PATTERN, "Enter a valid phone number"),
     city: requiredCity,
-    company: optionalText(255),
+    company: z.string().trim().min(1, "Enter your business name").max(255),
   }),
   items: z
     .array(quoteItemSchema)

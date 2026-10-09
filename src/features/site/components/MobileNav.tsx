@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
-import { NAV_LINKS, QUOTE_HREF } from "../nav";
+import { NAV_LINKS, CONTACT_HREF } from "../nav";
 
 /** Disclosure menu for small screens. Closes on link click, Escape, or resize to desktop. */
 export function MobileNav() {
@@ -63,11 +63,11 @@ export function MobileNav() {
             ))}
             <li className="pt-3">
               <Link
-                href={QUOTE_HREF}
+                href={CONTACT_HREF}
                 onClick={() => setOpen(false)}
                 className={buttonVariants({ size: "sm", className: "w-full" })}
               >
-                Get a Quote
+                Contact Us
               </Link>
             </li>
           </ul>

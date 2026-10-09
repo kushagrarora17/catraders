@@ -30,6 +30,8 @@ export const quoteRequests = pgTable("quote_requests", {
   city: varchar("city", { length: 100 }),
   companyName: varchar("company_name", { length: 255 }),
   notes: text("notes"),
+  // Client-generated per submission, so retries and double-submits don't create duplicates.
+  idempotencyKey: uuid("idempotency_key").unique(),
   status: quoteStatus("status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
@@ -77,6 +79,7 @@ export const inquiries = pgTable(
     phone: varchar("phone", { length: 50 }),
     category: varchar("category", { length: 100 }),
     message: text("message"),
+    idempotencyKey: uuid("idempotency_key").unique(),
     status: quoteStatus("status").notNull().default("pending"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

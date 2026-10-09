@@ -7,7 +7,7 @@ const valid = {
   business: "Smith Auto",
   city: " Windsor ",
   email: "jane@smithauto.ca",
-  phone: "",
+  phone: "(519) 555-0000",
   category: "",
   message: "",
 };
@@ -19,7 +19,7 @@ test("accepts a minimal inquiry and normalises empty optionals to undefined", ()
     business: "Smith Auto",
     city: "Windsor",
     email: "jane@smithauto.ca",
-    phone: undefined,
+    phone: "(519) 555-0000",
     category: undefined,
     message: undefined,
   });

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useHydrated } from "@/lib/useHydrated";
 import { useQuoteStore } from "../store/useQuoteStore";
-import { useHydrated } from "../useHydrated";
 
 export function QuoteCartLink() {
   const hydrated = useHydrated();
