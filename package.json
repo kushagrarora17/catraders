@@ -15,7 +15,8 @@
     "db:migrate": "drizzle-kit migrate",
     "studio:dev": "cd studio && bun run dev",
     "typegen": "cd studio && bun run typegen",
-    "seed": "cd studio && bun run seed"
+    "seed": "cd studio && bun run seed",
+    "upload-products": "cd studio && bun run upload-products"
   },
   "dependencies": {
     "@azure/communication-email": "^1.1.0",
