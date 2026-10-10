@@ -11,6 +11,7 @@
     "deploy-schema": "sanity schemas deploy",
     "typegen": "sanity schemas extract --enforce-required-fields --force && sanity typegen generate",
     "seed": "sanity exec scripts/seed.ts --with-user-token",
+    "upload-products": "sanity exec scripts/upload-products.ts --with-user-token",
     "validate": "sanity schemas validate"
   },
   "engines": {
