@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useHydrated } from "@/lib/useHydrated";
 import { type AvailabilityResponse, MAX_ITEM_QUANTITY } from "../schema";
 import { useQuoteStore } from "../store/useQuoteStore";
-import { useHydrated } from "../useHydrated";
 import { QuoteForm } from "./QuoteForm";
 
 type Availability = Record<string, { exists: boolean; inStock: boolean }>;

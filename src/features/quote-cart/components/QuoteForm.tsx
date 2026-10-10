@@ -1,6 +1,7 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
+import { IDEMPOTENCY_HEADER } from "@/lib/validation";
 import {
   type FieldIssue,
   type QuoteResponse,
@@ -21,13 +22,15 @@ const FIELDS = [
   { name: "email", label: "Email", type: "email", autoComplete: "email", required: true },
   { name: "phone", label: "Phone", type: "tel", autoComplete: "tel", required: true },
   { name: "city", label: "City", type: "text", autoComplete: "address-level2", required: true },
-  { name: "company", label: "Company (optional)", type: "text", autoComplete: "organization", required: false },
+  { name: "company", label: "Business name", type: "text", autoComplete: "organization", required: true },
 ] as const;
 
 export function QuoteForm({ items, disabled, onSubmitted, onUnavailable }: QuoteFormProps) {
   const [issues, setIssues] = useState<FieldIssue[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // One key per quote request: retries of the same submission reuse it, so the API stores it once.
+  const idempotencyKey = useRef<string | null>(null);
 
   const issueFor = (path: string) => issues.find((i) => i.path === path)?.message;
 
@@ -56,10 +59,11 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable }: Quote
     setPending(true);
     setIssues([]);
     setError(null);
+    idempotencyKey.current ??= crypto.randomUUID();
     try {
       const res = await fetch("/api/quotes", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", [IDEMPOTENCY_HEADER]: idempotencyKey.current },
         body: JSON.stringify(parsed.data),
       });
       const body = (await res.json()) as QuoteResponse;

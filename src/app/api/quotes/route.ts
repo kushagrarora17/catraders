@@ -1,5 +1,6 @@
 import { after, type NextRequest, NextResponse } from "next/server";
 import { type QuoteResponse, quoteRequestSchema, toFieldIssues } from "@/features/quote-cart/schema";
+import { IDEMPOTENCY_HEADER, parseIdempotencyKey } from "@/lib/validation";
 import { sendQuoteEmails } from "@/server/quotes/email";
 import { submitQuoteRequest } from "@/server/quotes/service";
 
@@ -34,7 +35,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await submitQuoteRequest(parsed.data);
+    const idempotencyKey = parseIdempotencyKey(req.headers.get(IDEMPOTENCY_HEADER));
+    const result = await submitQuoteRequest(parsed.data, idempotencyKey);
     if (!result.ok) {
       const message =
         result.error === "OUT_OF_STOCK"
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
       return respond({ success: false, error: result.error, message, productIds: result.productIds }, result.status);
     }
 
-    after(() => sendQuoteEmails(result.referenceNumber, result.quote));
+    if (!result.duplicate) after(() => sendQuoteEmails(result.referenceNumber, result.quote));
 
     return respond(
       {
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
         referenceNumber: result.referenceNumber,
         message: "Quote request successfully submitted.",
       },
-      201,
+      result.duplicate ? 200 : 201,
     );
   } catch (error) {
     console.error("[quotes] Failed to submit quote request", error);

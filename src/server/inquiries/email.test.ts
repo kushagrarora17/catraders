@@ -7,7 +7,7 @@ const inquiry: NewInquiry = {
   business: "Smith & Sons",
   city: "Kitchener",
   email: "jane@example.com",
-  phone: undefined,
+  phone: "(519) 555-0000",
   category: "Engine Oils",
   message: "Need <b>10</b> cases",
 };
@@ -26,7 +26,7 @@ test("builds a customer receipt and an internal notification with escaped HTML",
   expect(internal.content.html).not.toContain("<b>");
   expect(internal.content.plainText).toContain("Category: Engine Oils");
   expect(internal.content.plainText).toContain("City: Kitchener");
-  expect(internal.content.plainText).not.toContain("Phone:");
+  expect(internal.content.plainText).toContain("Phone: (519) 555-0000");
 });
 
 test("skips the internal notification when no recipient is configured", () => {

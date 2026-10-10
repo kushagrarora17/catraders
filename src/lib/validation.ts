@@ -21,3 +21,9 @@ export const optionalText = (max: number) =>
 export const requiredCity = z.string().trim().min(1, "Enter your city").max(100);
 
 export const PHONE_PATTERN = /^\+?[0-9 ()-]{7,20}$/;
+
+/** Header the forms send (one UUID per submission) so the API can ignore repeats. */
+export const IDEMPOTENCY_HEADER = "Idempotency-Key";
+
+/** The key if it's a valid UUID, otherwise undefined (the request is then processed without dedupe). */
+export const parseIdempotencyKey = (value: string | null) => z.uuid().safeParse(value).data;

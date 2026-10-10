@@ -2,7 +2,7 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Eyebrow } from "@/components/ui/section-heading";
-import { QUOTE_HREF } from "@/features/site/nav";
+import { CONTACT_HREF } from "@/features/site/nav";
 import { Icon, type IconName } from "./icons";
 
 const STATS = [
@@ -47,8 +47,8 @@ export function Hero() {
             <Link href="/products" className={buttonVariants()}>
               Browse Catalog
             </Link>
-            <Link href={QUOTE_HREF} className={buttonVariants({ variant: "outline" })}>
-              Request Quote
+            <Link href={CONTACT_HREF} className={buttonVariants({ variant: "outline" })}>
+              Contact Us
             </Link>
           </div>
           <dl className="mt-4 grid max-w-lg grid-cols-3 divide-x divide-border border border-border bg-secondary/60">

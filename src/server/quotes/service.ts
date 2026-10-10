@@ -6,14 +6,14 @@ import { getDb } from "@/server/db";
 import { insertQuote, type NewQuote } from "./repository";
 
 export type SubmitQuoteResult =
-  | { ok: true; referenceNumber: string; quote: NewQuote }
+  | { ok: true; referenceNumber: string; duplicate: boolean; quote: NewQuote }
   | { ok: false; status: 400 | 409; error: "UNKNOWN_PRODUCTS" | "OUT_OF_STOCK"; productIds: string[] };
 
 /**
  * Re-validates the cart against Sanity (existence, vertical, stock) and stores
  * the RFQ using canonical product data rather than what the client sent.
  */
-export async function submitQuoteRequest(request: QuoteRequest): Promise<SubmitQuoteResult> {
+export async function submitQuoteRequest(request: QuoteRequest, idempotencyKey?: string): Promise<SubmitQuoteResult> {
   const ids = request.items.map((i) => i.productId);
   const products = new Map((await getProductsForQuote(ids)).map((p) => [p._id, p]));
 
@@ -44,6 +44,6 @@ export async function submitQuoteRequest(request: QuoteRequest): Promise<SubmitQ
     }),
   };
 
-  const { referenceNumber } = await insertQuote(getDb(), quote);
-  return { ok: true, referenceNumber, quote };
+  const { referenceNumber, duplicate } = await insertQuote(getDb(), quote, idempotencyKey);
+  return { ok: true, referenceNumber, duplicate, quote };
 }

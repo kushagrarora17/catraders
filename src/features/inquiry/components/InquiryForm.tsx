@@ -4,13 +4,17 @@ import { type FormEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { SERVICE_AREAS } from "@/features/site/contact";
-import { type FieldIssue, toFieldIssues } from "@/lib/validation";
+import { useHydrated } from "@/lib/useHydrated";
+import { type FieldIssue, IDEMPOTENCY_HEADER, toFieldIssues } from "@/lib/validation";
 import { HONEYPOT_FIELD, INQUIRY_CATEGORIES, type InquiryResponse, inquirySchema, MAX_MESSAGE_LENGTH } from "../schema";
 
 const FIELD_ORDER = ["name", "business", "city", "phone", "email", "category", "message"] as const;
 
 export function InquiryForm() {
   const formRef = useRef<HTMLFormElement>(null);
+  // One key per inquiry: retries of the same submission reuse it, so the API stores it once.
+  const idempotencyKey = useRef<string | null>(null);
+  const hydrated = useHydrated();
   const [issues, setIssues] = useState<FieldIssue[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [reference, setReference] = useState<string | null>(null);
@@ -43,15 +47,17 @@ export function InquiryForm() {
 
     setPending(true);
     setIssues([]);
+    idempotencyKey.current ??= crypto.randomUUID();
     try {
       const res = await fetch("/api/inquiries", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", [IDEMPOTENCY_HEADER]: idempotencyKey.current },
         body: JSON.stringify(data),
       });
       const body = (await res.json()) as InquiryResponse;
       if (body.success) {
         setReference(body.referenceNumber);
+        idempotencyKey.current = null;
         form.reset();
         return;
       }
@@ -93,7 +99,7 @@ export function InquiryForm() {
             <input {...props} name="business" type="text" autoComplete="organization" placeholder="Smith Auto Service" />
           )}
         </Field>
-        <Field id="inquiry-phone" label="Phone Number" error={issueFor("phone")}>
+        <Field id="inquiry-phone" label="Phone Number" required error={issueFor("phone")}>
           {(props) => (
             <input {...props} name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(519) 555-0000" />
           )}
@@ -157,9 +163,9 @@ export function InquiryForm() {
         </p>
       )}
 
-      <Button type="submit" variant="secondary" size="lg" disabled={pending} className="w-full">
-        {pending ? "Sending…" : "Send Inquiry"}
-        {!pending && <span aria-hidden="true">→</span>}
+      <Button type="submit" variant="secondary" size="lg" disabled={!hydrated || pending} className="w-full">
+        {!hydrated ? "Loading…" : pending ? "Sending…" : "Send Inquiry"}
+        {hydrated && !pending && <span aria-hidden="true">→</span>}
       </Button>
     </form>
   );

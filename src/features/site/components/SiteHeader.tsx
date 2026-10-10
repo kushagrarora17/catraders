@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { QuoteCartLink } from "@/features/quote-cart/components/QuoteCartLink";
-import { NAV_LINKS, QUOTE_HREF } from "../nav";
+import { NAV_LINKS, CONTACT_HREF } from "../nav";
 import { Logo } from "./Logo";
 import { MobileNav } from "./MobileNav";
 
@@ -24,8 +24,8 @@ export function SiteHeader() {
             ))}
           </ul>
           <QuoteCartLink />
-          <Link href={QUOTE_HREF} className={buttonVariants({ size: "sm", className: "hidden lg:inline-flex" })}>
-            Get a Quote
+          <Link href={CONTACT_HREF} className={buttonVariants({ size: "sm", className: "hidden lg:inline-flex" })}>
+            Contact Us
           </Link>
           <MobileNav />
         </nav>

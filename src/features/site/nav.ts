@@ -4,7 +4,7 @@ export const NAV_LINKS = [
   { href: "/#testimonials", label: "Testimonials", footerLabel: "Testimonials" },
 ] as const;
 
-export const QUOTE_HREF = "/#contact";
+export const CONTACT_HREF = "/#contact";
 
 export const PRODUCT_LINKS = [
   "Engine Oils",
