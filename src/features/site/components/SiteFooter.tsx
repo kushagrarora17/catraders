@@ -38,9 +38,9 @@ export function SiteFooter() {
             Products
           </h2>
           <ul className="flex flex-col gap-2.5">
-            {PRODUCT_LINKS.map((label) => (
-              <li key={label}>
-                <Link href="/products" className={linkClass}>
+            {PRODUCT_LINKS.map(({ label, slug }) => (
+              <li key={slug}>
+                <Link href={`/products?category=${slug}`} className={linkClass}>
                   {label}
                 </Link>
               </li>
