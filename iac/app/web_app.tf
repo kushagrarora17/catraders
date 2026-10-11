@@ -13,7 +13,14 @@ locals {
       database_url          = azurerm_key_vault_secret.database_url
       sanity_webhook_secret = azurerm_key_vault_secret.sanity_webhook_secret
       acs_connection_string = azurerm_key_vault_secret.acs_connection_string
+      mcp_admin_password    = azurerm_key_vault_secret.mcp_admin_password
+      mcp_jwt_secret        = azurerm_key_vault_secret.mcp_jwt_secret
     } : key => "@Microsoft.KeyVault(SecretUri=${secret.versionless_id})"
+  }
+
+  sanity_write_token_setting = {
+    for secret in azurerm_key_vault_secret.sanity_write_token :
+    "SANITY_API_WRITE_TOKEN" => "@Microsoft.KeyVault(SecretUri=${secret.versionless_id})"
   }
 
   # Can't reference the web app's own default_hostname from its app_settings (cycle).
@@ -51,7 +58,7 @@ resource "azurerm_linux_web_app" "main" {
     }
   }
 
-  app_settings = {
+  app_settings = merge(local.sanity_write_token_setting, {
     WEBSITES_PORT                       = "3000"
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
 
@@ -65,9 +72,13 @@ resource "azurerm_linux_web_app" "main" {
     EMAIL_SENDER_ADDRESS                  = local.email_sender_address
     QUOTE_NOTIFICATION_EMAIL              = var.quote_notification_email
 
+    # Sign-in for the MCP server (/api/mcp); see the `mcp` output.
+    MCP_ADMIN_PASSWORD = local.key_vault_ref.mcp_admin_password
+    MCP_JWT_SECRET     = local.key_vault_ref.mcp_jwt_secret
+
     # Canonical URL for metadata, sitemap and robots.txt.
     SITE_URL = local.site_url
-  }
+  })
 
   logs {
     detailed_error_messages = false

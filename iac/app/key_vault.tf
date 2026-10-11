@@ -71,3 +71,45 @@ resource "azurerm_key_vault_secret" "acs_connection_string" {
 
   depends_on = [time_sleep.key_vault_rbac]
 }
+
+# Password for the MCP server's OAuth consent screen. Read it with the command in the `mcp` output.
+ephemeral "random_password" "mcp_admin" {
+  length  = 24
+  special = false
+}
+
+resource "azurerm_key_vault_secret" "mcp_admin_password" {
+  name             = "mcp-admin-password"
+  key_vault_id     = azurerm_key_vault.main.id
+  value_wo         = ephemeral.random_password.mcp_admin.result
+  value_wo_version = var.mcp_admin_password_version
+
+  depends_on = [time_sleep.key_vault_rbac]
+}
+
+# Signs the MCP server's access tokens.
+ephemeral "random_password" "mcp_jwt" {
+  length  = 64
+  special = false
+}
+
+resource "azurerm_key_vault_secret" "mcp_jwt_secret" {
+  name             = "mcp-jwt-secret"
+  key_vault_id     = azurerm_key_vault.main.id
+  value_wo         = ephemeral.random_password.mcp_jwt.result
+  value_wo_version = var.mcp_jwt_secret_version
+
+  depends_on = [time_sleep.key_vault_rbac]
+}
+
+# Editor token the MCP server uses to write to Sanity. Created only once a token is supplied.
+resource "azurerm_key_vault_secret" "sanity_write_token" {
+  count = var.sanity_write_token_version > 0 ? 1 : 0
+
+  name             = "sanity-write-token"
+  key_vault_id     = azurerm_key_vault.main.id
+  value_wo         = var.sanity_write_token
+  value_wo_version = var.sanity_write_token_version
+
+  depends_on = [time_sleep.key_vault_rbac]
+}

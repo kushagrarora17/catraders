@@ -58,3 +58,12 @@ output "database_url_command" {
   description = "Prints DATABASE_URL (for running migrations from an allowed IP)."
   value       = "az keyvault secret show --vault-name ${azurerm_key_vault.main.name} --name ${azurerm_key_vault_secret.database_url.name} --query value -o tsv"
 }
+
+output "mcp" {
+  description = "Connect Claude to the MCP server: add this URL as a custom connector, then sign in with the password."
+  value = {
+    url                      = "${local.site_url}/api/mcp"
+    read_password_with       = "az keyvault secret show --vault-name ${azurerm_key_vault.main.name} --name ${azurerm_key_vault_secret.mcp_admin_password.name} --query value -o tsv"
+    sanity_write_token_ready = var.sanity_write_token_version > 0
+  }
+}
