@@ -1,22 +1,44 @@
 version: 2
+
+# One combined PR for every ecosystem and directory; major version bumps are ignored.
+multi-ecosystem-groups:
+  all:
+    schedule:
+      interval: weekly
+
 updates:
   - package-ecosystem: bun
     directory: /
-    schedule:
-      interval: weekly
+    patterns: ["*"]
+    multi-ecosystem-group: all
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: bun
     directory: /studio
-    schedule:
-      interval: weekly
+    patterns: ["*"]
+    multi-ecosystem-group: all
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
-    schedule:
-      interval: weekly
+    patterns: ["*"]
+    multi-ecosystem-group: all
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: terraform
     directory: /iac/app
-    schedule:
-      interval: weekly
+    patterns: ["*"]
+    multi-ecosystem-group: all
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: terraform
     directory: /iac/bootstrap
-    schedule:
-      interval: weekly
+    patterns: ["*"]
+    multi-ecosystem-group: all
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
