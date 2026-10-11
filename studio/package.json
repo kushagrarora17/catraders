@@ -20,7 +20,7 @@
   "packageManager": "bun@1.4.2",
   "dependencies": {
     "@sanity/vision": "^6.16.0",
-    "react": "19.2.8",
+    "react": "19.3.0",
     "react-dom": "19.2.8",
     "sanity": "^6.16.0",
     "styled-components": "^6.1.15"
