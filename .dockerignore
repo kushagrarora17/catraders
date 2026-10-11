@@ -4,6 +4,7 @@
 .next
 node_modules
 studio
+video
 drizzle
 docker
 coverage
