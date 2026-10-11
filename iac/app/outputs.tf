@@ -43,6 +43,10 @@ output "github_actions_variables" {
     AZURE_WEBAPP_NAME    = azurerm_linux_web_app.main.name
     ACR_NAME             = azurerm_container_registry.main.name
     ACR_LOGIN_SERVER     = azurerm_container_registry.main.login_server
+    # Used by the deploy workflow to run database migrations.
+    AZURE_POSTGRES_SERVER     = azurerm_postgresql_flexible_server.main.name
+    AZURE_KEY_VAULT_NAME      = azurerm_key_vault.main.name
+    AZURE_DATABASE_URL_SECRET = azurerm_key_vault_secret.database_url.name
   }
 }
 

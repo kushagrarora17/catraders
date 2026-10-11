@@ -12,7 +12,7 @@
     "db:up": "sh scripts/db-up.sh",
     "db:down": "${CONTAINER_CLI:-podman} stop catraders-postgres",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "bun scripts/migrate.ts",
     "studio:dev": "cd studio && bun run dev",
     "typegen": "cd studio && bun run typegen",
     "seed": "cd studio && bun run seed",

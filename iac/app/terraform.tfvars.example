@@ -11,6 +11,6 @@ quote_notification_email = "sales@example.com"
 # MCP server (catalog & RFQ management at /api/mcp). The sign-in password and token-signing secret
 # are generated automatically. To let it edit Sanity content, create an Editor token at
 # sanity.io/manage → API → Tokens, then:
-#   export TF_VAR_sanity_write_token=sk...   # ephemeral: never written to state
-#   sanity_write_token_version = 1           # bump this (and re-export) to rotate
+#   export TF_VAR_sanity_write_token=sk...   # ephemeral: never written to state; needed on every plan/apply
+#   sanity_write_token_version = 1           # bump this (with a new token) to rotate
 # sanity_write_token_version = 1

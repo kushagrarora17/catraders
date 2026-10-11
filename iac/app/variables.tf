@@ -88,7 +88,7 @@ variable "mcp_jwt_secret_version" {
 }
 
 variable "sanity_write_token" {
-  description = "Sanity API token with Editor access (sanity.io/manage → API → Tokens); lets the MCP server edit content. Ephemeral: never stored in state, so pass it with TF_VAR_sanity_write_token whenever sanity_write_token_version changes."
+  description = "Sanity API token with Editor access (sanity.io/manage → API → Tokens); lets the MCP server edit content. Ephemeral: never stored in state, so TF_VAR_sanity_write_token must be set on every plan and apply while sanity_write_token_version is above 0 (the provider rejects a version without a value)."
   type        = string
   default     = null
   sensitive   = true

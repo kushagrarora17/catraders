@@ -104,9 +104,7 @@ gh variable set -f /tmp/gh-vars.env --repo kushagrarora17/catraders
 
 Optionally, restrict the `production` environment to the `main` branch and add required reviewers under Settings → Environments.
 
-**4. Run database migrations.** Add your IP to `postgres_allowed_ip_ranges` in `terraform.tfvars` and apply again, then:
-
-Run this from the repo root:
+**4. Database migrations.** The deploy workflow applies them automatically (step 6), using the `AZURE_POSTGRES_SERVER`, `AZURE_KEY_VAULT_NAME` and `AZURE_DATABASE_URL_SECRET` variables set above. Terraform grants the deploy identity the two things it needs: read access to the `database-url` secret only, and a custom role that can add and remove firewall rules on the Postgres server. Nothing is needed here unless you want to migrate by hand: add your IP to `postgres_allowed_ip_ranges`, apply, then run this from the repo root:
 
 ```bash
 DATABASE_URL="$(terraform -chdir=iac/app output -raw database_url_command | sh)" bun run db:migrate
@@ -114,7 +112,7 @@ DATABASE_URL="$(terraform -chdir=iac/app output -raw database_url_command | sh)"
 
 **5. Point Sanity at the site.** Use `terraform output sanity_webhook` for the URL and for the command that reads the secret. Create the webhook as described in the root README.
 
-**6. Deploy.** Push to `main`, or run the *Deploy Next.js Automotive App to Azure* workflow by hand. Until the first image is pushed, the web app shows container pull errors. That's expected.
+**6. Deploy.** Push to `main`, or run the *Deploy Next.js Automotive App to Azure* workflow by hand. The workflow builds the image, applies pending migrations, then deploys. Until the first image is pushed, the web app shows container pull errors. That's expected.
 
 ## Day-2
 
