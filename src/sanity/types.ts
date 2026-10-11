@@ -465,6 +465,160 @@ export type TESTIMONIALS_QUERY_RESULT = Array<{
   rating: 1 | 2 | 3 | 4 | 5;
 }>;
 
+// Source: ../src/server/mcp/queries.ts
+// Variable: PRODUCT_SEARCH_QUERY
+// Query: {  "total": count(*[  _type == "product" && vertical == "automotive"  && (!defined($q) || title match $q || sku match $q)  && (!defined($category) || $category in [    category->slug.current,    category->parent->slug.current,    category->parent->parent->slug.current  ])  && (!defined($inStock) || inStock == $inStock)  && (!defined($skus) || sku in $skus)]),  "items": *[  _type == "product" && vertical == "automotive"  && (!defined($q) || title match $q || sku match $q)  && (!defined($category) || $category in [    category->slug.current,    category->parent->slug.current,    category->parent->parent->slug.current  ])  && (!defined($inStock) || inStock == $inStock)  && (!defined($skus) || sku in $skus)] | order(title asc) [$start...$end] {  _id,  title,  "slug": slug.current,  sku,  inStock,  "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],  "attributes": attributeValues[]->label}}
+export type PRODUCT_SEARCH_QUERY_RESULT = {
+  total: number;
+  items: Array<{
+    _id: string;
+    title: string;
+    slug: string;
+    sku: string | null;
+    inStock: boolean;
+    categoryPath: Array<string | null>;
+    attributes: Array<string> | null;
+  }>;
+};
+
+// Source: ../src/server/mcp/queries.ts
+// Variable: HIDDEN_PRODUCT_SEARCH_QUERY
+// Query: {  "total": count(*[  _type == "product" && vertical == "automotive"  && (!defined($q) || title match $q || sku match $q)  && (!defined($category) || $category in [    category->slug.current,    category->parent->slug.current,    category->parent->parent->slug.current  ])  && (!defined($inStock) || inStock == $inStock)  && (!defined($skus) || sku in $skus) && _id in path("drafts.**") && !defined(*[_type == "product" && _id == string::split(^._id, "drafts.")[1]][0]._id)]),  "items": *[  _type == "product" && vertical == "automotive"  && (!defined($q) || title match $q || sku match $q)  && (!defined($category) || $category in [    category->slug.current,    category->parent->slug.current,    category->parent->parent->slug.current  ])  && (!defined($inStock) || inStock == $inStock)  && (!defined($skus) || sku in $skus) && _id in path("drafts.**") && !defined(*[_type == "product" && _id == string::split(^._id, "drafts.")[1]][0]._id)] | order(title asc) [$start...$end] {  _id,  title,  "slug": slug.current,  sku,  inStock,  "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],  "attributes": attributeValues[]->label}}
+export type HIDDEN_PRODUCT_SEARCH_QUERY_RESULT = {
+  total: number;
+  items: Array<{
+    _id: string;
+    title: string;
+    slug: string;
+    sku: string | null;
+    inStock: boolean;
+    categoryPath: Array<string | null>;
+    attributes: Array<string> | null;
+  }>;
+};
+
+// Source: ../src/server/mcp/queries.ts
+// Variable: PRODUCT_DETAIL_QUERY
+// Query: *[_type == "product" && vertical == "automotive" && _id == $docId][0] {    _id,    _updatedAt,    title,    "slug": slug.current,    sku,    inStock,    "category": category->{ _id, title, "slug": slug.current, level },    "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],    "attributes": attributeValues[]->{      _id,      label,      "slug": slug.current,      "attribute": attribute->{ title, "slug": slug.current }    },    "images": images[]{ "url": asset->url, alt },    description  }
+export type PRODUCT_DETAIL_QUERY_RESULT = {
+  _id: string;
+  _updatedAt: string;
+  title: string;
+  slug: string;
+  sku: string | null;
+  inStock: boolean;
+  category: {
+    _id: string;
+    title: string;
+    slug: string;
+    level: 1 | 2 | 3;
+  };
+  categoryPath: Array<string | null>;
+  attributes: Array<{
+    _id: string;
+    label: string;
+    slug: string;
+    attribute: {
+      title: string;
+      slug: string;
+    };
+  }> | null;
+  images: Array<{
+    url: string | null;
+    alt: string | null;
+  }> | null;
+  description: Array<{
+    children?: Array<{
+      marks?: Array<string>;
+      text?: string;
+      _type: "span";
+      _key: string;
+    }>;
+    style?: "blockquote" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "normal";
+    listItem?: "bullet" | "number";
+    markDefs?: Array<{
+      href?: string;
+      _type: "link";
+      _key: string;
+    }>;
+    level?: number;
+    _type: "block";
+    _key: string;
+  }> | null;
+} | null;
+
+// Source: ../src/server/mcp/queries.ts
+// Variable: PRODUCT_LOOKUP_QUERY
+// Query: *[_type == "product" && vertical == "automotive"    && (sku in $keys || slug.current in $keys || _id in $keys)] {    _id,    title,    "slug": slug.current,    sku,    inStock  }
+export type PRODUCT_LOOKUP_QUERY_RESULT = Array<{
+  _id: string;
+  title: string;
+  slug: string;
+  sku: string | null;
+  inStock: boolean;
+}>;
+
+// Source: ../src/server/mcp/queries.ts
+// Variable: PRODUCT_SLUGS_TAKEN_QUERY
+// Query: *[_type == "product" && vertical == "automotive" && slug.current in $candidates].slug.current
+export type PRODUCT_SLUGS_TAKEN_QUERY_RESULT = Array<string>;
+
+// Source: ../src/server/mcp/queries.ts
+// Variable: CATEGORIES_QUERY
+// Query: *[_type == "category" && vertical == "automotive"] | order(level asc, sortOrder asc, title asc) {    _id,    title,    "slug": slug.current,    level,    "parentId": parent._ref,    sortOrder  }
+export type CATEGORIES_QUERY_RESULT = Array<{
+  _id: string;
+  title: string;
+  slug: string;
+  level: 1 | 2 | 3;
+  parentId: string | null;
+  sortOrder: number | null;
+}>;
+
+// Source: ../src/server/mcp/queries.ts
+// Variable: ATTRIBUTES_QUERY
+// Query: *[_type == "attribute" && vertical == "automotive"] | order(sortOrder asc, title asc) {    _id,    title,    "slug": slug.current,    filterable,    allowMultiple,    sortOrder,    "values": *[_type == "attributeValue" && attribute._ref == ^._id] | order(sortOrder asc, label asc) {      _id,      label,      "slug": slug.current,      sortOrder    }  }
+export type ATTRIBUTES_QUERY_RESULT = Array<{
+  _id: string;
+  title: string;
+  slug: string;
+  filterable: boolean | null;
+  allowMultiple: boolean | null;
+  sortOrder: number | null;
+  values: Array<{
+    _id: string;
+    label: string;
+    slug: string;
+    sortOrder: number | null;
+  }>;
+}>;
+
+// Source: ../src/server/mcp/queries.ts
+// Variable: REVIEWS_QUERY
+// Query: *[_type == "testimonial" && vertical == "automotive"] | order(sortOrder asc, _createdAt asc) { _id, quote, name, role, city, rating, sortOrder }
+export type REVIEWS_QUERY_RESULT = Array<{
+  _id: string;
+  quote: string;
+  name: string;
+  role: string | null;
+  city: string | null;
+  rating: 1 | 2 | 3 | 4 | 5;
+  sortOrder: number | null;
+}>;
+
+// Source: ../src/server/mcp/queries.ts
+// Variable: HIDDEN_REVIEWS_QUERY
+// Query: *[_type == "testimonial" && vertical == "automotive" && _id in path("drafts.**") && !defined(*[_type == "testimonial" && _id == string::split(^._id, "drafts.")[1]][0]._id)]    | order(sortOrder asc, _createdAt asc) { _id, quote, name, role, city, rating, sortOrder }
+export type HIDDEN_REVIEWS_QUERY_RESULT = Array<{
+  _id: string;
+  quote: string;
+  name: string;
+  role: string | null;
+  city: string | null;
+  rating: 1 | 2 | 3 | 4 | 5;
+  sortOrder: number | null;
+}>;
+
 // Query TypeMap
 declare global {
   interface SanityQueries {
@@ -477,6 +631,15 @@ declare global {
     '\n  *[_type == "product" && vertical == "automotive" && _id in $ids] {\n    _id,\n    title,\n    sku,\n    inStock,\n    "categoryPath": [\n  category->parent->parent->{ title, "slug": slug.current },\n  category->parent->{ title, "slug": slug.current },\n  category->{ title, "slug": slug.current }\n][defined(slug)],\n    "attributeValues": attributeValues[]->{\n  label,\n  sortOrder,\n  "attribute": attribute->{ _id, title, sortOrder }\n}\n  }\n': QUOTE_PRODUCTS_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && defined(slug.current)] { "slug": slug.current, _updatedAt }\n': SITEMAP_QUERY_RESULT;
     '\n  *[_type == "testimonial" && vertical == "automotive"] | order(sortOrder asc, _createdAt asc) {\n    _id,\n    quote,\n    name,\n    role,\n    city,\n    rating\n  }\n': TESTIMONIALS_QUERY_RESULT;
+    '{\n  "total": count(*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n]),\n  "items": *[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n] | order(title asc) [$start...$end] {\n  _id,\n  title,\n  "slug": slug.current,\n  sku,\n  inStock,\n  "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],\n  "attributes": attributeValues[]->label\n}\n}': PRODUCT_SEARCH_QUERY_RESULT;
+    '{\n  "total": count(*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n && _id in path("drafts.**") && !defined(*[_type == "product" && _id == string::split(^._id, "drafts.")[1]][0]._id)]),\n  "items": *[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n && _id in path("drafts.**") && !defined(*[_type == "product" && _id == string::split(^._id, "drafts.")[1]][0]._id)] | order(title asc) [$start...$end] {\n  _id,\n  title,\n  "slug": slug.current,\n  sku,\n  inStock,\n  "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],\n  "attributes": attributeValues[]->label\n}\n}': HIDDEN_PRODUCT_SEARCH_QUERY_RESULT;
+    '\n  *[_type == "product" && vertical == "automotive" && _id == $docId][0] {\n    _id,\n    _updatedAt,\n    title,\n    "slug": slug.current,\n    sku,\n    inStock,\n    "category": category->{ _id, title, "slug": slug.current, level },\n    "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],\n    "attributes": attributeValues[]->{\n      _id,\n      label,\n      "slug": slug.current,\n      "attribute": attribute->{ title, "slug": slug.current }\n    },\n    "images": images[]{ "url": asset->url, alt },\n    description\n  }\n': PRODUCT_DETAIL_QUERY_RESULT;
+    '\n  *[_type == "product" && vertical == "automotive"\n    && (sku in $keys || slug.current in $keys || _id in $keys)] {\n    _id,\n    title,\n    "slug": slug.current,\n    sku,\n    inStock\n  }\n': PRODUCT_LOOKUP_QUERY_RESULT;
+    '\n  *[_type == "product" && vertical == "automotive" && slug.current in $candidates].slug.current\n': PRODUCT_SLUGS_TAKEN_QUERY_RESULT;
+    '\n  *[_type == "category" && vertical == "automotive"] | order(level asc, sortOrder asc, title asc) {\n    _id,\n    title,\n    "slug": slug.current,\n    level,\n    "parentId": parent._ref,\n    sortOrder\n  }\n': CATEGORIES_QUERY_RESULT;
+    '\n  *[_type == "attribute" && vertical == "automotive"] | order(sortOrder asc, title asc) {\n    _id,\n    title,\n    "slug": slug.current,\n    filterable,\n    allowMultiple,\n    sortOrder,\n    "values": *[_type == "attributeValue" && attribute._ref == ^._id] | order(sortOrder asc, label asc) {\n      _id,\n      label,\n      "slug": slug.current,\n      sortOrder\n    }\n  }\n': ATTRIBUTES_QUERY_RESULT;
+    '\n  *[_type == "testimonial" && vertical == "automotive"] | order(sortOrder asc, _createdAt asc) { _id, quote, name, role, city, rating, sortOrder }\n': REVIEWS_QUERY_RESULT;
+    '\n  *[_type == "testimonial" && vertical == "automotive" && _id in path("drafts.**") && !defined(*[_type == "testimonial" && _id == string::split(^._id, "drafts.")[1]][0]._id)]\n    | order(sortOrder asc, _createdAt asc) { _id, quote, name, role, city, rating, sortOrder }\n': HIDDEN_REVIEWS_QUERY_RESULT;
   }
 }
 // Lets @sanity/client releases that predate the global registry read it too

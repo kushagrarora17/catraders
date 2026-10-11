@@ -73,6 +73,34 @@ variable "sanity_webhook_secret_version" {
   default     = 1
 }
 
+# ── MCP server (catalog & RFQ management) ─────────────────────────────────
+
+variable "mcp_admin_password_version" {
+  description = "Bump to generate a new MCP sign-in password (all MCP clients keep working until their refresh tokens expire)."
+  type        = number
+  default     = 1
+}
+
+variable "mcp_jwt_secret_version" {
+  description = "Bump to generate a new MCP token-signing secret. Signs out every MCP client."
+  type        = number
+  default     = 1
+}
+
+variable "sanity_write_token" {
+  description = "Sanity API token with Editor access (sanity.io/manage → API → Tokens); lets the MCP server edit content. Ephemeral: never stored in state, so TF_VAR_sanity_write_token must be set on every plan and apply while sanity_write_token_version is above 0 (the provider rejects a version without a value)."
+  type        = string
+  default     = null
+  sensitive   = true
+  ephemeral   = true
+}
+
+variable "sanity_write_token_version" {
+  description = "0 leaves the Sanity write token unprovisioned (MCP catalog tools report an error). Set to 1, and bump to rotate, together with sanity_write_token."
+  type        = number
+  default     = 0
+}
+
 # ── PostgreSQL ────────────────────────────────────────────────────────────
 
 variable "postgres_version" {

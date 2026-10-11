@@ -115,7 +115,7 @@ The web app reads Sanity on the server only, so no CORS origin is needed for it.
 | `bun run test` | `bun test` with `.env.local` loaded. The Postgres integration tests run when `DATABASE_URL` is set. |
 | `bun run db:up` / `db:down` | Start or stop local Postgres (Podman) |
 | `bun run db:generate` | Create a migration from `src/server/db/schema.ts` |
-| `bun run db:migrate` | Apply migrations to `DATABASE_URL` |
+| `bun run db:migrate` | Apply pending migrations to `DATABASE_URL` (`scripts/migrate.ts`; the deploy workflow runs the same command) |
 | `bun run studio:dev` / `typegen` / `seed` | Studio shortcuts |
 
 ## Environment variables
@@ -130,6 +130,9 @@ The web app reads Sanity on the server only, so no CORS origin is needed for it.
 | `EMAIL_SENDER_ADDRESS` | prod | A verified ACS sender, e.g. `DoNotReply@<id>.azurecomm.net` |
 | `QUOTE_NOTIFICATION_EMAIL` | no | Internal inbox that gets new-RFQ and landing-page inquiry notices |
 | `SITE_URL` | prod | Public URL for canonical links, Open Graph, `sitemap.xml` and `robots.txt`. Defaults to `http://localhost:3000` |
+| `MCP_ADMIN_PASSWORD` | for MCP | Password on the MCP sign-in screen. Without it (and `MCP_JWT_SECRET`) `/api/mcp` returns 503 |
+| `MCP_JWT_SECRET` | for MCP | At least 32 characters; signs MCP access tokens |
+| `SANITY_API_WRITE_TOKEN` | for MCP | Sanity **Editor** token; the MCP catalog and review tools fail without it |
 
 In Azure, Terraform (`iac/app`) sets these as App Settings. The secrets are Key Vault references, e.g. `@Microsoft.KeyVault(SecretUri=https://<vault>.vault.azure.net/secrets/database-url)`, which the web app's managed identity resolves.
 
@@ -200,26 +203,71 @@ GitHub Actions:
 
 - **`.github/workflows/ci.yml`** runs on PRs and pushes to `main`:
   - lint, typecheck, migrations and tests against a Postgres service, then the build;
+  - a check that `src/server/db/schema.ts` and the committed migrations agree, so a schema change can't merge without its migration;
   - Studio schema validation, the Studio build, and a check that the committed TypeGen output is current;
   - `terraform fmt` and `validate` for both IaC stacks.
-- **`.github/workflows/azure-deploy.yml`** runs after CI passes on `main`. It logs in to Azure with **OIDC** (no stored secrets), builds the image, pushes it to ACR and deploys it to the Web App.
+- **`.github/workflows/azure-deploy.yml`** runs after CI passes on `main`. It logs in to Azure with **OIDC** (no stored secrets), builds the image and pushes it to ACR, **applies pending database migrations**, and only then deploys the image to the Web App.
 
   It needs two sets of values from Terraform (see [iac/README.md](iac/README.md)):
 
   - **`production` environment secrets:** `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. They're masked in the public logs.
-  - **Repository variables:** `AZURE_RESOURCE_GROUP`, `AZURE_WEBAPP_NAME`, `ACR_NAME`, `ACR_LOGIN_SERVER`. The job is skipped until these are set.
+  - **Repository variables:** `AZURE_RESOURCE_GROUP`, `AZURE_WEBAPP_NAME`, `ACR_NAME`, `ACR_LOGIN_SERVER`, plus `AZURE_POSTGRES_SERVER`, `AZURE_KEY_VAULT_NAME` and `AZURE_DATABASE_URL_SECRET` for migrations. The job is skipped until the first four are set, and fails with a clear message if the migration ones are missing.
 
   Only pushes to this repository's `main` (or a manual run) can deploy. CI runs from fork pull requests never reach the deploy job.
 
-Database migrations aren't part of the deploy workflow. Apply them before deploying code that needs them. From the repo root, with your IP in `postgres_allowed_ip_ranges`:
+**Database migrations** run automatically on every deploy, after the image is built and before it is released:
+
+1. The workflow reads `DATABASE_URL` from Key Vault (the deploy identity can read only that secret) and opens a temporary Postgres firewall rule for the runner's IP.
+2. `bun run db:migrate` applies pending migrations from `drizzle/`. It retries the first connection for up to five minutes while Azure applies the rule.
+3. The rule is removed again, even if the migration failed or the run was cancelled. A rule left behind by a hard-killed run is swept at the start of the next one.
+4. Only if all of that succeeded does the deploy step run. A failed migration leaves the running site untouched.
+
+Rules for writing migrations: they are forward-only and there is no automatic rollback. The previous release keeps serving until the deploy step finishes, so make each migration compatible with the code that is still running (add columns and tables first, remove or rename in a later release). Create them with `bun run db:generate` and commit the result; CI fails if `schema.ts` changed without one. Never edit a migration that has already been applied.
+
+To run migrations by hand (for example to recover a failed deploy), add your IP to `postgres_allowed_ip_ranges`, then from the repo root:
 
 ```bash
 DATABASE_URL="$(terraform -chdir=iac/app output -raw database_url_command | sh)" bun run db:migrate
 ```
+
+## MCP server (catalog & RFQ management)
+
+`/api/mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) endpoint (streamable HTTP, stateless) that lets Claude manage the catalog and quote pipeline in plain language. Everything runs inside this app; the code is in `src/server/mcp/` (tools) and `src/server/oauth/` (sign-in).
+
+**Tools**
+
+| Area | Tools |
+| --- | --- |
+| Catalog (read) | `search_products`, `get_product`, `get_taxonomy` |
+| Catalog (write) | `create_product`, `update_product`, `set_stock` (bulk, by SKU or id), `set_visibility`, `import_products_csv` |
+| Taxonomy | `upsert_category`, `upsert_attribute`, `upsert_attribute_value` |
+| Reviews | `list_reviews`, `upsert_review` (and `set_visibility`) |
+| Quotes & inquiries | `list_requests`, `get_request`, `update_request_status` |
+
+- **Writes publish immediately** and expire the catalog cache. There is no draft step. `set_visibility` unpublishes (moves the document to a draft), which is reversible; no tool deletes anything.
+- **CSV import** is a dry run by default. Columns: `sku` (required), `title`, `category`, `in_stock`, `description`, `image_url`, plus `attr:<attribute-slug>` columns with `|`-separated values. Rows with errors are skipped; valid rows still apply.
+- **Studio rules are re-checked server-side** (category levels and parents, one value per single-valued attribute, reserved attribute slugs, unique SKUs and slugs) because API writes bypass Studio validation.
+- `update_request_status` only records the status; it does not email the customer.
+
+**Sign-in.** The server is its own OAuth 2.1 authorization server (dynamic client registration, PKCE S256, 1-hour access tokens, rotating 30-day refresh tokens). The consent screen asks for the single shared admin password. Discovery documents are at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource/api/mcp`. Tokens are bound to `${SITE_URL}/api/mcp` and rejected for any other audience. Failed sign-ins are rate-limited per IP, in memory, so per instance.
+
+**Connecting**
+
+1. In sanity.io/manage → API → Tokens, create a token with the **Editor** role.
+2. Provision it: `export TF_VAR_sanity_write_token=<token>`, set `sanity_write_token_version = 1` in `terraform.tfvars`, and apply. Keep the variable exported for every later plan or apply, or Terraform errors. The sign-in password and signing secret are generated by Terraform.
+3. Read the password: `terraform -chdir=iac/app output -json mcp` shows the URL and the Key Vault command that prints it.
+4. Add the URL as a connector:
+   - **Claude Code:** `claude mcp add --transport http catraders https://<your-host>/api/mcp`, then `/mcp` to sign in.
+   - **claude.ai / Claude Desktop:** Settings → Connectors → Add custom connector.
+
+**Locally,** put `MCP_ADMIN_PASSWORD`, `MCP_JWT_SECRET` (32+ characters) and, for the content tools, `SANITY_API_WRITE_TOKEN` in `.env.local`, run `bun run db:migrate` (it adds the `oauth_*` tables), start `bun run dev`, and add `http://localhost:3000/api/mcp`. Local writes go to whatever `SANITY_DATASET` points at, which is `production` by default, so point it at a scratch dataset before experimenting.
 
 ## Known limitations / next steps
 
 - The UI is intentionally bare.
 - There is no rate limiting or bot protection on `POST /api/quotes`. Consider Azure Front Door WAF or a captcha.
 - Reference numbers use 90,000 random values per year, and the insert retries on a collision. Widen the format if volume grows.
-- There is no admin UI for RFQ status (`quote_status`) yet.
+- RFQ status is changed through the MCP server (`update_request_status`); there is no web admin UI for it.
+- The MCP server has one shared password and no per-person audit trail. Move the consent step to Microsoft Entra sign-in if more people need access.
+- MCP client registration uses dynamic client registration only (no Client ID Metadata Documents yet).
+- The MCP sign-in rate limiter is in memory; it needs a shared store before scaling out (same caveat as the cache).

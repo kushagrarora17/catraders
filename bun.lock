@@ -6,6 +6,7 @@
       "name": "web",
       "dependencies": {
         "@azure/communication-email": "^1.1.0",
+        "@modelcontextprotocol/server": "2.3.1",
         "@portabletext/react": "^8.0.1",
         "@sanity/client": "^8.7.0",
         "@sanity/image-url": "^2.1.1",
@@ -14,6 +15,7 @@
         "clsx": "^2.1.1",
         "drizzle-orm": "^0.45.3",
         "groq": "^6.16.0",
+        "jose": "^6.2.12",
         "next": "16.3.6",
         "pg": "^8.23.0",
         "react": "19.2.8",
@@ -254,6 +256,10 @@
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.6.0", "", {}, "sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw=="],
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
+
+    "@modelcontextprotocol/core": ["@modelcontextprotocol/core@2.3.1", "", { "dependencies": { "zod": "^4.2.0" } }, "sha512-laVmIhPGpWi7rG9q+0UigblRN0Hws/Yjlb6qLFtVqryXVLkc4h+yN8z731POD2LnAGQlFe7/tXhUm7Bi0YB91g=="],
+
+    "@modelcontextprotocol/server": ["@modelcontextprotocol/server@2.3.1", "", { "dependencies": { "@modelcontextprotocol/core": "2.3.1", "zod": "^4.2.0" } }, "sha512-e59MfWuSssj6DoQ96JCTqdW1AXT5/XtnTl0WWd6MU1Ka434fFUGGosCLJbGNySDhHGvxQWoRWK137FXYFkYNWw=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.2.4", "", { "dependencies": { "@tybys/wasm-util": "^0.10.3" }, "peerDependencies": { "@emnapi/core": "^1.7.1 || ^2.0.0-alpha.4", "@emnapi/runtime": "^1.7.1 || ^2.0.0-alpha.4" } }, "sha512-AJxoUD2/15ESHbvpcyjU274nsAPLuOtPHCk0vKJM5pj//Fg/B1FXNWjPnXTT9PymCYYiHo4zPj0ZomXBKhoy7g=="],
 
@@ -748,6 +754,8 @@
     "iterator.prototype": ["iterator.prototype@1.1.5", "", { "dependencies": { "define-data-property": "^1.1.4", "es-object-atoms": "^1.0.0", "get-intrinsic": "^1.2.6", "get-proto": "^1.0.0", "has-symbols": "^1.1.0", "set-function-name": "^2.0.2" } }, "sha512-H0dkQoCa3b2VEeKQBOxFph+JAbcrQdE7KC0UkqwpLmv2EC4P41QXP+rqo9wYodACiG5/WM5s9oDApTU8utwj9g=="],
 
     "jiti": ["jiti@2.7.0", "", { "bin": { "jiti": "lib/jiti-cli.mjs" } }, "sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ=="],
+
+    "jose": ["jose@6.2.12", "", {}, "sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw=="],
 
     "js-tokens": ["js-tokens@4.0.0", "", {}, "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ=="],
 

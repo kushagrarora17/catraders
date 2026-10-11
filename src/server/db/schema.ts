@@ -86,5 +86,33 @@ export const inquiries = pgTable(
   (table) => [index("idx_inquiries_created_at").on(table.createdAt)],
 );
 
+/** OAuth clients registered through dynamic client registration (CIMD clients are fetched, not stored). */
+export const oauthClients = pgTable("oauth_clients", {
+  clientId: varchar("client_id", { length: 64 }).primaryKey(),
+  clientName: varchar("client_name", { length: 255 }),
+  redirectUris: jsonb("redirect_uris").$type<string[]>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** One-time authorization codes for the MCP server's OAuth flow. Only the SHA-256 of the code is stored. */
+export const oauthCodes = pgTable("oauth_codes", {
+  codeHash: varchar("code_hash", { length: 64 }).primaryKey(),
+  clientId: text("client_id").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  codeChallenge: varchar("code_challenge", { length: 128 }).notNull(),
+  resource: text("resource").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Rotating refresh tokens. Only the SHA-256 of the token is stored. */
+export const oauthRefreshTokens = pgTable("oauth_refresh_tokens", {
+  tokenHash: varchar("token_hash", { length: 64 }).primaryKey(),
+  clientId: text("client_id").notNull(),
+  resource: text("resource").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type QuoteRequestRow = typeof quoteRequests.$inferSelect;
 export type NewQuoteItem = typeof quoteItems.$inferInsert;

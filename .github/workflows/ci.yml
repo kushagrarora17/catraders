@@ -40,6 +40,15 @@ jobs:
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run db:migrate
+
+      # The deploy workflow only applies committed migrations, so a schema change without one
+      # would ship code that expects tables or columns that don't exist.
+      - name: Check migrations match src/server/db/schema.ts
+        run: |
+          bun run db:generate
+          git diff --exit-code -- drizzle
+          test -z "$(git ls-files --others --exclude-standard -- drizzle)" || { echo "::error::schema.ts changed without a migration; run bun run db:generate and commit the result"; exit 1; }
+
       - run: bun run test
       - run: bun run build
 

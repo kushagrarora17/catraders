@@ -2,6 +2,10 @@ name: Deploy Next.js Automotive App to Azure
 
 # Deploys main only after CI has passed for that commit. Authenticates with
 # GitHub OIDC (no stored secrets); infrastructure comes from iac/app.
+#
+# Order: build and push the image (no side effects) -> run database migrations -> deploy.
+# A failed migration stops the run before the site is touched. Migrations are forward-only, so
+# write them to stay compatible with the previous release, which keeps serving until the deploy.
 on:
   workflow_run:
     workflows: [CI]
@@ -41,6 +45,17 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
+      # Installed before the Azure login so install scripts never run with Azure credentials.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - run: bun install --frozen-lockfile
+
       # IDs are `production` environment secrets so they're masked in public logs.
       - name: Log in to Azure (OIDC)
         uses: azure/login@v2
@@ -59,6 +74,59 @@ jobs:
         run: |
           docker build -f docker/Dockerfile --build-arg SITE_URL="$SITE_URL" -t "$IMAGE" .
           docker push "$IMAGE"
+
+      # The Postgres server only accepts listed IPs, so open a rule for this runner, migrate, and
+      # close it again. The rule is named per run; any left behind by a cancelled run is removed first.
+      - name: Open a temporary Postgres firewall rule for this runner
+        id: firewall
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          POSTGRES_SERVER: ${{ vars.AZURE_POSTGRES_SERVER }}
+          KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+        run: |
+          set -euo pipefail
+          if [ -z "$POSTGRES_SERVER" ] || [ -z "$KEY_VAULT_NAME" ]; then
+            echo "::error::Repository variables AZURE_POSTGRES_SERVER and AZURE_KEY_VAULT_NAME are not set. Run terraform apply in iac/app, then set the variables from the github_actions_variables output."
+            exit 1
+          fi
+
+          RUNNER_IP="$(curl -fsS --retry 3 https://api.ipify.org || curl -fsS --retry 3 https://checkip.amazonaws.com)"
+          RUNNER_IP="$(echo "$RUNNER_IP" | tr -d '[:space:]')"
+          [[ "$RUNNER_IP" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || { echo "::error::Could not determine the runner's IPv4 address"; exit 1; }
+
+          for stale in $(az postgres flexible-server firewall-rule list -g "$RESOURCE_GROUP" -s "$POSTGRES_SERVER" \
+              --query "[?starts_with(name, 'github-runner-')].name" -o tsv); do
+            az postgres flexible-server firewall-rule delete -g "$RESOURCE_GROUP" -s "$POSTGRES_SERVER" -n "$stale" --yes
+          done
+
+          RULE="github-runner-${GITHUB_RUN_ID}"
+          az postgres flexible-server firewall-rule create -g "$RESOURCE_GROUP" -s "$POSTGRES_SERVER" \
+            -n "$RULE" --start-ip-address "$RUNNER_IP" --end-ip-address "$RUNNER_IP" > /dev/null
+          echo "rule=$RULE" >> "$GITHUB_OUTPUT"
+
+      - name: Run database migrations
+        timeout-minutes: 15
+        env:
+          KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+          SECRET_NAME: ${{ vars.AZURE_DATABASE_URL_SECRET || 'database-url' }}
+          # Azure can take a while to enforce a new firewall rule; scripts/migrate.ts retries until then.
+          MIGRATE_CONNECT_TIMEOUT_SECONDS: "300"
+        run: |
+          set -euo pipefail
+          DATABASE_URL="$(az keyvault secret show --vault-name "$KEY_VAULT_NAME" --name "$SECRET_NAME" --query value -o tsv)"
+          # Mask the whole URL and its password before anything can print them.
+          echo "::add-mask::$DATABASE_URL"
+          echo "::add-mask::$(printf '%s' "$DATABASE_URL" | sed -E 's#^[^:]+://[^:]+:([^@]+)@.*#\1#')"
+          export DATABASE_URL
+          bun run db:migrate
+
+      - name: Remove the temporary firewall rule
+        if: always() && steps.firewall.outputs.rule != ''
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          POSTGRES_SERVER: ${{ vars.AZURE_POSTGRES_SERVER }}
+          RULE: ${{ steps.firewall.outputs.rule }}
+        run: az postgres flexible-server firewall-rule delete -g "$RESOURCE_GROUP" -s "$POSTGRES_SERVER" -n "$RULE" --yes
 
       - name: Deploy to Azure Web App for Containers
         uses: azure/webapps-deploy@v3
