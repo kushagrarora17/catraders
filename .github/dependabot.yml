@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: bun
+    directory: /studio
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /iac/app
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /iac/bootstrap
+    schedule:
+      interval: weekly
