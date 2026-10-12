@@ -1,0 +1,114 @@
+import { expect, test } from "../test";
+
+test.describe("landing page", () => {
+  test("renders every section with CMS reviews and structured data", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    for (const section of ["Why CA Traders", "Product Catalog", "Testimonials", "Service Area", "Contact Us"]) {
+      await expect(page.getByText(section, { exact: true }).first()).toBeVisible();
+    }
+    await expect(page.getByRole("list", { name: "Brands we carry" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Cities we serve" })).toBeVisible();
+
+    // Reviews come from Sanity, in sortOrder; hidden (draft) reviews never show.
+    const reviews = page.locator("#testimonials");
+    await expect(reviews.getByText("Reliable deliveries every week.")).toBeVisible();
+    await expect(reviews.getByText("Ranjit K.")).toBeVisible();
+    await expect(reviews.getByText("Rated 4 out of 5")).toBeAttached();
+    await expect(reviews.getByText("Hidden review.")).toHaveCount(0);
+
+    const jsonLd = await page.locator('script[type="application/ld+json"]').first().textContent();
+    expect(JSON.parse(jsonLd!)).toMatchObject({ "@context": "https://schema.org" });
+  });
+
+  test("header links to the catalog and the quote list", async ({ page }) => {
+    await page.goto("/");
+    const nav = page.getByRole("navigation", { name: "Primary" });
+    await nav.getByRole("link", { name: "Quote list" }).click();
+    await expect(page).toHaveURL(/\/quote$/);
+    await expect(page.getByRole("heading", { name: "Quote list" })).toBeVisible();
+  });
+
+  test("mobile menu opens, navigates and closes", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+
+    const toggle = page.getByRole("button", { name: "Open menu" });
+    await toggle.click();
+    await expect(page.getByRole("button", { name: "Close menu" })).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name: "Open menu" })).toBeFocused();
+
+    await toggle.click();
+    await page.locator("header").getByRole("link", { name: "Testimonials" }).click();
+    await expect(page).toHaveURL(/#testimonials$/);
+    await expect(page.getByRole("button", { name: "Open menu" })).toBeVisible();
+
+    // Growing to desktop width closes an open menu.
+    await page.getByRole("button", { name: "Open menu" }).click();
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(page.getByRole("button", { name: "Close menu" })).toBeHidden();
+  });
+});
+
+test.describe("inquiry form", () => {
+  const fill = async (page: import("@playwright/test").Page) => {
+    await page.getByLabel("Your Name").fill("Jordan Lee");
+    await page.getByLabel("Business Name").fill("Lee Auto Repair");
+    await page.getByLabel("Phone Number").fill("(519) 555-0101");
+    await page.getByLabel("Email Address").fill("kush-claude@agentmail.to");
+    await page.getByLabel("City").fill("Windsor");
+    await page.getByLabel("Product Category").selectOption("Coolant");
+    await page.getByLabel("Message / Order Details").fill("Two pallets of 50/50 coolant.");
+  };
+
+  test("shows validation errors and focuses the first invalid field", async ({ page }) => {
+    await page.goto("/#contact");
+    await page.getByRole("button", { name: /Send Inquiry/ }).click();
+    await expect(page.getByText("Enter your name")).toBeVisible();
+    await expect(page.getByText("Enter a valid email address")).toBeVisible();
+    await expect(page.getByLabel("Your Name")).toBeFocused();
+  });
+
+  test("submits, shows the reference, and can start again", async ({ page }) => {
+    await page.goto("/#contact");
+    await fill(page);
+    await page.getByRole("button", { name: /Send Inquiry/ }).click();
+
+    const status = page.getByRole("status");
+    await expect(status).toContainText("Thanks — inquiry received");
+    await expect(status).toContainText(/INQ-\d{4}-\d{5}/);
+
+    await page.getByRole("button", { name: "Send another inquiry" }).click();
+    await expect(page.getByLabel("Your Name")).toHaveValue("");
+  });
+
+  test("shows server-side errors", async ({ page }) => {
+    await page.route("/api/inquiries", (route) =>
+      route.fulfill({
+        status: 400,
+        json: {
+          success: false,
+          error: "VALIDATION_FAILED",
+          message: "Please correct the highlighted fields.",
+          issues: [{ path: "phone", message: "Enter a valid phone number" }],
+        },
+      }),
+    );
+    await page.goto("/#contact");
+    await fill(page);
+    await page.getByRole("button", { name: /Send Inquiry/ }).click();
+    await expect(page.locator("form").getByRole("alert")).toHaveText("Please correct the highlighted fields.");
+    await expect(page.getByText("Enter a valid phone number")).toBeVisible();
+    await expect(page.getByLabel("Phone Number")).toBeFocused();
+  });
+
+  test("reports network failures", async ({ page }) => {
+    await page.route("/api/inquiries", (route) => route.abort());
+    await page.goto("/#contact");
+    await fill(page);
+    await page.getByRole("button", { name: /Send Inquiry/ }).click();
+    await expect(page.locator("form").getByRole("alert")).toContainText("Network error");
+  });
+});

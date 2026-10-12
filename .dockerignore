@@ -8,5 +8,9 @@ video
 drizzle
 docker
 coverage
+e2e
+playwright.config.ts
+test-results
+playwright-report
 *.md
 .env*

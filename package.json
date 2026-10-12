@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "bun --env-file=.env.local test",
+    "test:e2e": "rm -rf coverage/e2e-raw && playwright test && bun e2e/coverage-report.ts",
     "db:up": "sh scripts/db-up.sh",
     "db:down": "${CONTAINER_CLI:-podman} stop catraders-postgres",
     "db:generate": "drizzle-kit generate",
@@ -40,6 +41,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
     "@tailwindcss/postcss": "^4",
     "@types/bun": "^1.4.2",
     "@types/node": "^24",
@@ -49,6 +51,8 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "groq-js": "2.0.0",
+    "monocart-coverage-reports": "2.13.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

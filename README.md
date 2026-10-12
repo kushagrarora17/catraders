@@ -113,6 +113,7 @@ The web app reads Sanity on the server only, so no CORS origin is needed for it.
 | `bun run dev` / `build` / `start` | Next.js |
 | `bun run lint` / `typecheck` | ESLint / `tsc` (after `next typegen`) |
 | `bun run test` | `bun test` with `.env.local` loaded. The Postgres integration tests run when `DATABASE_URL` is set. |
+| `bun run test:e2e` | Playwright end-to-end tests (`e2e/`) against a coverage build of the app, a mock Sanity API and the Postgres in `E2E_DATABASE_URL` (default: the local `db:up` container). Fails under 85% line coverage of `src/`; report in `coverage/e2e/index.html`. First run `bunx playwright install chromium`. |
 | `bun run db:up` / `db:down` | Start or stop local Postgres (Podman) |
 | `bun run db:generate` | Create a migration from `src/server/db/schema.ts` |
 | `bun run db:migrate` | Apply pending migrations to `DATABASE_URL` (`scripts/migrate.ts`; the deploy workflow runs the same command) |
