@@ -46,7 +46,7 @@ export function registerRequestTools(server: McpServer) {
     {
       title: "Get a quote request or inquiry",
       description:
-        "Full details by reference number (RFQ-… for quotes, INQ-… for inquiries). Quotes include their line items with the specifications captured when the customer submitted them.",
+        "Full details by reference number (RFQ-… for quotes, INQ-… for inquiries). Quotes include their line items with the specifications captured when the customer submitted them; specifications.inStock is false for items that were out of stock at that point (missing on older quotes).",
       inputSchema: z.object({ reference: referenceSchema }),
       annotations: READ_ONLY,
     },
