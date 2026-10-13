@@ -11,7 +11,14 @@ const quote: NewQuote = {
       productTitle: "Oil & Coolant",
       sku: "EO-1",
       quantity: 2,
-      specificationsSnapshot: { categoryPath: [], attributes: [] },
+      specificationsSnapshot: { categoryPath: [], attributes: [], inStock: true },
+    },
+    {
+      sanityProductId: "p2",
+      productTitle: "Brake Fluid",
+      sku: null,
+      quantity: 1,
+      specificationsSnapshot: { categoryPath: [], attributes: [], inStock: false },
     },
   ],
 };
@@ -24,7 +31,9 @@ test("builds a customer receipt and an internal notification with escaped HTML",
   expect(receipt.recipients.to?.[0].address).toBe("jane@example.com");
   expect(receipt.content.subject).toContain("RFQ-2026-12345");
   expect(receipt.content.html).not.toContain("<script>");
-  expect(receipt.content.html).toContain("Oil &#38; Coolant");
+  expect(receipt.content.html).toContain("Oil &#38; Coolant (EO-1)");
+  expect(receipt.content.html).toContain("Brake Fluid (out of stock) × 1");
+  expect(internal.content.plainText).toContain("- Brake Fluid (out of stock) × 1");
   expect(internal.recipients.to?.[0].address).toBe("sales@example.com");
   expect(internal.replyTo?.[0].address).toBe("jane@example.com");
   expect(internal.content.html).not.toContain("<b>");

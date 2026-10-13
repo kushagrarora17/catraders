@@ -20,7 +20,7 @@ export function QuoteCart() {
   const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
 
   // Re-check stock whenever the set of products changes; the CMS may have
-  // marked something out of stock since it was added.
+  // removed a product or changed its stock since it was added.
   const idsKey = items.map((i) => i.productId).sort().join(",");
   useEffect(() => {
     if (!idsKey) return;
@@ -63,9 +63,7 @@ export function QuoteCart() {
   const unavailableReason = (productId: string) => {
     const status = availability[productId];
     if (!status) return null;
-    if (!status.exists) return "No longer available";
-    if (!status.inStock) return "Out of stock";
-    return null;
+    return status.exists ? null : "No longer available";
   };
   const hasUnavailable = items.some((i) => unavailableReason(i.productId));
 
@@ -89,6 +87,9 @@ export function QuoteCart() {
                   <Link href={`/products/${item.slug}`} className="hover:text-highlight">
                     {item.title}
                   </Link>
+                  {!reason && availability[item.productId]?.inStock === false && (
+                    <span className="ml-1 text-muted-foreground">(out of stock)</span>
+                  )}
                   {reason && <span className="ml-2 text-destructive">— {reason}, please remove</span>}
                 </td>
                 <td className="py-2 text-muted-foreground">{item.sku ?? "—"}</td>
@@ -134,7 +135,7 @@ export function QuoteCart() {
           onUnavailable={(ids) =>
             setAvailability((prev) => ({
               ...prev,
-              ...Object.fromEntries(ids.map((id) => [id, { exists: prev[id]?.exists ?? true, inStock: false }])),
+              ...Object.fromEntries(ids.map((id) => [id, { exists: false, inStock: false }])),
             }))
           }
         />

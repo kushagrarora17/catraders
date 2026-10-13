@@ -4,13 +4,14 @@ import { escapeHtml, getEmailConfig, sendEmails } from "@/server/email/send";
 import type { NewQuote } from "./repository";
 
 function renderItems(quote: NewQuote) {
+  const stock = (i: NewQuote["items"][number]) => (i.specificationsSnapshot.inStock === false ? " (out of stock)" : "");
   const text = quote.items
-    .map((i) => `- ${i.productTitle}${i.sku ? ` (${i.sku})` : ""} × ${i.quantity}`)
+    .map((i) => `- ${i.productTitle}${stock(i)}${i.sku ? ` (${i.sku})` : ""} × ${i.quantity}`)
     .join("\n");
   const html = `<ul>${quote.items
     .map(
       (i) =>
-        `<li>${escapeHtml(i.productTitle)}${i.sku ? ` (${escapeHtml(i.sku)})` : ""} × ${i.quantity}</li>`,
+        `<li>${escapeHtml(i.productTitle)}${stock(i)}${i.sku ? ` (${escapeHtml(i.sku)})` : ""} × ${i.quantity}</li>`,
     )
     .join("")}</ul>`;
   return { text, html };

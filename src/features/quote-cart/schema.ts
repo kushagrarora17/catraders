@@ -46,7 +46,7 @@ export type QuoteResponse =
   | { success: true; referenceNumber: string; message: string }
   | {
       success: false;
-      error: "INVALID_JSON" | "VALIDATION_FAILED" | "UNKNOWN_PRODUCTS" | "OUT_OF_STOCK" | "PAYLOAD_TOO_LARGE" | "INTERNAL_ERROR";
+      error: "INVALID_JSON" | "VALIDATION_FAILED" | "UNKNOWN_PRODUCTS" | "PAYLOAD_TOO_LARGE" | "INTERNAL_ERROR";
       message: string;
       issues?: FieldIssue[];
       productIds?: string[];

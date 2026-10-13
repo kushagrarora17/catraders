@@ -7,11 +7,12 @@ import { insertQuote, type NewQuote } from "./repository";
 
 export type SubmitQuoteResult =
   | { ok: true; referenceNumber: string; duplicate: boolean; quote: NewQuote }
-  | { ok: false; status: 400 | 409; error: "UNKNOWN_PRODUCTS" | "OUT_OF_STOCK"; productIds: string[] };
+  | { ok: false; status: 400; error: "UNKNOWN_PRODUCTS"; productIds: string[] };
 
 /**
- * Re-validates the cart against Sanity (existence, vertical, stock) and stores
- * the RFQ using canonical product data rather than what the client sent.
+ * Re-validates the cart against Sanity (existence, vertical) and stores the RFQ
+ * using canonical product data rather than what the client sent. Out-of-stock
+ * products can still be quoted; their stock status is kept in the snapshot.
  */
 export async function submitQuoteRequest(request: QuoteRequest, idempotencyKey?: string): Promise<SubmitQuoteResult> {
   const ids = request.items.map((i) => i.productId);
@@ -20,10 +21,6 @@ export async function submitQuoteRequest(request: QuoteRequest, idempotencyKey?:
   const unknown = ids.filter((id) => !products.has(id));
   if (unknown.length) {
     return { ok: false, status: 400, error: "UNKNOWN_PRODUCTS", productIds: unknown };
-  }
-  const outOfStock = ids.filter((id) => !products.get(id)!.inStock);
-  if (outOfStock.length) {
-    return { ok: false, status: 409, error: "OUT_OF_STOCK", productIds: outOfStock };
   }
 
   const quote: NewQuote = {
@@ -39,6 +36,7 @@ export async function submitQuoteRequest(request: QuoteRequest, idempotencyKey?:
         specificationsSnapshot: {
           categoryPath: product.categoryPath.flatMap((c) => (c ? [c.title] : [])),
           attributes: groupAttributeValues(product.attributeValues),
+          inStock: product.inStock,
         },
       };
     }),

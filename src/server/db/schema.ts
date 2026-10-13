@@ -44,6 +44,8 @@ export const quoteRequests = pgTable("quote_requests", {
 export interface SpecificationsSnapshot {
   categoryPath: string[];
   attributes: { attribute: string; values: string[] }[];
+  /** Missing on quotes submitted before out-of-stock products could be quoted. */
+  inStock?: boolean;
 }
 
 export const quoteItems = pgTable(

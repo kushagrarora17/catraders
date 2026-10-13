@@ -81,8 +81,8 @@ test.describe("POST /api/quotes", () => {
     const sold = await post(
       JSON.stringify({ customer, items: [{ ...castrolItem, productId: "prod-valvoline-10w40-4l" }] }),
     );
-    expect(sold.status()).toBe(409);
-    expect(await sold.json()).toMatchObject({ error: "OUT_OF_STOCK", productIds: ["prod-valvoline-10w40-4l"] });
+    expect(sold.status()).toBe(201);
+    expect((await sold.json()).referenceNumber).toMatch(/^RFQ-\d{4}-\d{5}$/);
   });
 });
 
@@ -137,7 +137,7 @@ test.describe("POST /api/webhooks/sanity", () => {
     expect(await res.json()).toEqual({ revalidated: true, tag: "automotive-products" });
 
     await page.reload();
-    await expect(page.getByRole("button", { name: "Out of stock — cannot be quoted" })).toBeVisible();
+    await expect(page.getByText("Out of stock")).toBeVisible();
   });
 });
 
