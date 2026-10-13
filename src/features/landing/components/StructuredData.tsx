@@ -1,19 +1,14 @@
-import {
-  BUSINESS_NAME,
-  DESCRIPTION,
-  EMAIL,
-  OPENING_HOURS,
-  PHONE_E164,
-  SERVICE_AREAS,
-} from "@/features/site/contact";
+import { BUSINESS_NAME, DESCRIPTION, EMAIL, OPENING_HOURS, PHONE_E164 } from "@/features/site/contact";
 import { getSiteUrl } from "@/features/site/url";
+import { getServiceArea } from "../api";
 
 /**
  * LocalBusiness JSON-LD for the landing page. Deliberately no Review/AggregateRating:
  * Google treats first-party reviews of your own business as self-serving.
  */
-export function StructuredData() {
+export async function StructuredData() {
   const url = getSiteUrl();
+  const area = await getServiceArea();
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": ["AutoPartsStore", "WholesaleStore"],
@@ -25,7 +20,8 @@ export function StructuredData() {
     telephone: PHONE_E164,
     email: EMAIL,
     address: { "@type": "PostalAddress", addressRegion: "ON", addressCountry: "CA" },
-    areaServed: SERVICE_AREAS.map((name) => ({
+    // The Sanity service-area cities; omitted (undefined) while none are set.
+    areaServed: area?.cities?.map((name) => ({
       "@type": "City",
       name,
       containedInPlace: { "@type": "State", name: "Ontario" },

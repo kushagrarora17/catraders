@@ -378,6 +378,7 @@ test.describe("service area", () => {
     await page.goto("/");
     await expect(page.locator("#service-area").getByText("Sarnia, ON")).toBeVisible();
     await expect(page.getByRole("combobox", { name: "City" }).getByRole("option", { name: "Sarnia" })).toBeAttached();
+    expect(await page.locator('script[type="application/ld+json"]').first().textContent()).toContain('"name":"Sarnia"');
   });
 });
 

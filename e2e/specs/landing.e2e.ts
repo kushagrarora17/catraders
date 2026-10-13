@@ -19,7 +19,10 @@ test.describe("landing page", () => {
     await expect(reviews.getByText("Hidden review.")).toHaveCount(0);
 
     const jsonLd = await page.locator('script[type="application/ld+json"]').first().textContent();
-    expect(JSON.parse(jsonLd!)).toMatchObject({ "@context": "https://schema.org" });
+    expect(JSON.parse(jsonLd!)).toMatchObject({
+      "@context": "https://schema.org",
+      areaServed: ["Windsor", "London", "Kitchener"].map((name) => expect.objectContaining({ "@type": "City", name })),
+    });
   });
 
   test("service area comes from Sanity", async ({ page }) => {
