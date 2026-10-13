@@ -14,29 +14,3 @@ export const OPENING_HOURS = {
   opens: "08:00",
   closes: "18:00",
 } as const;
-
-export const REGION = "Southwestern Ontario";
-
-/** Cities we deliver to: the Windsor–Kitchener corridor plus the towns north and south of it. */
-export const SERVICE_AREAS = [
-  "Windsor",
-  "LaSalle",
-  "Tecumseh",
-  "Amherstburg",
-  "Leamington",
-  "Kingsville",
-  "Chatham-Kent",
-  "Sarnia",
-  "Strathroy",
-  "London",
-  "St. Thomas",
-  "Tillsonburg",
-  "Woodstock",
-  "Ingersoll",
-  "Stratford",
-  "Kitchener",
-  "Waterloo",
-  "Cambridge",
-  "Guelph",
-  "Brantford",
-] as const;

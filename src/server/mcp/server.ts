@@ -5,9 +5,10 @@ import { registerCatalogWriteTools } from "./tools/catalog-write";
 import { registerImportTool } from "./tools/import";
 import { registerRequestTools } from "./tools/requests";
 import { registerReviewTools } from "./tools/reviews";
+import { registerServiceAreaTools } from "./tools/service-area";
 import { registerTaxonomyWriteTools } from "./tools/taxonomy-write";
 
-const INSTRUCTIONS = `Manage the Catraders automotive catalog, customer reviews and quote requests.
+const INSTRUCTIONS = `Manage the Catraders automotive catalog, customer reviews, the landing-page service area and quote requests.
 - Writes go live on the website immediately; there is no draft step. Hiding (set_visibility) is the reversible way to take something down; nothing can be deleted here.
 - Before creating or importing products, call get_taxonomy so category slugs and attribute values are spelled exactly. Add missing values with upsert_attribute_value.
 - Run import_products_csv as a dry run first and review the report before applying.
@@ -22,6 +23,7 @@ export function createCatradersServer() {
   registerTaxonomyWriteTools(server);
   registerImportTool(server);
   registerReviewTools(server);
+  registerServiceAreaTools(server);
   registerRequestTools(server);
   return server;
 }

@@ -3,14 +3,17 @@
 import { type FormEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { SERVICE_AREAS } from "@/features/site/contact";
 import { useHydrated } from "@/lib/useHydrated";
 import { type FieldIssue, IDEMPOTENCY_HEADER, toFieldIssues } from "@/lib/validation";
 import { HONEYPOT_FIELD, INQUIRY_CATEGORIES, type InquiryResponse, inquirySchema, MAX_MESSAGE_LENGTH } from "../schema";
 
 const FIELD_ORDER = ["name", "business", "city", "phone", "email", "category", "message"] as const;
 
-export function InquiryForm() {
+/** Value of the drop-down's last option. Choosing it swaps in a free-text field named `city`. */
+const OTHER_CITY = "__other__";
+
+/** `cities` are the service-area cities from Sanity; without any, City is a plain text field. */
+export function InquiryForm({ cities }: { cities: string[] }) {
   const formRef = useRef<HTMLFormElement>(null);
   // One key per inquiry: retries of the same submission reuse it, so the API stores it once.
   const idempotencyKey = useRef<string | null>(null);
@@ -19,6 +22,8 @@ export function InquiryForm() {
   const [error, setError] = useState<string | null>(null);
   const [reference, setReference] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [otherCity, setOtherCity] = useState(false);
+  const cityOptions = [...cities].sort((a, b) => a.localeCompare(b, "en-CA"));
 
   const issueFor = (path: string) => issues.find((i) => i.path === path)?.message;
 
@@ -59,6 +64,7 @@ export function InquiryForm() {
         setReference(body.referenceNumber);
         idempotencyKey.current = null;
         form.reset();
+        setOtherCity(false);
         return;
       }
       showIssues(body.issues ?? []);
@@ -110,23 +116,38 @@ export function InquiryForm() {
           )}
         </Field>
       </div>
-      <Field id="inquiry-city" label="City" required error={issueFor("city")}>
-        {(props) => (
-          <input
-            {...props}
-            name="city"
-            type="text"
-            autoComplete="address-level2"
-            list="inquiry-city-options"
-            placeholder="Windsor"
-          />
-        )}
-      </Field>
-      <datalist id="inquiry-city-options">
-        {SERVICE_AREAS.map((city) => (
-          <option key={city} value={city} />
-        ))}
-      </datalist>
+      {cityOptions.length ? (
+        <>
+          <Field id="inquiry-city" label="City" required error={otherCity ? undefined : issueFor("city")}>
+            {(props) => (
+              <select
+                {...props}
+                name={otherCity ? undefined : "city"}
+                defaultValue=""
+                onChange={(event) => setOtherCity(event.target.value === OTHER_CITY)}
+              >
+                <option value="">— Select your city —</option>
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+                <option value={OTHER_CITY}>Others</option>
+              </select>
+            )}
+          </Field>
+          {/* Mounted by picking "Others", so autofocus follows the user's own action. */}
+          {otherCity && (
+            <Field id="inquiry-city-other" label="Your City" required error={issueFor("city")}>
+              {(props) => <input {...props} name="city" type="text" autoComplete="address-level2" autoFocus />}
+            </Field>
+          )}
+        </>
+      ) : (
+        <Field id="inquiry-city" label="City" required error={issueFor("city")}>
+          {(props) => <input {...props} name="city" type="text" autoComplete="address-level2" placeholder="Windsor" />}
+        </Field>
+      )}
       <Field id="inquiry-category" label="Product Category" error={issueFor("category")}>
         {(props) => (
           <select {...props} name="category" defaultValue="">

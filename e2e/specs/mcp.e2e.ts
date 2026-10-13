@@ -40,6 +40,7 @@ test.describe("endpoint", () => {
       "create_product",
       "get_product",
       "get_request",
+      "get_service_area",
       "get_taxonomy",
       "import_products_csv",
       "list_requests",
@@ -49,6 +50,7 @@ test.describe("endpoint", () => {
       "set_visibility",
       "update_product",
       "update_request_status",
+      "update_service_area",
       "upsert_attribute",
       "upsert_attribute_value",
       "upsert_category",
@@ -354,6 +356,29 @@ test.describe("reviews", () => {
 
     await page.goto("/");
     await expect(page.getByText("Fast delivery.")).toBeVisible();
+  });
+});
+
+test.describe("service area", () => {
+  test("get_service_area and update_service_area", async ({ request, page }) => {
+    expect((await tool(request, "get_service_area")).json).toEqual({
+      region: "Southwestern Ontario",
+      description: "We deliver wholesale lubricants and fluids along the Windsor–Kitchener corridor.",
+      cities: ["Windsor", "London", "Kitchener"],
+    });
+
+    expect((await tool(request, "update_service_area")).text).toContain("Nothing to update");
+    expect((await tool(request, "update_service_area", { cities: ["Sarnia", "sarnia"] })).isError).toBe(true);
+    expect((await tool(request, "update_service_area", { cities: ["Windsor", "London", "Sarnia"] })).json).toEqual({
+      created: false,
+      updated: ["cities"],
+    });
+    expect(await mockDoc(request, "serviceArea")).toMatchObject({ region: "Southwestern Ontario", cities: ["Windsor", "London", "Sarnia"] });
+
+    await page.goto("/");
+    await expect(page.locator("#service-area").getByText("Sarnia, ON")).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "City" }).getByRole("option", { name: "Sarnia" })).toBeAttached();
+    expect(await page.locator('script[type="application/ld+json"]').first().textContent()).toContain('"name":"Sarnia"');
   });
 });
 

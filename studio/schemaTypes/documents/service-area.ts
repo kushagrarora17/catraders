@@ -25,7 +25,7 @@ export const serviceArea = defineType({
       title: 'Cities',
       type: 'array',
       of: [{type: 'string'}],
-      description: 'Shown in this order, each followed by ", ON".',
+      description: 'Shown in this order, each followed by ", ON". The inquiry form lists them A–Z, with "Others" last.',
       validation: (rule) => rule.required().min(1).unique(),
     }),
     verticalField,

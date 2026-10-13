@@ -9,12 +9,14 @@ mock.module("@/sanity/write-client", () => ({ getWriteClient: () => sanity }));
 mock.module("../revalidate", () => ({
   revalidateCatalog: () => void revalidations++,
   revalidateReviews: () => void revalidations++,
+  revalidateServiceArea: () => void revalidations++,
 }));
 
 const { registerCatalogReadTools } = await import("./catalog-read");
 const { registerCatalogWriteTools } = await import("./catalog-write");
 const { registerImportTool } = await import("./import");
 const { registerReviewTools } = await import("./reviews");
+const { registerServiceAreaTools } = await import("./service-area");
 const { registerTaxonomyWriteTools } = await import("./taxonomy-write");
 
 type Handler = (args: unknown) => Promise<CallToolResult>;
@@ -29,6 +31,7 @@ for (const register of [
   registerTaxonomyWriteTools,
   registerImportTool,
   registerReviewTools,
+  registerServiceAreaTools,
 ]) {
   register(registry as never);
 }
@@ -284,6 +287,34 @@ describe("upsert_review", () => {
 
     expect((await call("upsert_review", { id: "prod-1", rating: 1 })).text).toMatch(/No review/);
     expect((await call("upsert_review", { id: "rev-1" })).text).toMatch(/Nothing to update/);
+  });
+});
+
+describe("service area tools", () => {
+  test("creates the singleton only with every field, then patches what is passed", async () => {
+    expect((await call("get_service_area")).text).toMatch(/No service area is set/);
+    expect((await call("update_service_area", { region: "Ontario" })).text).toMatch(/pass region, description and cities/);
+    expect(sanity.docs.has("serviceArea")).toBe(false);
+
+    const created = await call("update_service_area", { region: "Ontario", description: "We deliver.", cities: ["Windsor", "London"] });
+    expect(created.json).toEqual({ created: true, updated: ["region", "description", "cities"] });
+    expect(sanity.docs.get("serviceArea")).toMatchObject({ _type: "serviceArea", vertical: "automotive", cities: ["Windsor", "London"] });
+
+    await call("update_service_area", { cities: ["Windsor", "London", "Sarnia"] });
+    expect((await call("get_service_area")).json).toEqual({
+      region: "Ontario",
+      description: "We deliver.",
+      cities: ["Windsor", "London", "Sarnia"],
+    });
+    expect(revalidations).toBe(2);
+  });
+
+  test("rejects empty updates and repeated cities without writing", async () => {
+    expect((await call("update_service_area")).text).toMatch(/Nothing to update/);
+    expect((await call("update_service_area", { region: "Ontario", description: "x", cities: ["Windsor", "windsor "] })).text).toMatch(
+      /repeated: windsor/,
+    );
+    expect(sanity.commits).toHaveLength(0);
   });
 });
 

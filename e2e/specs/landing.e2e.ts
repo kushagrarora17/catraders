@@ -19,7 +19,10 @@ test.describe("landing page", () => {
     await expect(reviews.getByText("Hidden review.")).toHaveCount(0);
 
     const jsonLd = await page.locator('script[type="application/ld+json"]').first().textContent();
-    expect(JSON.parse(jsonLd!)).toMatchObject({ "@context": "https://schema.org" });
+    expect(JSON.parse(jsonLd!)).toMatchObject({
+      "@context": "https://schema.org",
+      areaServed: ["Windsor", "London", "Kitchener"].map((name) => expect.objectContaining({ "@type": "City", name })),
+    });
   });
 
   test("service area comes from Sanity", async ({ page }) => {
@@ -87,7 +90,7 @@ test.describe("inquiry form", () => {
     await page.getByLabel("Business Name").fill("Lee Auto Repair");
     await page.getByLabel("Phone Number").fill("(519) 555-0101");
     await page.getByLabel("Email Address").fill("kush-claude@agentmail.to");
-    await page.getByLabel("City").fill("Windsor");
+    await page.getByRole("combobox", { name: "City" }).selectOption("Windsor");
     await page.getByLabel("Product Category").selectOption("Coolant");
     await page.getByLabel("Message / Order Details").fill("Two pallets of 50/50 coolant.");
   };
@@ -131,6 +134,30 @@ test.describe("inquiry form", () => {
     await expect(page.locator("form").getByRole("alert")).toHaveText("Please correct the highlighted fields.");
     await expect(page.getByText("Enter a valid phone number")).toBeVisible();
     await expect(page.getByLabel("Phone Number")).toBeFocused();
+  });
+
+  test("city drop-down lists service-area cities A–Z, with Others for anywhere else", async ({ page }) => {
+    await page.goto("/#contact");
+    const city = page.getByRole("combobox", { name: "City" });
+    await expect(city.locator("option")).toHaveText(["— Select your city —", "Kitchener", "London", "Windsor", "Others"]);
+
+    await fill(page);
+    await city.selectOption("Others");
+    const other = page.getByLabel("Your City");
+    await expect(other).toBeFocused();
+    await page.getByRole("button", { name: /Send Inquiry/ }).click();
+    await expect(page.getByText("Enter your city")).toBeVisible();
+    await expect(other).toBeFocused();
+
+    await other.fill("Toronto");
+    const submitted = page.waitForRequest("/api/inquiries");
+    await page.getByRole("button", { name: /Send Inquiry/ }).click();
+    expect((await submitted).postDataJSON()).toMatchObject({ city: "Toronto" });
+    await expect(page.getByRole("status")).toContainText("Thanks — inquiry received");
+
+    await page.getByRole("button", { name: "Send another inquiry" }).click();
+    await expect(page.getByRole("combobox", { name: "City" })).toHaveValue("");
+    await expect(page.getByLabel("Your City")).toBeHidden();
   });
 
   test("reports network failures", async ({ page }) => {

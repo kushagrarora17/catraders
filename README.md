@@ -43,6 +43,7 @@ docker/Dockerfile          # multi-stage standalone image
 - **Attribute Value**: an allowed value of an attribute (`5W-30`, `4 L`, `API SP`).
 - **Product**: `title`, `slug`, `sku`, `category` (a reference), `attributeValues` (references), `inStock`, `images` and `description`. Each pack size is its own product/SKU.
 - **Review** (`testimonial`): `quote`, `name`, `role`, `city`, `rating` and `sortOrder`. Shown in the landing-page Testimonials section, which is hidden when there are none.
+- **Service area** (`serviceArea`, a singleton): `region`, `description` and `cities`. Drives the landing-page Service Area section (hidden until it exists) and the inquiry form's City drop-down, which lists the cities A–Z with "Others" last for a free-text city. The cities are also the `areaServed` of the landing page's LocalBusiness structured data.
 - **Stock**: out-of-stock products stay visible with a badge and can still be quoted. They're marked "(out of stock)" in the quote list and in the quote emails.
 
 Each document carries a `vertical` field (automotive, baby or home). Every web query filters on `vertical == "automotive"`.
@@ -152,11 +153,11 @@ Create a webhook at [sanity.io/manage](https://www.sanity.io/manage/project/51ng
 | URL | `https://<your-host>/api/webhooks/sanity` |
 | Dataset | `production` |
 | Trigger on | Create, Update, Delete |
-| Filter | `_type in ["product", "category", "attribute", "attributeValue", "testimonial"]` |
+| Filter | `_type in ["product", "category", "attribute", "attributeValue", "testimonial", "serviceArea"]` |
 | Projection | `{_type, vertical}` |
 | Secret | Same value as `SANITY_WEBHOOK_SECRET` |
 
-The route checks the `sanity-webhook-signature` HMAC and then calls `revalidateTag(tag, { expire: 0 })`, where `tag` is `automotive-products` for catalog types and `automotive-testimonials` for reviews.
+The route checks the `sanity-webhook-signature` HMAC and then calls `revalidateTag(tag, { expire: 0 })`, where `tag` is `automotive-products` for catalog types, `automotive-testimonials` for reviews and `automotive-service-area` for the service area.
 
 > **Scaling out:** Next's data cache is per instance. If the app runs on more than one instance, revalidation only reaches the instance that got the webhook. Before scaling out, configure a shared [`cacheHandler`](https://nextjs.org/docs/app/api-reference/config/next-config-js/incrementalCacheHandlerPath), e.g. Redis.
 
@@ -242,6 +243,7 @@ DATABASE_URL="$(terraform -chdir=iac/app output -raw database_url_command | sh)"
 | Catalog (write) | `create_product`, `update_product`, `set_stock` (bulk, by SKU or id), `set_visibility`, `import_products_csv` |
 | Taxonomy | `upsert_category`, `upsert_attribute`, `upsert_attribute_value` |
 | Reviews | `list_reviews`, `upsert_review` (and `set_visibility`) |
+| Service area | `get_service_area`, `update_service_area` |
 | Quotes & inquiries | `list_requests`, `get_request`, `update_request_status` |
 
 - **Writes publish immediately** and expire the catalog cache. There is no draft step. `set_visibility` unpublishes (moves the document to a draft), which is reversible; no tool deletes anything.
