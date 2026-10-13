@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Root canvas colour (= --brand-navy-dark, #111d29). Browsers sample html/body
+   background for the Android bottom "chin", iOS Safari toolbars and overscroll;
+   the theme variables are scoped below <body>, so use the literal here. */
+html,
+body {
+  background-color: #111d29;
+}
+
 /* Map the active vertical's theme variables to semantic Tailwind utilities
    (bg-primary, text-muted-foreground, border-border, font-heading, …). */
 @theme inline {

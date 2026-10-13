@@ -35,10 +35,13 @@ export const metadata: Metadata = {
   },
   twitter: { card: "summary_large_image" },
   formatDetection: { telephone: false },
+  appleWebApp: { capable: true, title: BUSINESS_NAME, statusBarStyle: "black" },
 };
 
+// Matches --brand-navy-dark. Drives Chrome/Android toolbar + Safari iOS toolbar tint.
 export const viewport: Viewport = {
   themeColor: "#111d29",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
