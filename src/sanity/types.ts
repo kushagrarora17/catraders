@@ -286,25 +286,6 @@ export type AllSanitySchemaTypes =
   | Geopoint;
 
 // Source: ../src/features/catalog/queries.ts
-// Variable: CATEGORY_TREE_QUERY
-// Query: *[_type == "category" && vertical == "automotive" && level == 1] | order(sortOrder asc, title asc) {    _id,    title,    "slug": slug.current,    "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc) {      _id,      title,      "slug": slug.current,      "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc) {        _id,        title,        "slug": slug.current      }    }  }
-export type CATEGORY_TREE_QUERY_RESULT = Array<{
-  _id: string;
-  title: string;
-  slug: string;
-  children: Array<{
-    _id: string;
-    title: string;
-    slug: string;
-    children: Array<{
-      _id: string;
-      title: string;
-      slug: string;
-    }>;
-  }>;
-}>;
-
-// Source: ../src/features/catalog/queries.ts
 // Variable: CATEGORY_BY_SLUG_QUERY
 // Query: *[_type == "category" && vertical == "automotive" && slug.current == $slug][0] {    _id,    title,    "slug": slug.current,    level,    "ancestors": [      parent->parent->{ title, "slug": slug.current },      parent->{ title, "slug": slug.current }    ][defined(slug)],    "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc) {      _id,      title,      "slug": slug.current    }  }
 export type CATEGORY_BY_SLUG_QUERY_RESULT = {
@@ -622,7 +603,6 @@ export type HIDDEN_REVIEWS_QUERY_RESULT = Array<{
 // Query TypeMap
 declare global {
   interface SanityQueries {
-    '\n  *[_type == "category" && vertical == "automotive" && level == 1] | order(sortOrder asc, title asc) {\n    _id,\n    title,\n    "slug": slug.current,\n    "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc) {\n      _id,\n      title,\n      "slug": slug.current,\n      "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc) {\n        _id,\n        title,\n        "slug": slug.current\n      }\n    }\n  }\n': CATEGORY_TREE_QUERY_RESULT;
     '\n  *[_type == "category" && vertical == "automotive" && slug.current == $slug][0] {\n    _id,\n    title,\n    "slug": slug.current,\n    level,\n    "ancestors": [\n      parent->parent->{ title, "slug": slug.current },\n      parent->{ title, "slug": slug.current }\n    ][defined(slug)],\n    "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc) {\n      _id,\n      title,\n      "slug": slug.current\n    }\n  }\n': CATEGORY_BY_SLUG_QUERY_RESULT;
     '*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!$available || inStock == true)\n] | order(title asc) {\n  _id,\n  title,\n  "slug": slug.current,\n  sku,\n  inStock,\n  "image": images[0],\n  "category": category->{ title, "slug": slug.current },\n  "attributeLabels": attributeValues[]->label\n}': PRODUCT_LIST_QUERY_RESULT;
     '\n  *[_type == "attribute" && vertical == "automotive" && filterable == true] | order(sortOrder asc, title asc) {\n    _id,\n    title,\n    "key": slug.current,\n    "values": *[_type == "attributeValue" && attribute._ref == ^._id] | order(sortOrder asc, label asc) {\n      _id,\n      label,\n      "key": slug.current,\n      "count": count(*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!$available || inStock == true)\n && references(^._id)])\n    }[count > 0]\n  }[count(values) > 0]\n': FACETS_QUERY_RESULT;

@@ -2,24 +2,6 @@ import { defineQuery } from "groq";
 
 // Every catalog query is scoped to the automotive vertical (TRD §8 isolation).
 
-export const CATEGORY_TREE_QUERY = defineQuery(`
-  *[_type == "category" && vertical == "automotive" && level == 1] | order(sortOrder asc, title asc) {
-    _id,
-    title,
-    "slug": slug.current,
-    "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc) {
-      _id,
-      title,
-      "slug": slug.current,
-      "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc) {
-        _id,
-        title,
-        "slug": slug.current
-      }
-    }
-  }
-`);
-
 export const CATEGORY_BY_SLUG_QUERY = defineQuery(`
   *[_type == "category" && vertical == "automotive" && slug.current == $slug][0] {
     _id,
