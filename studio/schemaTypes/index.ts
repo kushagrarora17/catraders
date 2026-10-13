@@ -3,9 +3,10 @@ import {attribute} from './documents/attribute'
 import {attributeValue} from './documents/attribute-value'
 import {category} from './documents/category'
 import {product} from './documents/product'
+import {serviceArea} from './documents/service-area'
 import {testimonial} from './documents/testimonial'
 
-export const schemaTypes = [product, category, attribute, attributeValue, testimonial]
+export const schemaTypes = [product, category, attribute, attributeValue, testimonial, serviceArea]
 
 // Used by the desk structure to pre-fill fields when creating from a filtered list.
 export const schemaTemplates: Template[] = [

@@ -22,6 +22,35 @@ test.describe("landing page", () => {
     expect(JSON.parse(jsonLd!)).toMatchObject({ "@context": "https://schema.org" });
   });
 
+  test("service area comes from Sanity", async ({ page }) => {
+    await page.goto("/");
+    const section = page.locator("#service-area");
+    await expect(section.getByRole("heading", { name: /Serving\s+Southwestern Ontario/ })).toBeVisible();
+    await expect(section.getByText("along the Windsor–Kitchener corridor")).toBeVisible();
+    for (const city of ["Windsor", "London", "Kitchener"]) {
+      await expect(section.getByRole("list", { name: "Cities we serve" }).getByText(`${city}, ON`)).toBeVisible();
+    }
+  });
+
+  test("hero product categories link to the filtered catalog", async ({ page }) => {
+    await page.goto("/");
+    const categories = page.getByRole("list", { name: "Product categories" });
+    await expect(categories.getByRole("link")).toHaveCount(4);
+    await categories.getByRole("link", { name: /Engine Oils/ }).click();
+    await expect(page).toHaveURL(/\/products\?category=engine-oils$/);
+  });
+
+  test("brand cards stay still on hover while the marquee pauses", async ({ page }) => {
+    await page.goto("/");
+    const card = page.getByRole("list", { name: "Brands we carry" }).getByRole("listitem").first();
+    const strip = card.locator("xpath=ancestor::div[contains(@class,'animate-marquee')]");
+    // The strip is always moving, so hover its (stable) container rather than a card.
+    await strip.locator("xpath=..").hover();
+    await expect(strip).toHaveCSS("animation-play-state", "paused");
+    await expect(card).toHaveCSS("translate", "none");
+    await expect(card).toHaveCSS("box-shadow", "none");
+  });
+
   test("header links to the catalog and the quote list", async ({ page }) => {
     await page.goto("/");
     const nav = page.getByRole("navigation", { name: "Primary" });

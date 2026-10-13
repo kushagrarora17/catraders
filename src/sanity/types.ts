@@ -15,6 +15,18 @@
 export declare const internalGroqTypeReferenceTo: unique symbol;
 
 // Source: schema.json
+export type ServiceArea = {
+  _id: string;
+  _type: "serviceArea";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  region: string;
+  description: string;
+  cities: Array<string>;
+  vertical: "automotive" | "baby" | "home";
+};
+
 export type Testimonial = {
   _id: string;
   _type: "testimonial";
@@ -264,6 +276,7 @@ export type Geopoint = {
 };
 
 export type AllSanitySchemaTypes =
+  | ServiceArea
   | Testimonial
   | AttributeReference
   | AttributeValue
@@ -446,6 +459,15 @@ export type TESTIMONIALS_QUERY_RESULT = Array<{
   rating: 1 | 2 | 3 | 4 | 5;
 }>;
 
+// Source: ../src/features/landing/queries.ts
+// Variable: SERVICE_AREA_QUERY
+// Query: *[_type == "serviceArea" && vertical == "automotive"][0] {    region,    description,    cities  }
+export type SERVICE_AREA_QUERY_RESULT = {
+  region: string;
+  description: string;
+  cities: Array<string>;
+} | null;
+
 // Source: ../src/server/mcp/queries.ts
 // Variable: PRODUCT_SEARCH_QUERY
 // Query: {  "total": count(*[  _type == "product" && vertical == "automotive"  && (!defined($q) || title match $q || sku match $q)  && (!defined($category) || $category in [    category->slug.current,    category->parent->slug.current,    category->parent->parent->slug.current  ])  && (!defined($inStock) || inStock == $inStock)  && (!defined($skus) || sku in $skus)]),  "items": *[  _type == "product" && vertical == "automotive"  && (!defined($q) || title match $q || sku match $q)  && (!defined($category) || $category in [    category->slug.current,    category->parent->slug.current,    category->parent->parent->slug.current  ])  && (!defined($inStock) || inStock == $inStock)  && (!defined($skus) || sku in $skus)] | order(title asc) [$start...$end] {  _id,  title,  "slug": slug.current,  sku,  inStock,  "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],  "attributes": attributeValues[]->label}}
@@ -611,6 +633,7 @@ declare global {
     '\n  *[_type == "product" && vertical == "automotive" && _id in $ids] {\n    _id,\n    title,\n    sku,\n    inStock,\n    "categoryPath": [\n  category->parent->parent->{ title, "slug": slug.current },\n  category->parent->{ title, "slug": slug.current },\n  category->{ title, "slug": slug.current }\n][defined(slug)],\n    "attributeValues": attributeValues[]->{\n  label,\n  sortOrder,\n  "attribute": attribute->{ _id, title, sortOrder }\n}\n  }\n': QUOTE_PRODUCTS_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && defined(slug.current)] { "slug": slug.current, _updatedAt }\n': SITEMAP_QUERY_RESULT;
     '\n  *[_type == "testimonial" && vertical == "automotive"] | order(sortOrder asc, _createdAt asc) {\n    _id,\n    quote,\n    name,\n    role,\n    city,\n    rating\n  }\n': TESTIMONIALS_QUERY_RESULT;
+    '\n  *[_type == "serviceArea" && vertical == "automotive"][0] {\n    region,\n    description,\n    cities\n  }\n': SERVICE_AREA_QUERY_RESULT;
     '{\n  "total": count(*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n]),\n  "items": *[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n] | order(title asc) [$start...$end] {\n  _id,\n  title,\n  "slug": slug.current,\n  sku,\n  inStock,\n  "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],\n  "attributes": attributeValues[]->label\n}\n}': PRODUCT_SEARCH_QUERY_RESULT;
     '{\n  "total": count(*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n && _id in path("drafts.**") && !defined(*[_type == "product" && _id == string::split(^._id, "drafts.")[1]][0]._id)]),\n  "items": *[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n && _id in path("drafts.**") && !defined(*[_type == "product" && _id == string::split(^._id, "drafts.")[1]][0]._id)] | order(title asc) [$start...$end] {\n  _id,\n  title,\n  "slug": slug.current,\n  sku,\n  inStock,\n  "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],\n  "attributes": attributeValues[]->label\n}\n}': HIDDEN_PRODUCT_SEARCH_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && _id == $docId][0] {\n    _id,\n    _updatedAt,\n    title,\n    "slug": slug.current,\n    sku,\n    inStock,\n    "category": category->{ _id, title, "slug": slug.current, level },\n    "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],\n    "attributes": attributeValues[]->{\n      _id,\n      label,\n      "slug": slug.current,\n      "attribute": attribute->{ title, "slug": slug.current }\n    },\n    "images": images[]{ "url": asset->url, alt },\n    description\n  }\n': PRODUCT_DETAIL_QUERY_RESULT;

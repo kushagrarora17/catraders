@@ -11,11 +11,11 @@ const STATS = [
   { value: "B2B", label: "Wholesale Only" },
 ] as const;
 
-const CATEGORIES: { icon: IconName; title: string; brands: string }[] = [
-  { icon: "drop", title: "Engine Oils", brands: "Mobil · Castrol · Liqui Moly · Benzol · Quaker State" },
-  { icon: "gear", title: "ATF & Gear Oils", brands: "Mobil ATF · Castrol CVT · Lucas · Toyota WS" },
-  { icon: "thermometer", title: "Coolants & Refrigerants", brands: "Star Fire · Emzone · Duracool · R134a" },
-  { icon: "wrench", title: "Filters & Shop Supplies", brands: "COYO Oil Filters · Cabin & Air Filters · Wiper Blades" },
+const CATEGORIES: { icon: IconName; title: string; brands: string; slug: string }[] = [
+  { icon: "drop", title: "Engine Oils", slug: "engine-oils", brands: "Mobil · Castrol · Liqui Moly · Benzol · Quaker State" },
+  { icon: "gear", title: "ATF & Gear Oils", slug: "transmission-fluids", brands: "Mobil ATF · Castrol CVT · Lucas · Toyota WS" },
+  { icon: "thermometer", title: "Coolants & Refrigerants", slug: "coolants", brands: "Star Fire · Emzone · Duracool · R134a" },
+  { icon: "wrench", title: "Filters & Shop Supplies", slug: "filters", brands: "COYO Oil Filters · Cabin & Air Filters · Wiper Blades" },
 ];
 
 export function Hero() {
@@ -66,15 +66,20 @@ export function Hero() {
             <li
               key={cat.title}
               style={{ animationDelay: `${(i + 1) * 100}ms` }}
-              className="flex items-center gap-5 border border-primary/20 bg-card p-5 transition-[border-color,translate] duration-300 hover:border-primary motion-safe:animate-slide-in motion-safe:hover:translate-x-1.5 lg:even:ml-8"
+              className="motion-safe:animate-slide-in lg:even:ml-8"
             >
-              <span className="grid size-12 shrink-0 place-items-center bg-primary/10 text-highlight">
-                <Icon name={cat.icon} />
-              </span>
-              <div>
-                <p className="font-heading text-lg font-bold uppercase tracking-wide text-foreground">{cat.title}</p>
-                <p className="text-sm text-muted-foreground">{cat.brands}</p>
-              </div>
+              <Link
+                href={`/products?category=${cat.slug}`}
+                className="flex items-center gap-5 border border-primary/20 bg-card p-5 transition-[border-color,translate] duration-300 hover:border-primary motion-safe:hover:translate-x-1.5"
+              >
+                <span className="grid size-12 shrink-0 place-items-center bg-primary/10 text-highlight">
+                  <Icon name={cat.icon} />
+                </span>
+                <div>
+                  <p className="font-heading text-lg font-bold uppercase tracking-wide text-foreground">{cat.title}</p>
+                  <p className="text-sm text-muted-foreground">{cat.brands}</p>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>

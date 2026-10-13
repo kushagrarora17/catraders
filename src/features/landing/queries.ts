@@ -10,3 +10,11 @@ export const TESTIMONIALS_QUERY = defineQuery(`
     rating
   }
 `);
+
+export const SERVICE_AREA_QUERY = defineQuery(`
+  *[_type == "serviceArea" && vertical == "automotive"][0] {
+    region,
+    description,
+    cities
+  }
+`);

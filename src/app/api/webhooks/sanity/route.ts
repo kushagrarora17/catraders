@@ -2,7 +2,7 @@ import { revalidateTag } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 import { isValidSignature, SIGNATURE_HEADER_NAME } from "@sanity/webhook";
 import { CATALOG_TAG } from "@/features/catalog/api";
-import { TESTIMONIALS_TAG } from "@/features/landing/api";
+import { SERVICE_AREA_TAG, TESTIMONIALS_TAG } from "@/features/landing/api";
 
 // Any change to a catalog type can alter catalog pages (products embed category
 // paths and attribute labels), so they all invalidate the catalog tag.
@@ -12,6 +12,7 @@ const TAG_BY_TYPE: Record<string, string> = {
   attribute: CATALOG_TAG,
   attributeValue: CATALOG_TAG,
   testimonial: TESTIMONIALS_TAG,
+  serviceArea: SERVICE_AREA_TAG,
 };
 
 export async function POST(req: NextRequest) {

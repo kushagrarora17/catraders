@@ -58,7 +58,7 @@ export function BrandGrid() {
               {BRANDS.map((brand) => (
                 <li
                   key={brand.name}
-                  className="relative aspect-4/3 w-40 shrink-0 border border-b-3 border-border bg-card transition-[border-color,box-shadow,translate] duration-250 hover:border-b-primary hover:shadow-xl motion-safe:hover:-translate-y-1 sm:w-48"
+                  className="relative aspect-4/3 w-40 shrink-0 border border-b-3 border-border bg-card sm:w-48"
                 >
                   <Image
                     src={brand.logo}

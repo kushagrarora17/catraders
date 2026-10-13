@@ -24,7 +24,7 @@ export async function sendWebhook(request: APIRequestContext, body: string) {
 /** Restores the seed content and expires the app's cached copies of it. */
 export async function resetContent(request: APIRequestContext) {
   await request.post(`${MOCK_URL}/__reset`);
-  for (const _type of ["product", "testimonial"]) await sendWebhook(request, JSON.stringify({ _type }));
+  for (const _type of ["product", "testimonial", "serviceArea"]) await sendWebhook(request, JSON.stringify({ _type }));
 }
 
 /** Reads one document straight from the mock Sanity dataset (drafts included). */

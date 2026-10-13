@@ -159,6 +159,14 @@ export function seedDocuments(): Doc[] {
       sortOrder: 2,
     },
     {
+      _id: "serviceArea",
+      _type: "serviceArea",
+      vertical: "automotive",
+      region: "Southwestern Ontario",
+      description: "We deliver wholesale lubricants and fluids along the Windsor–Kitchener corridor.",
+      cities: ["Windsor", "London", "Kitchener"],
+    },
+    {
       _id: "drafts.review-hidden",
       _type: "testimonial",
       vertical: "automotive",

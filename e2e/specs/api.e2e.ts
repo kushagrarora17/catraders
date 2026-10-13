@@ -141,6 +141,24 @@ test.describe("POST /api/webhooks/sanity", () => {
   });
 });
 
+test.describe("service area webhook", () => {
+  test("expires the cached service area section", async ({ page, request }) => {
+    await page.goto("/");
+    await expect(page.locator("#service-area").getByText("Windsor, ON")).toBeVisible();
+    await expect(page.locator("#service-area").getByText("Sarnia, ON")).toHaveCount(0);
+
+    await request.post(`${MOCK_URL}/v2026-09-01/data/mutate/production`, {
+      data: { mutations: [{ patch: { id: "serviceArea", set: { cities: ["Windsor", "London", "Kitchener", "Sarnia"] } } }] },
+    });
+    const res = await sendWebhook(request, JSON.stringify({ _type: "serviceArea" }));
+    expect(await res.json()).toEqual({ revalidated: true, tag: "automotive-service-area" });
+
+    await page.reload();
+    await expect(page.locator("#service-area").getByText("Sarnia, ON")).toBeVisible();
+    await resetContent(request);
+  });
+});
+
 test.describe("SEO and metadata routes", () => {
   test("robots.txt and sitemap.xml", async ({ request }) => {
     const robots = await (await request.get("/robots.txt")).text();
