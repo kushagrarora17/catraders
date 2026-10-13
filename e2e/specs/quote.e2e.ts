@@ -67,30 +67,30 @@ test("edits quantities, removes items and submits a quote", async ({ page }) => 
   await expect(page).toHaveURL(/\/products$/);
 });
 
-test("flags products that went out of stock or disappeared", async ({ page }) => {
+test("marks out-of-stock products and blocks ones that disappeared", async ({ page }) => {
   await openWithCart(page, [castrol, valvoline, gone]);
 
-  await expect(page.getByText("— Out of stock, please remove")).toBeVisible();
+  await expect(page.getByRole("row", { name: /Valvoline/ })).toContainText("(out of stock)");
+  await expect(page.getByRole("row", { name: /Castrol/ })).not.toContainText("(out of stock)");
   await expect(page.getByText("— No longer available, please remove")).toBeVisible();
   await expect(page.getByText("Remove unavailable products before submitting.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Submit quote request" })).toBeDisabled();
 
-  await page.getByRole("row", { name: /Valvoline/ }).getByRole("button", { name: "Remove" }).click();
   await page.getByRole("row", { name: /Discontinued/ }).getByRole("button", { name: "Remove" }).click();
   await expect(page.getByRole("button", { name: "Submit quote request" })).toBeEnabled();
 });
 
-test("handles stock changes reported at submission", async ({ page }) => {
-  // The availability check passes, but the product sells out before submission.
+test("handles products removed before submission", async ({ page }) => {
+  // The availability check passes, but the product is gone by the time the quote is submitted.
   await page.route("**/api/availability?**", (route) =>
-    route.fulfill({ json: { products: [{ id: valvoline.productId, exists: true, inStock: true }] } }),
+    route.fulfill({ json: { products: [{ id: gone.productId, exists: true, inStock: true }] } }),
   );
-  await openWithCart(page, [valvoline]);
+  await openWithCart(page, [gone]);
   await fillDetails(page);
   await page.getByRole("button", { name: "Submit quote request" }).click();
 
-  await expect(page.locator("form").getByRole("alert")).toContainText("Some products are out of stock");
-  await expect(page.getByText("— Out of stock, please remove")).toBeVisible();
+  await expect(page.locator("form").getByRole("alert")).toContainText("Some products are no longer available");
+  await expect(page.getByText("— No longer available, please remove")).toBeVisible();
 });
 
 test("shows server validation and network errors", async ({ page }) => {

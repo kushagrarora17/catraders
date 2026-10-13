@@ -176,7 +176,7 @@ export function registerCatalogWriteTools(server: McpServer) {
     {
       title: "Set stock status",
       description:
-        "Mark products in stock or out of stock in bulk, by exact SKU and/or product id. Out-of-stock products stay visible but can't be added to a quote. Reports SKUs that weren't found.",
+        "Mark products in stock or out of stock in bulk, by exact SKU and/or product id. Out-of-stock products stay visible and can still be quoted. Reports SKUs that weren't found.",
       inputSchema: z.object({
         inStock: z.boolean(),
         skus: z.array(z.string().min(1)).max(200).optional(),

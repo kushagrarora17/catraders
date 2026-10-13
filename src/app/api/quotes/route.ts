@@ -38,10 +38,7 @@ export async function POST(req: NextRequest) {
     const idempotencyKey = parseIdempotencyKey(req.headers.get(IDEMPOTENCY_HEADER));
     const result = await submitQuoteRequest(parsed.data, idempotencyKey);
     if (!result.ok) {
-      const message =
-        result.error === "OUT_OF_STOCK"
-          ? "Some products are out of stock. Remove them to continue."
-          : "Some products are no longer available.";
+      const message = "Some products are no longer available.";
       return respond({ success: false, error: result.error, message, productIds: result.productIds }, result.status);
     }
 

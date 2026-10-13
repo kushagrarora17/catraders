@@ -5,18 +5,10 @@ import { useState } from "react";
 import { MAX_ITEM_QUANTITY } from "../schema";
 import { type QuoteItem, useQuoteStore } from "../store/useQuoteStore";
 
-export function AddToQuote({ product, inStock }: { product: Omit<QuoteItem, "quantity">; inStock: boolean }) {
+export function AddToQuote({ product }: { product: Omit<QuoteItem, "quantity"> }) {
   const addItem = useQuoteStore((s) => s.addItem);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
-
-  if (!inStock) {
-    return (
-      <button type="button" disabled className="cursor-not-allowed rounded-xs border border-border px-3 py-1 text-muted-foreground">
-        Out of stock — cannot be quoted
-      </button>
-    );
-  }
 
   return (
     <form

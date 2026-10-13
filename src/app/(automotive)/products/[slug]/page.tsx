@@ -74,7 +74,6 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
               sku: product.sku ?? undefined,
               slug: product.slug,
             }}
-            inStock={product.inStock}
           />
 
           {attributes.length > 0 && (

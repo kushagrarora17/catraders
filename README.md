@@ -43,7 +43,7 @@ docker/Dockerfile          # multi-stage standalone image
 - **Attribute Value**: an allowed value of an attribute (`5W-30`, `4 L`, `API SP`).
 - **Product**: `title`, `slug`, `sku`, `category` (a reference), `attributeValues` (references), `inStock`, `images` and `description`. Each pack size is its own product/SKU.
 - **Review** (`testimonial`): `quote`, `name`, `role`, `city`, `rating` and `sortOrder`. Shown in the landing-page Testimonials section, which is hidden when there are none.
-- **Stock**: out-of-stock products stay visible with a badge, but they can't be added to a quote. The API also rejects them with a 409.
+- **Stock**: out-of-stock products stay visible with a badge and can still be quoted. They're marked "(out of stock)" in the quote list and in the quote emails.
 
 Each document carries a `vertical` field (automotive, baby or home). Every web query filters on `vertical == "automotive"`.
 
@@ -167,7 +167,7 @@ The route checks the `sanity-webhook-signature` HMAC and then calls `revalidateT
 The request body is the TRD's shape without vehicle `specs`. Items are `{ productId, title, sku?, quantity }`.
 
 - The body is validated with zod (`src/features/quote-cart/schema.ts`).
-- Products are re-checked in Sanity: they must exist, be in the automotive vertical, and be in stock. Canonical titles and SKUs are stored, not the ones the client sent.
+- Products are re-checked in Sanity: they must exist and be in the automotive vertical. Each item's stock status at submission is kept in its specifications snapshot. Canonical titles and SKUs are stored, not the ones the client sent.
 - The request and its items are inserted in one transaction.
 - Emails are sent after the response.
 
@@ -175,12 +175,11 @@ The request body is the TRD's shape without vehicle `specs`. Items are `{ produc
 | --- | --- |
 | `201` | `{ success: true, referenceNumber: "RFQ-2026-90214", message }` |
 | `400` | `INVALID_JSON`, `VALIDATION_FAILED` (with `issues`) or `UNKNOWN_PRODUCTS` (with `productIds`) |
-| `409` | `OUT_OF_STOCK` (with `productIds`) |
 | `413` | The body is larger than 100 KB |
 
 ### Other endpoints
 
-- `GET /api/availability?ids=a,b` returns the current stock status of cart items. The cart uses it to flag items that became unavailable.
+- `GET /api/availability?ids=a,b` returns the current stock status of cart items. The cart uses it to flag items that were removed or went out of stock.
 - `POST /api/webhooks/sanity` triggers revalidation (see above).
 - `GET /api/health` is the liveness probe.
 

@@ -90,10 +90,11 @@ test.describe("product page", () => {
     await expect(page.getByLabel("Quantity for Castrol EDGE 5W-30 4L")).toHaveValue("3");
   });
 
-  test("out-of-stock products can't be quoted", async ({ page }) => {
+  test("out-of-stock products can be quoted", async ({ page }) => {
     await page.goto("/products/valvoline-10w40-4l");
     await expect(page.getByText("Out of stock").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Out of stock — cannot be quoted" })).toBeDisabled();
+    await page.getByRole("button", { name: "Add to quote" }).click();
+    await expect(page.getByRole("link", { name: "Quote list (1)" })).toBeVisible();
   });
 
   test("products without images or SKU still render", async ({ page }) => {
