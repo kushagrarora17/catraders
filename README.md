@@ -43,7 +43,7 @@ docker/Dockerfile          # multi-stage standalone image
 - **Attribute Value**: an allowed value of an attribute (`5W-30`, `4 L`, `API SP`).
 - **Product**: `title`, `slug`, `sku`, `category` (a reference), `attributeValues` (references), `inStock`, `images` and `description`. Each pack size is its own product/SKU.
 - **Review** (`testimonial`): `quote`, `name`, `role`, `city`, `rating` and `sortOrder`. Shown in the landing-page Testimonials section, which is hidden when there are none.
-- **Service area** (`serviceArea`, a singleton): `region`, `description` and `cities`. Drives the landing-page Service Area section, which is hidden until it exists.
+- **Service area** (`serviceArea`, a singleton): `region`, `description` and `cities`. Drives the landing-page Service Area section (hidden until it exists) and the inquiry form's City drop-down, which lists the cities A–Z with "Others" last for a free-text city.
 - **Stock**: out-of-stock products stay visible with a badge and can still be quoted. They're marked "(out of stock)" in the quote list and in the quote emails.
 
 Each document carries a `vertical` field (automotive, baby or home). Every web query filters on `vertical == "automotive"`.

@@ -3,6 +3,7 @@ import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { InquiryForm } from "@/features/inquiry/components/InquiryForm";
 import { EMAIL, HOURS_DISPLAY, PHONE_DISPLAY, PHONE_E164 } from "@/features/site/contact";
+import { getServiceArea } from "../api";
 import { Icon, type IconName } from "./icons";
 
 const DETAILS: { icon: IconName; label: string; value: string; href?: string }[] = [
@@ -11,7 +12,8 @@ const DETAILS: { icon: IconName; label: string; value: string; href?: string }[]
   { icon: "clock", label: "Hours", value: HOURS_DISPLAY },
 ];
 
-export function Contact() {
+export async function Contact() {
+  const area = await getServiceArea();
   return (
     <section id="contact" aria-labelledby="contact-title" data-surface="light" className="bg-background py-20 sm:py-28">
       <Container className="grid gap-10 lg:grid-cols-2 lg:gap-16">
@@ -57,7 +59,7 @@ export function Contact() {
             for itemized pricing.
           </p>
           <div className="mt-4">
-            <InquiryForm />
+            <InquiryForm cities={area?.cities ?? []} />
           </div>
         </div>
       </Container>

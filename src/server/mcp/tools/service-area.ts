@@ -53,7 +53,9 @@ export function registerServiceAreaTools(server: McpServer) {
           .min(1)
           .max(100)
           .optional()
-          .describe('City names in display order, without the province; each is shown followed by ", ON"'),
+          .describe(
+            `City names without the province. Shown in this order (each followed by ", ON") in the Service Area section, and A–Z in the inquiry form's City drop-down`,
+          ),
       }),
       annotations: IDEMPOTENT_WRITE,
     },
