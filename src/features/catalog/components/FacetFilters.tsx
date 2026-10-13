@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import Link from "next/link";
 import type { FACETS_QUERY_RESULT } from "@/sanity/types";
 import type { CatalogFilters } from "../filters";
@@ -5,6 +6,7 @@ import type { CatalogFilters } from "../filters";
 /** Plain GET form: works without JavaScript and keeps filters in the URL. */
 export function FacetFilters({ facets, filters }: { facets: FACETS_QUERY_RESULT; filters: CatalogFilters }) {
   const clearHref = filters.category ? `/products?category=${encodeURIComponent(filters.category)}` : "/products";
+  const clearRoute = clearHref as Route;
   return (
     <form action="/products" className="space-y-4 text-sm">
       {filters.category && <input type="hidden" name="category" value={filters.category} />}
@@ -45,7 +47,7 @@ export function FacetFilters({ facets, filters }: { facets: FACETS_QUERY_RESULT;
         <button type="submit" className="rounded-xs bg-primary px-3 py-1 text-primary-foreground hover:bg-primary-hover">
           Apply
         </button>
-        <Link href={clearHref} className="text-muted-foreground hover:text-foreground">
+        <Link href={clearRoute} className="text-muted-foreground hover:text-foreground">
           Clear
         </Link>
       </div>

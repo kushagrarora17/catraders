@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { notFound } from "next/navigation";
@@ -10,7 +10,7 @@ import { parseCatalogFilters } from "@/features/catalog/filters";
 
 export const metadata: Metadata = { title: "Products" };
 
-const categoryHref = (slug: string) => `/products?category=${encodeURIComponent(slug)}`;
+const categoryHref = (slug: string) => `/products?category=${encodeURIComponent(slug)}` as Route;
 
 export default async function ProductsPage({ searchParams }: PageProps<"/products">) {
   const filters = parseCatalogFilters(await searchParams);

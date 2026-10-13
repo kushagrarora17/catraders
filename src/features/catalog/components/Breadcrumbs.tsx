@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import Link from "next/link";
 
 export interface Crumb {
@@ -13,7 +14,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
           <li key={`${item.title}-${i}`} className="flex gap-1">
             {i > 0 && <span aria-hidden>›</span>}
             {item.href ? (
-              <Link href={item.href} className="hover:text-foreground">
+              <Link href={item.href as Route} className="hover:text-foreground">
                 {item.title}
               </Link>
             ) : (
