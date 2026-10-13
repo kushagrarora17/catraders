@@ -19,3 +19,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Local Postgres runs in Podman: `bun run db:up`.
 - MCP server for catalog/RFQ management: `/api/mcp`, tools in `src/server/mcp/` (register new ones in `server.ts`), OAuth sign-in in `src/server/oauth/`; usage in `README.md`. Sanity writes go through `getWriteClient()` (`src/sanity/write-client.ts`) and must call the helpers in `src/server/mcp/revalidate.ts`.
 - Azure infra is Terraform in `iac/` (`bootstrap/` = state storage, `app/` = everything else; azurerm v5). Run `terraform fmt -recursive iac` after edits. Keep secrets out of state via ephemeral values + write-only (`*_wo`) arguments. Deploys use GitHub OIDC (repo variables, no secrets).
+- PRs to `main` merge only when the `ci-ok` check passes (ruleset: `.github/rulesets/main.json`; add new CI jobs to its `needs`). Open a PR and run `gh pr merge --auto --squash`; direct pushes to `main` are blocked.
