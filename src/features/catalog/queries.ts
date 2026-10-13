@@ -45,12 +45,12 @@ const PRODUCT_CARD_PROJECTION = `{
 }`;
 
 export const PRODUCT_LIST_QUERY = defineQuery(
-  `*[${PRODUCT_LIST_FILTER}] | order(title asc) ${PRODUCT_CARD_PROJECTION}`,
+  `*[${PRODUCT_LIST_FILTER}] | order(select(inStock == true => 0, 1) asc, title asc) ${PRODUCT_CARD_PROJECTION}`,
 );
 
 /** Same shape as PRODUCT_LIST_QUERY, with extra `&& …` attribute clauses spliced in. */
 export function productListQueryWithFilters(extraFilter: string) {
-  return `*[${PRODUCT_LIST_FILTER} ${extraFilter}] | order(title asc) ${PRODUCT_CARD_PROJECTION}`;
+  return `*[${PRODUCT_LIST_FILTER} ${extraFilter}] | order(select(inStock == true => 0, 1) asc, title asc) ${PRODUCT_CARD_PROJECTION}`;
 }
 
 export const FACETS_QUERY = defineQuery(`
