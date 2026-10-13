@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient, type SanityClient } from "@sanity/client";
-import { apiVersion, dataset, projectId } from "./env";
+import { apiVersion, dataset, hostConfig, projectId } from "./env";
 
 let writeClient: SanityClient | undefined;
 
@@ -16,6 +16,7 @@ export function getWriteClient() {
     dataset,
     apiVersion,
     useCdn: false,
+    ...hostConfig,
     perspective: "published",
     token,
   });

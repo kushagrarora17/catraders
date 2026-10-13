@@ -53,6 +53,54 @@ jobs:
       - run: bun run test
       - run: bun run build
 
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: catraders
+          POSTGRES_PASSWORD: catraders
+          POSTGRES_DB: catraders
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U catraders -d catraders"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://catraders:catraders@localhost:5432/catraders
+      E2E_DATABASE_URL: postgres://catraders:catraders@localhost:5432/catraders
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run db:migrate
+
+      # Builds the app with coverage instrumentation against the mock Sanity API, runs the
+      # Playwright specs, then fails if line coverage of src/ is under the threshold.
+      - run: bun run test:e2e
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: e2e-report
+          path: |
+            coverage/e2e
+            playwright-report
+            test-results
+          retention-days: 14
+
   studio:
     runs-on: ubuntu-latest
     defaults:

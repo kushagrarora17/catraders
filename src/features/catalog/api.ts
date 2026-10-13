@@ -2,7 +2,6 @@ import "server-only";
 import { client } from "@/sanity/client";
 import type {
   CATEGORY_BY_SLUG_QUERY_RESULT,
-  CATEGORY_TREE_QUERY_RESULT,
   FACETS_QUERY_RESULT,
   PRODUCT_AVAILABILITY_QUERY_RESULT,
   PRODUCT_BY_SLUG_QUERY_RESULT,
@@ -13,7 +12,6 @@ import type {
 import { type CatalogFilters, toAttributeFilter, toBaseParams } from "./filters";
 import {
   CATEGORY_BY_SLUG_QUERY,
-  CATEGORY_TREE_QUERY,
   FACETS_QUERY,
   PRODUCT_AVAILABILITY_QUERY,
   PRODUCT_BY_SLUG_QUERY,
@@ -31,10 +29,6 @@ function cachedFetch<T>(query: string, params: Record<string, unknown> = {}) {
     cache: "force-cache",
     next: { tags: [CATALOG_TAG] },
   });
-}
-
-export function getCategoryTree() {
-  return cachedFetch<CATEGORY_TREE_QUERY_RESULT>(CATEGORY_TREE_QUERY);
 }
 
 export function getCategory(slug: string) {
