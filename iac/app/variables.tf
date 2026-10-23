@@ -194,3 +194,15 @@ variable "site_url" {
   type        = string
   default     = null
 }
+
+variable "custom_domain" {
+  description = "Apex domain to bind to the web app (e.g. caelitelube.com). Needs the cloudflare-origin certificate in Key Vault first; see ../README.md."
+  type        = string
+  default     = null
+}
+
+variable "app_service_rp_object_id" {
+  description = "Object ID of the Microsoft Azure App Service service principal in this tenant (az ad sp show --id abfa0a7c-a6b6-4736-8310-5855508787cd --query id -o tsv). It reads the origin certificate from Key Vault."
+  type        = string
+  default     = null
+}

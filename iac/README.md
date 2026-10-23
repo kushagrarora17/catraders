@@ -122,6 +122,7 @@ DATABASE_URL="$(terraform -chdir=iac/app output -raw database_url_command | sh)"
 | Rotate the webhook secret | Bump `sanity_webhook_secret_version`, apply, update the secret in Sanity, then restart the web app. |
 | Scale up | Change `app_service_sku` (e.g. `P0v3`) or `postgres_sku` (e.g. `GP_Standard_D2ds_v5`). |
 | Use a custom email domain | Switch `domain_management` to `CustomerManaged` in `email.tf` and add the DNS records from `verification_records`. |
+| Use a custom domain | Proxy the apex through Cloudflare (SSL mode Full (strict)). Set `app_service_rp_object_id` and apply, issue a Cloudflare Origin CA certificate and import it into Key Vault as `cloudflare-origin` (`az keyvault certificate import`), then set `custom_domain` and `site_url` and apply again. Set the repo variable `SITE_URL` so the next deploy bakes it into the sitemap. DNS: `asuid` TXT from `customDomainVerificationId`, proxied CNAMEs for `@` and `www`. |
 | Another environment | Use a separate state `key` in `backend.hcl` and set `environment = "staging"`. |
 
 To tear the environment down, first remove `prevent_destroy` from the Postgres server in `database.tf`, then run `terraform destroy`.

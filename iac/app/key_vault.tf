@@ -113,3 +113,19 @@ resource "azurerm_key_vault_secret" "sanity_write_token" {
 
   depends_on = [time_sleep.key_vault_rbac]
 }
+
+# Import the origin certificate from the CLI (az keyvault certificate import).
+resource "azurerm_role_assignment" "key_vault_deployer_certificates" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Certificates Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+# App Service itself (not the web app's identity) reads the certificate secret to bind it.
+resource "azurerm_role_assignment" "key_vault_app_service_rp" {
+  count                = var.app_service_rp_object_id == null ? 0 : 1
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = var.app_service_rp_object_id
+  principal_type       = "ServicePrincipal"
+}
