@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
+import Script from "next/script";
 import { BUSINESS_NAME } from "@/features/site/contact";
 import { getSiteUrl } from "@/features/site/url";
 import "./globals.css";
@@ -15,6 +16,8 @@ const barlowCondensed = Barlow_Condensed({
   subsets: ["latin"],
   weight: ["500", "600", "700", "800", "900"],
 });
+
+const GA_MEASUREMENT_ID = "G-WDCX7J1BHG";
 
 const description =
   "Wholesale automotive lubricants, fluids, filters and shop supplies for mechanics, auto shops and dealerships across Southwestern Ontario — Windsor, London, Kitchener-Waterloo and everywhere between. Mobil, Castrol, Liqui Moly, Lucas and more at mechanic pricing.";
@@ -47,7 +50,16 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en-CA" className={`${barlow.variable} ${barlowCondensed.variable} h-full`}>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
+        <Script id="google-tag" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_MEASUREMENT_ID}');`}
+        </Script>
+      </body>
     </html>
   );
 }
