@@ -220,6 +220,8 @@ GitHub Actions:
 
   Deploy runs for CI on this repository's `main` (a push, or the Dependabot follow-up dispatch) and for a manual run of `refs/heads/main`. Fork pull-request CI never reaches the deploy job, including a fork branch named `main`.
 
+- **`.github/workflows/postgres-firewall-drift.yml`** runs daily and on demand. It compares the web app's possible outbound IPs with the Postgres `webapp-*` firewall rules and fails if they differ. It only reads. See [iac/README.md](iac/README.md).
+
 **Database migrations** run automatically on every deploy, after the image is built and before it is released:
 
 1. The workflow reads the admin `DATABASE_URL` from Key Vault secret `database-url` (the deploy identity can read only that secret, not `database-url-app`) and opens a temporary Postgres firewall rule for the runner's IP.

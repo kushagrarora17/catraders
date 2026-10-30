@@ -152,12 +152,38 @@ To roll the lockdown back: point `DATABASE_URL` at the `database-url` reference 
 | Rotate the admin DB password | Bump `postgres_password_version`, then `terraform apply`. The server and the `database-url` secret (migrations) change together. The web app keeps using `database-url-app`. |
 | Rotate the app DB password | `ALTER ROLE catraders_app PASSWORD '...'`, then `az keyvault secret set` on `database-url-app` with the new URL, then restart the web app. Terraform ignores that secret's value, so the next apply leaves it. |
 | Rotate the webhook secret | Bump `sanity_webhook_secret_version`, apply, update the secret in Sanity, then restart the web app. |
-| Scale up | Change `app_service_sku` (e.g. `P0v3`) or `postgres_sku` (e.g. `GP_Standard_D2ds_v5`). |
+| Scale up | Change `app_service_sku` (e.g. `P0v3`) or `postgres_sku` (e.g. `GP_Standard_D2ds_v5`). An App Service SKU or tier change can move the scale unit and replace the outbound IPs; update the firewall in the same apply (see below). |
+| Outbound IPs changed | The app cannot reach Postgres until the `webapp-*` rules match. See [Postgres firewall](#postgres-firewall). |
 | Use a custom email domain | Switch `domain_management` to `CustomerManaged` in `email.tf` and add the DNS records from `verification_records`. |
 | Use a custom domain | Proxy the apex through Cloudflare (SSL mode Full (strict)). Set `app_service_rp_object_id` and apply, issue a Cloudflare Origin CA certificate and import it into Key Vault as `cloudflare-origin` (`az keyvault certificate import`), then set `custom_domain` and `site_url` and apply again. Set the repo variable `SITE_URL` so the next deploy bakes it into the sitemap. DNS: `asuid` TXT from `customDomainVerificationId`, proxied CNAMEs for `@` and `www`. |
 | Another environment | Use a separate state `key` in `backend.hcl` and set `environment = "staging"`. |
 
 To tear the environment down, first remove `prevent_destroy` from the Postgres server in `database.tf`, then run `terraform destroy`.
+
+## Postgres firewall
+
+The app is allowed to reach Postgres only through the App Service's possible outbound addresses. Terraform keeps one rule per address, named `webapp-<ip>` with the dots turned into hyphens (`20.1.2.3` is `webapp-20-1-2-3`). That list is `possibleOutboundIpAddresses` on the web app (`possible_outbound_ip_address_list` in `database.tf`). Production currently has **31** of those rules. The 0.0.0.0 "allow Azure services" rule stays off. The only other holes are `postgres_allowed_ip_ranges` and the deploy workflow's short-lived `github-runner-*` rules.
+
+Those addresses belong to the App Service scale unit. Changing the plan SKU or tier, or a platform move onto another scale unit, replaces the list. The new addresses are not in the firewall, and the app loses Postgres: pages that write RFQs or inquiries fail until the rules catch up.
+
+Recovery:
+
+1. From `iac/app`, run `terraform apply`. The `webapp-*` rules are generated from the web app's current possible outbound IPs, so apply adds the new ones and removes managed rules for addresses that are gone. Apply is manual; CI does not apply Terraform.
+2. Or add each missing address with the same name, then apply when you can so state matches:
+
+```bash
+az postgres flexible-server firewall-rule create \
+  -g "$AZURE_RESOURCE_GROUP" -s "$AZURE_POSTGRES_SERVER" \
+  -n "webapp-${IP//./-}" --start-ip-address "$IP" --end-ip-address "$IP"
+```
+
+Do not turn the 0.0.0.0 rule back on to get the site up. That allows every Azure customer.
+
+The deploy workflow's `github-runner-*` rules are separate. For each migration it opens one rule for that runner's IP and deletes it afterwards. They are not a substitute for the `webapp-*` rules, and Terraform does not manage them.
+
+`.github/workflows/postgres-firewall-drift.yml` runs every day at 13:17 UTC, and from the Actions tab by hand. It compares `az webapp show --query possibleOutboundIpAddresses` with the live `webapp-*` rules and fails if any IP is missing or extra. The log and the job summary list both sets. `github-runner-*` rules are ignored. The job only reads.
+
+The deploy identity can already read both sides, so this workflow grants nothing. Reader on the resource group covers `Microsoft.Web/sites/read`. The custom role `catraders-prod Postgres firewall rule manager` covers `Microsoft.DBforPostgreSQL/flexibleServers/firewallRules/read` (and read on the server). If a run fails with `AuthorizationFailed`, the log names which of those roles to assign.
 
 ## Notes
 
