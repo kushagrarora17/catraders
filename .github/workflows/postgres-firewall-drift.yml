@@ -1,0 +1,39 @@
+name: Postgres firewall drift
+
+# Read-only check. The App Service's possible outbound IPs must each have a
+# webapp-<ip> Postgres firewall rule. A SKU change or a scale-unit move can
+# replace those IPs and cut the app off from the database. This job only
+# compares the two lists. It does not change rules and does not grant roles.
+# Schedule runs from the default branch only. Run it by hand with workflow_dispatch.
+on:
+  schedule:
+    - cron: "17 13 * * *"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  check:
+    if: vars.AZURE_WEBAPP_NAME != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The deploy identity's federated credential requires this environment.
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Log in to Azure (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Compare possible outbound IPs with webapp-* firewall rules
+        env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+          AZURE_POSTGRES_SERVER: ${{ vars.AZURE_POSTGRES_SERVER }}
+        run: bash .github/scripts/postgres-firewall-drift.sh
