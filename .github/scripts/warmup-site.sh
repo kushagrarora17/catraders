@@ -123,10 +123,12 @@ discover_category_from_sitemap() {
 }
 
 # First /products?category=... href in an HTML body.
+# -m stops after one matching line, and the homepage is a single line, so -m 1
+# would return every category link. head keeps exactly one.
 discover_category_href() {
   local file=$1
   local href
-  href=$(grep -oE -m 1 '/products\?category=[A-Za-z0-9._~%-]+' "$file" || true)
+  href=$(grep -oE '/products\?category=[A-Za-z0-9._~%-]+' "$file" | head -n 1 || true)
   if [ -z "$href" ]; then
     return 1
   fi

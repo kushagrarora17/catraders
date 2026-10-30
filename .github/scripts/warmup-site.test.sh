@@ -175,6 +175,22 @@ grep -F "warmup discovered category=$ORIGIN/products?category=from-sitemap" <<<"
 grep -F 'from-home' <<<"$got" >/dev/null && fail "$name should not use the homepage category"
 PASS=$((PASS + 1))
 
+name="one homepage line with several category links yields a single URL"
+new_case
+one_line='<a href="/products?category=engine-oils">A</a><a href="/products?category=coolants">B</a><a href="/products?category=filters">C</a>'
+put "$ORIGIN/api/health" 200 0.1
+put "$ORIGIN/" 200 0.2 "$one_line"
+put "$ORIGIN/products" 200 0.2
+put "$ORIGIN/sitemap.xml" 200 0.2 "$(sitemap_body)"
+put "$ORIGIN/products/castrol-edge-5w30-4l" 200 0.2
+put "$ORIGIN/products?category=engine-oils" 200 0.2
+got=$(run_script 0)
+line=$(grep -F "warmup discovered category=" <<<"$got")
+[ "$line" = "warmup discovered category=$ORIGIN/products?category=engine-oils" ] || fail "$name got: $line"
+grep -F 'category=coolants' "$FIXTURE/calls" >/dev/null && fail "$name requested a second category"
+grep -F 'category=filters' "$FIXTURE/calls" >/dev/null && fail "$name requested a third category"
+PASS=$((PASS + 1))
+
 name="category is taken from the homepage when the sitemap has none"
 new_case
 put "$ORIGIN/api/health" 200 0.1

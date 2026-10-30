@@ -43,9 +43,9 @@ resource "azurerm_linux_web_app" "main" {
   }
 
   site_config {
-    # B1, one worker, no slots. Always On and this health check are what keep
-    # that worker from idling; leave both set. (F1 cannot enable Always On.)
-    always_on                               = true
+    # B1, one worker, no slots. Always On (unavailable on F1) and this health
+    # check keep that worker from idling.
+    always_on                               = var.app_service_sku != "F1"
     ftps_state                              = "Disabled"
     http2_enabled                           = true
     minimum_tls_version                     = "1.2"
