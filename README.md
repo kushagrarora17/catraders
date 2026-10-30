@@ -136,7 +136,7 @@ The web app reads Sanity on the server only, so no CORS origin is needed for it.
 | `MCP_JWT_SECRET` | for MCP | At least 32 characters; signs MCP access tokens |
 | `SANITY_API_WRITE_TOKEN` | for MCP | Sanity **Editor** token; the MCP catalog and review tools fail without it |
 
-In Azure, Terraform (`iac/app`) sets these as App Settings. The secrets are Key Vault references, e.g. `@Microsoft.KeyVault(SecretUri=https://<vault>.vault.azure.net/secrets/database-url)`, which the web app's managed identity resolves.
+In Azure, Terraform (`iac/app`) sets these as App Settings. The secrets are Key Vault references. The web app's `DATABASE_URL` is `@Microsoft.KeyVault(SecretUri=https://<vault>.vault.azure.net/secrets/database-url-app)` (role `catraders_app`). Migrations use the admin secret `database-url`. The web app's managed identity resolves the references.
 
 ## Caching and revalidation
 
@@ -218,7 +218,7 @@ GitHub Actions:
 
 **Database migrations** run automatically on every deploy, after the image is built and before it is released:
 
-1. The workflow reads `DATABASE_URL` from Key Vault (the deploy identity can read only that secret) and opens a temporary Postgres firewall rule for the runner's IP.
+1. The workflow reads the admin `DATABASE_URL` from Key Vault secret `database-url` (the deploy identity can read only that secret, not `database-url-app`) and opens a temporary Postgres firewall rule for the runner's IP.
 2. `bun run db:migrate` applies pending migrations from `drizzle/`. It retries the first connection for up to five minutes while Azure applies the rule.
 3. The rule is removed again, even if the migration failed or the run was cancelled. A rule left behind by a hard-killed run is swept at the start of the next one.
 4. Only if all of that succeeded does the deploy step run. A failed migration leaves the running site untouched.

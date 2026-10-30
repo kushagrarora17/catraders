@@ -43,7 +43,8 @@ output "github_actions_variables" {
     AZURE_WEBAPP_NAME    = azurerm_linux_web_app.main.name
     ACR_NAME             = azurerm_container_registry.main.name
     ACR_LOGIN_SERVER     = azurerm_container_registry.main.login_server
-    # Used by the deploy workflow to run database migrations.
+    # Used by the deploy workflow to run database migrations as the admin role.
+    # This must stay database-url, not database-url-app (the app role cannot DDL).
     AZURE_POSTGRES_SERVER     = azurerm_postgresql_flexible_server.main.name
     AZURE_KEY_VAULT_NAME      = azurerm_key_vault.main.name
     AZURE_DATABASE_URL_SECRET = azurerm_key_vault_secret.database_url.name
@@ -59,8 +60,13 @@ output "sanity_webhook" {
 }
 
 output "database_url_command" {
-  description = "Prints DATABASE_URL (for running migrations from an allowed IP)."
+  description = "Prints the admin DATABASE_URL (catraders_admin) for running migrations from an allowed IP."
   value       = "az keyvault secret show --vault-name ${azurerm_key_vault.main.name} --name ${azurerm_key_vault_secret.database_url.name} --query value -o tsv"
+}
+
+output "database_url_app_secret_name" {
+  description = "Key Vault secret the web app reads (catraders_app). Terraform ignores its value; set it out of band. See iac/README.md."
+  value       = azurerm_key_vault_secret.database_url_app.name
 }
 
 output "mcp" {

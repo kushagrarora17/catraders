@@ -124,19 +124,19 @@ variable "postgres_backup_retention_days" {
 }
 
 variable "postgres_password_version" {
-  description = "Bump to rotate the admin password; the server and the DATABASE_URL secret are updated together."
+  description = "Bump to rotate the admin password. The server and the database-url secret (migrations) update together. The web app uses database-url-app and is not rotated by this."
   type        = number
   default     = 1
 }
 
 variable "postgres_allow_azure_services" {
-  description = "Allow connections from Azure services (needed by App Service without VNet integration)."
+  description = "Create the 0.0.0.0 firewall rule that allows every Azure service. Leave false: the web app is allowed by its possible outbound IPs instead. Turning this on admits any client hosted in Azure."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "postgres_allowed_ip_ranges" {
-  description = "Extra client IP ranges allowed through the Postgres firewall, e.g. for running migrations."
+  description = "Extra client IP ranges allowed through the Postgres firewall, besides the web app's possible outbound IPs. For running migrations by hand. Deploy-workflow github-runner-* rules are temporary and are not listed here."
   type = map(object({
     start_ip_address = string
     end_ip_address   = string
