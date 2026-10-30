@@ -15,7 +15,7 @@ Everything is in **Central US** by default. The subscription can't create Postgr
 | --- | --- |
 | Resource group `rg-catraders-prod` | |
 | Container Registry (Basic) | Admin user disabled. The web app pulls with its managed identity (`AcrPull`). |
-| App Service plan (Linux, B1) + Web App for Containers | System-assigned identity, HTTPS only, TLS 1.2, FTP/basic publishing off, health check `/api/health`, `WEBSITES_PORT=3000` |
+| App Service plan (Linux, B1) + Web App for Containers | System-assigned identity, HTTPS only, TLS 1.2, FTP/basic publishing off, Always On, health check and warmup `/api/health`, container start limit 300s, `WEBSITES_PORT=3000` |
 | PostgreSQL Flexible Server 17 (B1ms, 32 GB) + database `catraders` | Public access with a firewall: one rule per address in the web app's `possible_outbound_ip_address_list`, plus any `postgres_allowed_ip_ranges`. The 0.0.0.0 "allow Azure services" rule stays off unless `postgres_allow_azure_services` is set. TLS required. `prevent_destroy` is on. |
 | Key Vault (RBAC) | Holds `database-url` (admin, migrations), `database-url-app` (the `catraders_app` role the web app uses), `sanity-webhook-secret` and `acs-connection-string`. The web app reads them through `@Microsoft.KeyVault(...)` app-setting references. |
 | Communication Services + Email (Azure-managed domain) | The sender is `DoNotReply@<id>.azurecomm.net` |

@@ -43,6 +43,8 @@ resource "azurerm_linux_web_app" "main" {
   }
 
   site_config {
+    # B1, one worker, no slots. Always On (unavailable on F1) and this health
+    # check keep that worker from idling.
     always_on                               = var.app_service_sku != "F1"
     ftps_state                              = "Disabled"
     http2_enabled                           = true
@@ -61,6 +63,11 @@ resource "azurerm_linux_web_app" "main" {
   app_settings = merge(local.sanity_write_token_setting, {
     WEBSITES_PORT                       = "3000"
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
+    # Ask the platform to request /api/health before the container is given
+    # traffic, and wait a bit longer than the 230s default so a cold Next.js
+    # boot can finish that request. The deploy workflow then loads the real pages.
+    WEBSITE_WARMUP_PATH                 = "/api/health"
+    WEBSITES_CONTAINER_START_TIME_LIMIT = "300"
 
     SANITY_PROJECT_ID     = var.sanity_project_id
     SANITY_DATASET        = var.sanity_dataset
