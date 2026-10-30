@@ -227,6 +227,8 @@ GitHub Actions:
 3. The rule is removed again, even if the migration failed or the run was cancelled. A rule left behind by a hard-killed run is swept at the start of the next one.
 4. Only if all of that succeeded does the deploy step run. A failed migration leaves the running site untouched.
 
+After the image is deployed, the workflow requests `https://caelitelube.com/` (`/api/health`, the homepage, `/products`, one category page, and one product page from the sitemap) until each returns 200 in under 3 seconds. A page that stays slower than that does not fail the deploy; a page that never returns 200 does. Always On, the health check path, and `WEBSITE_WARMUP_PATH` are set in Terraform, which is applied by hand, not by CI.
+
 Rules for writing migrations: they are forward-only and there is no automatic rollback. The previous release keeps serving until the deploy step finishes, so make each migration compatible with the code that is still running (add columns and tables first, remove or rename in a later release). Create them with `bun run db:generate` and commit the result; CI fails if `schema.ts` changed without one. Never edit a migration that has already been applied.
 
 To run migrations by hand (for example to recover a failed deploy), add your IP to `postgres_allowed_ip_ranges`, then from the repo root:
