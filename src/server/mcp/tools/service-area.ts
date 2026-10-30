@@ -78,12 +78,12 @@ export function registerServiceAreaTools(server: McpServer) {
           return fail("No service area exists yet: pass region, description and cities to create it");
         }
         await client.create({ _id: SERVICE_AREA_ID, _type: "serviceArea", vertical: "automotive", ...fields });
-        revalidateServiceArea();
+        await revalidateServiceArea();
         return ok({ created: true, updated: Object.keys(fields) });
       }
 
       await client.patch(existing._id).set(fields).commit();
-      revalidateServiceArea();
+      await revalidateServiceArea();
       return ok({ created: false, updated: Object.keys(fields) });
     },
   );

@@ -85,7 +85,7 @@ export function registerCatalogWriteTools(server: McpServer) {
           images,
         }),
       );
-      revalidateCatalog();
+      await revalidateCatalog();
 
       return ok({
         id,
@@ -161,7 +161,7 @@ export function registerCatalogWriteTools(server: McpServer) {
         transaction = transaction.setIfMissing({ images: [] }).insert("after", "images[-1]", images);
       }
       await transaction.commit();
-      revalidateCatalog();
+      await revalidateCatalog();
 
       return ok({
         id: ref.baseId,
@@ -208,7 +208,7 @@ export function registerCatalogWriteTools(server: McpServer) {
         const transaction = getWriteClient().transaction();
         for (const product of changing) transaction.patch(product.docId, { set: { inStock } });
         await transaction.commit();
-        revalidateCatalog();
+        await revalidateCatalog();
       }
 
       return ok({
@@ -274,8 +274,8 @@ export function registerCatalogWriteTools(server: McpServer) {
         transaction.delete(id);
       }
       await transaction.commit();
-      if (type === "product") revalidateCatalog();
-      else revalidateReviews();
+      if (type === "product") await revalidateCatalog();
+      else await revalidateReviews();
 
       return ok({ id, visible, changed: true });
     },
