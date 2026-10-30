@@ -2,7 +2,15 @@ name: CI
 
 on:
   pull_request:
+  # expected_sha is set when Dependabot auto-merge dispatches CI for the squash
+  # commit. workflow_dispatch resolves the ref when the run is created; a mismatch
+  # has to fail this workflow so deploy will not release a different SHA.
   workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Commit this run must check out. Set by Dependabot auto-merge.
+        required: false
+        type: string
   push:
     branches:
       - main
@@ -162,6 +170,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Test workflow guard scripts
+        run: |
+          bash .github/scripts/dispatch-ci-after-automerge.test.sh
+          bash .github/scripts/resolve-deploy-sha.test.sh
+
       - name: Lint workflows
         run: |
           bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
@@ -208,6 +221,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
+      - name: Fail unless this is the commit Dependabot dispatched
+        if: github.event_name == 'workflow_dispatch' && inputs.expected_sha != ''
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "$EXPECTED_SHA" ]; then
+            echo "No expected_sha; nothing to pin."
+            exit 0
+          fi
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "::error::expected_sha is not a 40-character commit SHA"
+            exit 1
+          fi
+          expected=$(printf '%s' "$EXPECTED_SHA" | tr '[:upper:]' '[:lower:]')
+          actual=$(printf '%s' "$GITHUB_SHA" | tr '[:upper:]' '[:lower:]')
+          if [ "$expected" != "$actual" ]; then
+            echo "::error::This run checked out $actual but Dependabot auto-merge asked for $expected"
+            exit 1
+          fi
+          echo "CI is running on the auto-merged commit $actual"
+
       - name: Fail unless every job passed or was skipped
         env:
           NEEDS: ${{ toJSON(needs) }}
