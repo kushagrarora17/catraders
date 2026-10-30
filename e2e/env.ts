@@ -15,6 +15,8 @@ export const appEnv: Record<string, string> = {
   NODE_ENV: "production",
   NEXT_TELEMETRY_DISABLED: "1",
   E2E_COVERAGE: "1",
+  // next start -p uses this same port. MCP cache flushes call back to it.
+  PORT: String(APP_PORT),
   SITE_URL,
   // Deliberately not DATABASE_URL, which may come from .env.local and point somewhere real.
   DATABASE_URL: process.env.E2E_DATABASE_URL ?? "postgres://catraders:catraders@localhost:5432/catraders",

@@ -46,7 +46,7 @@ export function registerTaxonomyWriteTools(server: McpServer) {
         if (parentCategory) patch = patch.set({ parent: { _type: "reference", _ref: parentCategory._id } });
         if (sortOrder !== undefined) patch = patch.set({ sortOrder });
         await patch.commit();
-        revalidateCatalog();
+        await revalidateCatalog();
         return ok({ id: existing._id, slug: categorySlug, created: false });
       }
 
@@ -59,7 +59,7 @@ export function registerTaxonomyWriteTools(server: McpServer) {
         ...(parentCategory ? { parent: { _type: "reference", _ref: parentCategory._id } } : {}),
         ...(sortOrder !== undefined ? { sortOrder } : {}),
       });
-      revalidateCatalog();
+      await revalidateCatalog();
       return ok({ id: created._id, slug: categorySlug, created: true });
     },
   );
@@ -94,7 +94,7 @@ export function registerTaxonomyWriteTools(server: McpServer) {
         if (allowMultiple !== undefined) set.allowMultiple = allowMultiple;
         if (sortOrder !== undefined) set.sortOrder = sortOrder;
         await client.patch(existing._id).set(set).commit();
-        revalidateCatalog();
+        await revalidateCatalog();
         return ok({ id: existing._id, slug: attributeSlug, created: false });
       }
 
@@ -107,7 +107,7 @@ export function registerTaxonomyWriteTools(server: McpServer) {
         allowMultiple: allowMultiple ?? false,
         ...(sortOrder !== undefined ? { sortOrder } : {}),
       });
-      revalidateCatalog();
+      await revalidateCatalog();
       return ok({ id: created._id, slug: attributeSlug, created: true });
     },
   );
@@ -142,7 +142,7 @@ export function registerTaxonomyWriteTools(server: McpServer) {
         const set: Record<string, unknown> = { label };
         if (sortOrder !== undefined) set.sortOrder = sortOrder;
         await client.patch(existing._id).set(set).commit();
-        revalidateCatalog();
+        await revalidateCatalog();
         return ok({ id: existing._id, attribute, slug: valueSlug, created: false });
       }
 
@@ -153,7 +153,7 @@ export function registerTaxonomyWriteTools(server: McpServer) {
         slug: slugRef(valueSlug),
         ...(sortOrder !== undefined ? { sortOrder } : {}),
       });
-      revalidateCatalog();
+      await revalidateCatalog();
       return ok({ id: created._id, attribute, slug: valueSlug, created: true });
     },
   );
