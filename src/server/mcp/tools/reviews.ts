@@ -58,7 +58,7 @@ export function registerReviewTools(server: McpServer) {
           rating: 5,
           ...fields,
         });
-        revalidateReviews();
+        await revalidateReviews();
         return ok({ id: created._id, created: true });
       }
 
@@ -74,7 +74,7 @@ export function registerReviewTools(server: McpServer) {
       if (!Object.keys(fields).length) return fail("Nothing to update: pass at least one field to change");
 
       await client.patch(existing._id).set(fields).commit();
-      revalidateReviews();
+      await revalidateReviews();
       return ok({ id: published, created: false, visible: !!live });
     },
   );

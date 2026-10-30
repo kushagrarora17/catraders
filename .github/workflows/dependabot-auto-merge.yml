@@ -1,17 +1,31 @@
 name: Dependabot auto-merge
 
-# Enables auto-merge on Dependabot PRs; GitHub merges them only once the ci-ok check passes.
-on: pull_request
+# Enables auto-merge on Dependabot patch and minor PRs. GitHub squash-merges them
+# once ci-ok passes, as github-actions[bot], using this workflow's GITHUB_TOKEN.
+# Pushes from that token do not start other workflows, so CI on main (and therefore
+# the deploy workflow, which waits for CI) never runs for the merge commit.
+#
+# workflow_run is not subject to that limit. After the pull request's CI succeeds,
+# dispatch-ci waits for the squash commit and starts CI on that SHA via
+# workflow_dispatch, which GITHUB_TOKEN is allowed to start. Deploy then releases
+# the commit that run validated.
 
-permissions:
-  contents: write
-  pull-requests: write
+on:
+  pull_request:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions: {}
 
 jobs:
   auto-merge:
-    if: github.actor == 'dependabot[bot]'
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - id: meta
         uses: dependabot/fetch-metadata@v2
@@ -21,3 +35,39 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dispatch-ci:
+    # Only a successful pull_request CI run from this repo's Dependabot branch.
+    # Push and workflow_dispatch CI on main must not dispatch another run, or a
+    # human merge would be tested and deployed twice. Fork PRs are excluded by
+    # the repository check: a branch named dependabot/* on a fork is not merged.
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: dependabot-dispatch-${{ github.event.workflow_run.head_sha }}
+      cancel-in-progress: false
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
+    steps:
+      # Default-branch workflow file, default-branch script. Never the PR head.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Dispatch CI for the auto-merge commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: bash .github/scripts/dispatch-ci-after-automerge.sh

@@ -130,7 +130,7 @@ export function registerImportTool(server: McpServer) {
       let written = 0;
       if (!dryRun) {
         written = await applyPlan(plan);
-        if (written) revalidateCatalog();
+        if (written) await revalidateCatalog();
       }
 
       const shown = plan.rows.filter((r) => r.action !== "unchanged");
