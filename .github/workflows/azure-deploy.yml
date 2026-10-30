@@ -3,6 +3,12 @@ name: Deploy Next.js Automotive App to Azure
 # Deploys main only after CI has passed for that commit. Authenticates with
 # GitHub OIDC (no stored secrets); infrastructure comes from iac/app.
 #
+# A push to main starts CI, and this workflow runs from that CI run's workflow_run.
+# Dependabot auto-merge pushes with GITHUB_TOKEN, which does not start CI; the
+# auto-merge workflow dispatches CI for the squash SHA instead. That run's event
+# is workflow_dispatch, and it is deployed the same way. There is no push trigger
+# here, so a human merge does not deploy once from the push and again from CI.
+#
 # Order: build and push the image (no side effects) -> run database migrations -> deploy.
 # A failed migration stops the run before the site is touched. Migrations are forward-only, so
 # write them to stay compatible with the previous release, which keeps serving until the deploy.
@@ -11,10 +17,10 @@ on:
     workflows: [CI]
     types: [completed]
     branches: [main]
+  # Run workflow on this file to redeploy the current tip of main.
   workflow_dispatch:
 
 permissions:
-  id-token: write
   contents: read
 
 concurrency:
@@ -22,28 +28,67 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  resolve-sha:
     # Skipped until the repository variables from `terraform output github_actions_variables` are set
     # (secrets can't be read in job-level `if`, so the gate uses a variable).
-    # For workflow_run, only deploy CI runs triggered by a push to this repo: the `branches`
-    # filter matches branch *names*, so a fork PR from a branch called "main" would otherwise
-    # get this job to build and deploy untrusted code with the Azure identity.
+    # The `branches` filter matches branch names, so a fork PR from a branch called "main" starts
+    # this workflow; pull_request CI is not in the event list, so it never takes the Azure identity.
+    # Manual runs have to target main. Dispatched CI is accepted only for this repository.
     if: >-
       vars.AZURE_WEBAPP_NAME != '' &&
-      (github.event_name == 'workflow_dispatch' ||
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
        (github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.event == 'push' &&
-        github.event.workflow_run.head_repository.full_name == github.repository))
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        (github.event.workflow_run.event == 'push' ||
+         github.event.workflow_run.event == 'workflow_dispatch')))
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.pick.outputs.sha }}
+    steps:
+      # workflow_run loads this file from the default branch. Check that commit out
+      # so the guard script matches the workflow, not an older CI SHA.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Resolve the commit CI validated
+        id: pick
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! sha=$(bash .github/scripts/resolve-deploy-sha.sh); then
+            echo "::error::Could not resolve the deploy SHA"
+            exit 1
+          fi
+          if [ -n "$sha" ]; then
+            echo "sha=$sha" >> "$GITHUB_OUTPUT"
+            echo "Deploying $sha"
+          fi
+
+  build-and-deploy:
+    needs: resolve-sha
+    if: needs.resolve-sha.result == 'success' && needs.resolve-sha.outputs.sha != ''
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     # Must match the federated credential subject in iac/app/github.tf.
     environment: production
     env:
-      IMAGE: ${{ vars.ACR_LOGIN_SERVER }}/automotive-site:${{ github.event.workflow_run.head_sha || github.sha }}
+      IMAGE: ${{ vars.ACR_LOGIN_SERVER }}/automotive-site:${{ needs.resolve-sha.outputs.sha }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ needs.resolve-sha.outputs.sha }}
 
       # Installed before the Azure login so install scripts never run with Azure credentials.
       - uses: actions/setup-node@v7

@@ -202,19 +202,23 @@ Azure infrastructure is defined in Terraform under [`iac/`](iac). It covers App 
 
 GitHub Actions:
 
-- **`.github/workflows/ci.yml`** runs on PRs and pushes to `main`:
+- **`.github/workflows/ci.yml`** runs on pull requests, on pushes to `main`, and on `workflow_dispatch`:
   - lint, typecheck, migrations and tests against a Postgres service, then the build;
   - a check that `src/server/db/schema.ts` and the committed migrations agree, so a schema change can't merge without its migration;
   - Studio schema validation, the Studio build, and a check that the committed TypeGen output is current;
   - `terraform fmt` and `validate` for both IaC stacks.
-- **`.github/workflows/azure-deploy.yml`** runs after CI passes on `main`. It logs in to Azure with **OIDC** (no stored secrets), builds the image and pushes it to ACR, **applies pending database migrations**, and only then deploys the image to the Web App.
+- **`.github/workflows/azure-deploy.yml`** releases `main` after CI has passed for that commit. It logs in to Azure with **OIDC** (no stored secrets), builds the image and pushes it to ACR, **applies pending database migrations**, and only then deploys the image. The image is tagged with the commit SHA CI validated, and the job checks that SHA out.
+
+  A push to `main` starts CI, and the successful run starts this workflow (`workflow_run`). Dependabot auto-merge squash-merges as `github-actions[bot]` with the workflow `GITHUB_TOKEN`. GitHub does not start `push` workflows for that token, so those commits were reaching `main` with no CI run and no deploy. After CI succeeds on the Dependabot pull request, `.github/workflows/dependabot-auto-merge.yml` dispatches CI for the squash commit (`workflow_dispatch`, which that token is allowed to start). Deploy accepts that run and releases the same SHA. An ordinary push is not deployed twice: it already starts CI, and the dispatch runs only when the merger was `github-actions` and that commit has no CI run yet. If `main` has moved on by the time deploy starts, the older SHA is skipped.
+
+  **Run workflow** on the deploy workflow redeploys the tip of `main` by hand.
 
   It needs two sets of values from Terraform (see [iac/README.md](iac/README.md)):
 
   - **`production` environment secrets:** `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. They're masked in the public logs.
   - **Repository variables:** `AZURE_RESOURCE_GROUP`, `AZURE_WEBAPP_NAME`, `ACR_NAME`, `ACR_LOGIN_SERVER`, plus `AZURE_POSTGRES_SERVER`, `AZURE_KEY_VAULT_NAME` and `AZURE_DATABASE_URL_SECRET` for migrations. The job is skipped until the first four are set, and fails with a clear message if the migration ones are missing.
 
-  Only pushes to this repository's `main` (or a manual run) can deploy. CI runs from fork pull requests never reach the deploy job.
+  Deploy runs for CI on this repository's `main` (a push, or the Dependabot follow-up dispatch) and for a manual run of `refs/heads/main`. Fork pull-request CI never reaches the deploy job, including a fork branch named `main`.
 
 **Database migrations** run automatically on every deploy, after the image is built and before it is released:
 
