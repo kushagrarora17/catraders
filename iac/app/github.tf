@@ -45,11 +45,12 @@ resource "azurerm_role_assignment" "github_resource_group_reader" {
 }
 
 # ── Database migrations from the deploy workflow ──────────────────────────
-# The workflow reads DATABASE_URL from Key Vault, opens a temporary Postgres firewall rule for
-# the runner's IP, runs `bun run db:migrate`, and removes the rule again. Both grants are scoped
-# as narrowly as Azure allows.
+# The workflow reads the admin DATABASE_URL (secret database-url) from Key Vault, opens a
+# temporary Postgres firewall rule for the runner's IP, runs `bun run db:migrate`, and removes
+# the rule again. Both grants are scoped as narrowly as Azure allows. The web app's
+# database-url-app secret is not readable by this identity; migrations stay on the admin role.
 
-# Read access to the single DATABASE_URL secret, not the whole vault.
+# Read access to the admin DATABASE_URL secret only, not the whole vault and not database-url-app.
 resource "azurerm_role_assignment" "github_database_url" {
   scope                = azurerm_key_vault_secret.database_url.resource_versionless_id
   role_definition_name = "Key Vault Secrets User"

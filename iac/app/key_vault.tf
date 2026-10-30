@@ -48,6 +48,29 @@ resource "azurerm_key_vault_secret" "database_url" {
   depends_on = [time_sleep.key_vault_rbac]
 }
 
+# Connection string for catraders_app (db/catraders_app.sql). The password is
+# chosen out of band — do not put it in configuration or in a TF_VAR.
+# `value` is only the placeholder used when Terraform itself creates the
+# secret. ignore_changes keeps a later apply from publishing a new version
+# over the URL written with `az keyvault secret set`.
+# value_wo is the wrong tool here: the provider writes it whenever
+# value_wo_version changes, and importing a secret that was created by hand
+# leaves that version unset, so the next apply would replace the real URL
+# with this placeholder. See iac/README.md for the set-then-import order.
+# The provider reads `value` back into state; the state account is RBAC-only.
+resource "azurerm_key_vault_secret" "database_url_app" {
+  name         = "database-url-app"
+  key_vault_id = azurerm_key_vault.main.id
+  content_type = "postgres connection string (catraders_app)"
+  value        = "unset"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+
+  depends_on = [time_sleep.key_vault_rbac]
+}
+
 # Shared with the Sanity GROQ webhook; read it with the command in the
 # `sanity_webhook` output.
 ephemeral "random_password" "sanity_webhook_secret" {
