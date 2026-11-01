@@ -1,6 +1,9 @@
 import { expect, test } from "../test";
+import { resetContent } from "../helpers";
 
 test.describe("landing page", () => {
+  test.beforeEach(async ({ request }) => resetContent(request));
+
   test("renders every section with CMS reviews and structured data", async ({ page }) => {
     await page.goto("/");
 
