@@ -30,6 +30,7 @@ function postRevalidate(tag: string): Promise<void> {
         port,
         path: REVALIDATE_PATH,
         method: "POST",
+        signal: AbortSignal.timeout(10_000),
         headers: {
           "content-type": "application/json",
           "content-length": Buffer.byteLength(body),
@@ -57,14 +58,24 @@ function postRevalidate(tag: string): Promise<void> {
   });
 }
 
-export function revalidateCatalog() {
-  return postRevalidate(CATALOG_TAG);
+export interface CacheResult { cacheWarning?: string }
+
+async function invalidate(tag: string): Promise<CacheResult> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await postRevalidate(tag);
+      return {};
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown";
+      const status = /failed \((\d+)\)/.exec(message)?.[1];
+      const category = status ? `http-${status}` : "transport-or-configuration";
+      console.warn("Cache invalidation failed", { tag, category });
+      if ((status && Number(status) < 500) || !process.env.SANITY_WEBHOOK_SECRET) break;
+    }
+  }
+  return { cacheWarning: "The write succeeded, but storefront data may be stale. Do not repeat the mutation." };
 }
 
-export function revalidateReviews() {
-  return postRevalidate(TESTIMONIALS_TAG);
-}
-
-export function revalidateServiceArea() {
-  return postRevalidate(SERVICE_AREA_TAG);
-}
+export function revalidateCatalog() { return invalidate(CATALOG_TAG); }
+export function revalidateReviews() { return invalidate(TESTIMONIALS_TAG); }
+export function revalidateServiceArea() { return invalidate(SERVICE_AREA_TAG); }

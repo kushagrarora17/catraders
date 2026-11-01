@@ -49,8 +49,8 @@ resource "azurerm_postgresql_flexible_server_database" "app" {
 
 # 0.0.0.0 is Azure's special "allow Azure services" rule. Leave it off
 # (postgres_allow_azure_services = false): it admits every Azure-hosted client.
-# Destroy it only after the web app's own rules exist, so an apply does not
-# open a gap where nothing can connect.
+# Migration requires two applies: retain this rule while adding and verifying
+# the app IP rules, then disable it. Dependencies do not order this destruction.
 resource "azurerm_postgresql_flexible_server_firewall_rule" "azure_services" {
   count            = var.postgres_allow_azure_services ? 1 : 0
   name             = "AllowAllAzureServicesAndResourcesWithinAzureIps"
@@ -58,7 +58,6 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "azure_services" {
   start_ip_address = "0.0.0.0"
   end_ip_address   = "0.0.0.0"
 
-  depends_on = [azurerm_postgresql_flexible_server_firewall_rule.web_app]
 }
 
 # App Service has no VNet integration, so each address it might egress from

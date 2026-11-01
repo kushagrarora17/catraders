@@ -85,9 +85,10 @@ export function registerCatalogWriteTools(server: McpServer) {
           images,
         }),
       );
-      await revalidateCatalog();
+      const cacheResult = await revalidateCatalog();
 
       return ok({
+        ...cacheResult,
         id,
         slug: productSlug,
         url: `${getSiteUrl()}/products/${productSlug}`,
@@ -161,9 +162,10 @@ export function registerCatalogWriteTools(server: McpServer) {
         transaction = transaction.setIfMissing({ images: [] }).insert("after", "images[-1]", images);
       }
       await transaction.commit();
-      await revalidateCatalog();
+      const cacheResult = await revalidateCatalog();
 
       return ok({
+        ...cacheResult,
         id: ref.baseId,
         updated: [...Object.keys(set), ...unset.map((field) => `${field} (removed)`), ...(images.length && !clearImages ? ["images (added)"] : [])],
         visible: !ref.hidden,
@@ -203,15 +205,17 @@ export function registerCatalogWriteTools(server: McpServer) {
         else notFound.push(id);
       }
 
+      let cacheResult = {};
       const changing = [...targets.values()].filter((p) => p.inStock !== inStock);
       if (changing.length) {
         const transaction = getWriteClient().transaction();
         for (const product of changing) transaction.patch(product.docId, { set: { inStock } });
         await transaction.commit();
-        await revalidateCatalog();
+        cacheResult = await revalidateCatalog();
       }
 
       return ok({
+        ...cacheResult,
         inStock,
         updated: changing.map((p) => ({ id: p.baseId, sku: p.sku, title: p.title })),
         alreadyInThatState: [...targets.values()].filter((p) => p.inStock === inStock).map((p) => p.sku ?? p.baseId),
@@ -274,10 +278,9 @@ export function registerCatalogWriteTools(server: McpServer) {
         transaction.delete(id);
       }
       await transaction.commit();
-      if (type === "product") await revalidateCatalog();
-      else await revalidateReviews();
+      const cacheResult = type === "product" ? await revalidateCatalog() : await revalidateReviews();
 
-      return ok({ id, visible, changed: true });
+      return ok({ ...cacheResult, id, visible, changed: true });
     },
   );
 }
