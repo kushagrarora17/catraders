@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLandingLinks } from "@/features/catalog/api";
 import { buttonVariants } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Eyebrow } from "@/components/ui/section-heading";
@@ -13,12 +14,13 @@ const STATS = [
 
 const CATEGORIES: { icon: IconName; title: string; brands: string; slug: string }[] = [
   { icon: "drop", title: "Engine Oils", slug: "engine-oils", brands: "Mobil · Castrol · Liqui Moly · Benzol · Quaker State" },
-  { icon: "gear", title: "ATF & Gear Oils", slug: "transmission-fluids", brands: "Mobil ATF · Castrol CVT · Lucas · Toyota WS" },
-  { icon: "thermometer", title: "Coolants & Refrigerants", slug: "coolants", brands: "Star Fire · Emzone · Duracool · R134a" },
-  { icon: "wrench", title: "Filters & Shop Supplies", slug: "filters", brands: "COYO Oil Filters · Cabin & Air Filters · Wiper Blades" },
+  { icon: "gear", title: "Transmission Fluids", slug: "transmission-fluids", brands: "Automatic · CVT · Manual Transmission Fluids" },
+  { icon: "thermometer", title: "Coolants", slug: "coolants", brands: "Ready-to-Use · Concentrates · OAT · HOAT" },
+  { icon: "wrench", title: "Filters", slug: "filters", brands: "Oil Filters · Cabin Filters · Engine Air Filters" },
 ];
 
-export function Hero() {
+export async function Hero() {
+  const links = await getLandingLinks();
   return (
     <section aria-labelledby="hero-title" className="relative isolate overflow-hidden bg-background">
       <div aria-hidden="true" className="absolute inset-0 -z-10 bg-grid" />
@@ -69,7 +71,7 @@ export function Hero() {
               className="motion-safe:animate-slide-in lg:even:ml-8"
             >
               <Link
-                href={`/products?category=${cat.slug}`}
+                href={links.categories.some((category) => category.slug === cat.slug) ? `/categories/${cat.slug}` : `/products?category=${cat.slug}`}
                 className="flex items-center gap-5 border border-primary/20 bg-card p-5 transition-[border-color,translate] duration-300 hover:border-primary motion-safe:hover:translate-x-1.5"
               >
                 <span className="grid size-12 shrink-0 place-items-center bg-primary/10 text-highlight">

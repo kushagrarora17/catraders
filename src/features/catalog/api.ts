@@ -1,4 +1,7 @@
 import "server-only";
+import { SERVICE_AREA_TAG } from "@/features/landing/api";
+import { SEO_CATEGORY_QUERY, SEO_LINKS_QUERY } from "@/features/seo/queries";
+import type { SEO_CATEGORY_QUERY_RESULT, SEO_LINKS_QUERY_RESULT } from "@/sanity/types";
 import { client } from "@/sanity/client";
 import type {
   CATEGORY_BY_SLUG_QUERY_RESULT,
@@ -63,4 +66,14 @@ export function getSitemapEntries() {
 /** Uncached: quote submission must see the latest stock status. */
 export function getProductsForQuote(ids: string[]) {
   return client.fetch<QUOTE_PRODUCTS_QUERY_RESULT>(QUOTE_PRODUCTS_QUERY, { ids }, { cache: "no-store" });
+}
+
+export function getCategoryLanding(slug: string) {
+  return cachedFetch<SEO_CATEGORY_QUERY_RESULT>(SEO_CATEGORY_QUERY, { slug });
+}
+
+export function getLandingLinks() {
+  return client.fetch<SEO_LINKS_QUERY_RESULT>(SEO_LINKS_QUERY, {}, {
+    cache: "force-cache", next: { tags: [CATALOG_TAG, SERVICE_AREA_TAG] },
+  });
 }

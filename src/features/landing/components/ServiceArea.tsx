@@ -1,9 +1,11 @@
 import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
+import Link from "next/link";
 import { getServiceArea } from "../api";
+import { getLandingLinks } from "@/features/catalog/api";
 
 export async function ServiceArea() {
-  const area = await getServiceArea();
+  const [area, links] = await Promise.all([getServiceArea(), getLandingLinks()]);
   if (!area?.cities?.length) return null;
 
   return (
@@ -23,7 +25,7 @@ export async function ServiceArea() {
               key={city}
               className="border border-primary/20 bg-card px-4 py-2 font-heading font-bold uppercase tracking-wide text-foreground"
             >
-              {city}, ON
+              {links.cities.some((page) => page.city === city) ? <Link href={`/service-areas/${links.cities.find((page) => page.city === city)!.slug}`} className="underline underline-offset-4 hover:text-highlight">{city}, ON</Link> : <>{city}, ON</>}
             </li>
           ))}
         </ul>

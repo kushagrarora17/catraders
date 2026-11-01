@@ -21,6 +21,7 @@ export const category = defineType({
       validation: (rule) => rule.required(),
     }),
     verticalField,
+    defineField({name: 'landing', title: 'Category landing page', type: 'landingContent', hidden: ({document}) => document?.level !== 1}),
     defineField({
       name: 'level',
       title: 'Level',

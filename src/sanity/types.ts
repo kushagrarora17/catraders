@@ -15,6 +15,84 @@
 export declare const internalGroqTypeReferenceTo: unique symbol;
 
 // Source: schema.json
+export type ServiceAreaReference = {
+  _ref: string;
+  _type: "reference";
+  _weak?: boolean;
+  [internalGroqTypeReferenceTo]?: "serviceArea";
+};
+
+export type ServiceAreaLandingPage = {
+  _id: string;
+  _type: "serviceAreaLandingPage";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  vertical: "automotive" | "baby" | "home";
+  serviceArea: ServiceAreaReference;
+  city: string;
+  slug: Slug;
+  content: LandingContent;
+};
+
+export type LandingContent = {
+  _type: "landingContent";
+  heading: string;
+  seo: Seo;
+  introduction: string;
+  keywords?: Array<string>;
+  sections: Array<{
+    heading: string;
+    body: Array<{
+      children?: Array<{
+        marks?: Array<string>;
+        text?: string;
+        _type: "span";
+        _key: string;
+      }>;
+      style?: "normal";
+      listItem?: "bullet";
+      markDefs?: null;
+      level?: number;
+      _type: "block";
+      _key: string;
+    }>;
+    _type: "editorialSection";
+    _key: string;
+  }>;
+  comparison?: Array<{
+    option: string;
+    usage: string;
+    selection: string;
+    _type: "comparisonRow";
+    _key: string;
+  }>;
+  faqs: Array<{
+    question: string;
+    answer: string;
+    _type: "faq";
+    _key: string;
+  }>;
+  sources?: Array<{
+    title: string;
+    url: string;
+    _type: "source";
+    _key: string;
+  }>;
+};
+
+export type Slug = {
+  _type: "slug";
+  current: string;
+  source?: string;
+};
+
+export type Seo = {
+  _type: "seo";
+  title?: string;
+  description?: string;
+};
+
 export type ServiceArea = {
   _id: string;
   _type: "serviceArea";
@@ -61,12 +139,6 @@ export type AttributeValue = {
   sortOrder?: number;
 };
 
-export type Slug = {
-  _type: "slug";
-  current: string;
-  source?: string;
-};
-
 export type Attribute = {
   _id: string;
   _type: "attribute";
@@ -111,6 +183,7 @@ export type Product = {
   title: string;
   slug: Slug;
   vertical: "automotive" | "baby" | "home";
+  seo?: Seo;
   sku?: string;
   inStock: boolean;
   category: CategoryReference;
@@ -173,6 +246,7 @@ export type Category = {
   title: string;
   slug: Slug;
   vertical: "automotive" | "baby" | "home";
+  landing?: LandingContent;
   level: 1 | 2 | 3;
   parent?: CategoryReference;
   sortOrder?: number;
@@ -276,11 +350,15 @@ export type Geopoint = {
 };
 
 export type AllSanitySchemaTypes =
+  | ServiceAreaReference
+  | ServiceAreaLandingPage
+  | LandingContent
+  | Slug
+  | Seo
   | ServiceArea
   | Testimonial
   | AttributeReference
   | AttributeValue
-  | Slug
   | Attribute
   | CategoryReference
   | AttributeValueReference
@@ -319,7 +397,7 @@ export type CATEGORY_BY_SLUG_QUERY_RESULT = {
 
 // Source: ../src/features/catalog/queries.ts
 // Variable: PRODUCT_LIST_QUERY
-// Query: *[  _type == "product" && vertical == "automotive"  && (!defined($q) || title match $q || sku match $q)  && (!defined($category) || $category in [    category->slug.current,    category->parent->slug.current,    category->parent->parent->slug.current  ])  && (!$available || inStock == true)] | order(select(inStock == true => 0, 1) asc, title asc) {  _id,  title,  "slug": slug.current,  sku,  inStock,  "image": images[0],  "category": category->{ title, "slug": slug.current },  "attributeLabels": attributeValues[]->label}
+// Query: *[  _type == "product" && vertical == "automotive"  && (!defined($q) || title match $q || sku match $q)  && (!defined($category) || $category in [    category->slug.current,    category->parent->slug.current,    category->parent->parent->slug.current  ])  && (!$available || inStock == true)] | order(select(inStock == true => 0, 1) asc, title asc) {  _id,  title,  "slug": slug.current,  sku,  inStock,  "image": images[0],  "category": category->{ title, "slug": slug.current },  "attributeLabels": attributeValues[]->label,  "brandLabels": attributeValues[@->attribute->slug.current == "brand"][]->label}
 export type PRODUCT_LIST_QUERY_RESULT = Array<{
   _id: string;
   title: string;
@@ -340,6 +418,7 @@ export type PRODUCT_LIST_QUERY_RESULT = Array<{
     slug: string;
   };
   attributeLabels: Array<string> | null;
+  brandLabels: Array<string> | null;
 }>;
 
 // Source: ../src/features/catalog/queries.ts
@@ -359,7 +438,7 @@ export type FACETS_QUERY_RESULT = Array<{
 
 // Source: ../src/features/catalog/queries.ts
 // Variable: PRODUCT_BY_SLUG_QUERY
-// Query: *[_type == "product" && vertical == "automotive" && slug.current == $slug][0] {    _id,    title,    "slug": slug.current,    sku,    inStock,    images,    description,    "categoryPath": [  category->parent->parent->{ title, "slug": slug.current },  category->parent->{ title, "slug": slug.current },  category->{ title, "slug": slug.current }][defined(slug)],    "attributeValues": attributeValues[]->{  label,  sortOrder,  "attribute": attribute->{ _id, title, sortOrder }}  }
+// Query: *[_type == "product" && vertical == "automotive" && slug.current == $slug][0] {    _id,    title,    "slug": slug.current,    sku,    inStock,    images,    description,    seo,    "descriptionText": pt::text(description),    "categoryPath": [  category->parent->parent->{ title, "slug": slug.current },  category->parent->{ title, "slug": slug.current },  category->{ title, "slug": slug.current }][defined(slug)],    "attributeValues": attributeValues[]->{  label,  sortOrder,  "attribute": attribute->{ _id, title, sortOrder }}  }
 export type PRODUCT_BY_SLUG_QUERY_RESULT = {
   _id: string;
   title: string;
@@ -393,6 +472,8 @@ export type PRODUCT_BY_SLUG_QUERY_RESULT = {
     _type: "block";
     _key: string;
   }> | null;
+  seo: Seo | null;
+  descriptionText: string;
   categoryPath: Array<{
     title: string;
     slug: string;
@@ -467,6 +548,47 @@ export type SERVICE_AREA_QUERY_RESULT = {
   description: string;
   cities: Array<string>;
 } | null;
+
+// Source: ../src/features/seo/queries.ts
+// Variable: SEO_CATEGORY_QUERY
+// Query: *[_type == "category" && vertical == "automotive" && level == 1 && defined(slug.current) && defined(landing.heading) && defined(landing.introduction) && defined(landing.seo.title) && defined(landing.seo.description) && count(landing.sections) >= 3 && count(landing.faqs) >= 4 && slug.current == $slug][0]{  _id, title, "slug": slug.current, landing,  "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc){_id, title, "slug": slug.current}}
+export type SEO_CATEGORY_QUERY_RESULT = {
+  _id: string;
+  title: string;
+  slug: string;
+  landing: LandingContent | null;
+  children: Array<{
+    _id: string;
+    title: string;
+    slug: string;
+  }>;
+} | null;
+
+// Source: ../src/features/seo/queries.ts
+// Variable: SEO_CITY_QUERY
+// Query: *[_type == "serviceAreaLandingPage" && vertical == "automotive" && defined(slug.current) && serviceArea->vertical == "automotive" && city in serviceArea->cities && defined(content.heading) && defined(content.introduction) && defined(content.seo.title) && defined(content.seo.description) && count(content.sections) >= 3 && count(content.faqs) >= 4 && slug.current == $slug][0]{  _id, city, "slug": slug.current, content}
+export type SEO_CITY_QUERY_RESULT = {
+  _id: string;
+  city: string;
+  slug: string;
+  content: LandingContent;
+} | null;
+
+// Source: ../src/features/seo/queries.ts
+// Variable: SEO_LINKS_QUERY
+// Query: {  "categories": *[_type == "category" && vertical == "automotive" && level == 1 && defined(slug.current) && defined(landing.heading) && defined(landing.introduction) && defined(landing.seo.title) && defined(landing.seo.description) && count(landing.sections) >= 3 && count(landing.faqs) >= 4] | order(sortOrder asc, title asc){title, "slug": slug.current, _updatedAt},  "cities": *[_type == "serviceAreaLandingPage" && vertical == "automotive" && defined(slug.current) && serviceArea->vertical == "automotive" && city in serviceArea->cities && defined(content.heading) && defined(content.introduction) && defined(content.seo.title) && defined(content.seo.description) && count(content.sections) >= 3 && count(content.faqs) >= 4] | order(city asc){city, "slug": slug.current, _updatedAt}}
+export type SEO_LINKS_QUERY_RESULT = {
+  categories: Array<{
+    title: string;
+    slug: string;
+    _updatedAt: string;
+  }>;
+  cities: Array<{
+    city: string;
+    slug: string;
+    _updatedAt: string;
+  }>;
+};
 
 // Source: ../src/server/mcp/queries.ts
 // Variable: PRODUCT_SEARCH_QUERY
@@ -626,14 +748,17 @@ export type HIDDEN_REVIEWS_QUERY_RESULT = Array<{
 declare global {
   interface SanityQueries {
     '\n  *[_type == "category" && vertical == "automotive" && slug.current == $slug][0] {\n    _id,\n    title,\n    "slug": slug.current,\n    level,\n    "ancestors": [\n      parent->parent->{ title, "slug": slug.current },\n      parent->{ title, "slug": slug.current }\n    ][defined(slug)],\n    "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc) {\n      _id,\n      title,\n      "slug": slug.current\n    }\n  }\n': CATEGORY_BY_SLUG_QUERY_RESULT;
-    '*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!$available || inStock == true)\n] | order(select(inStock == true => 0, 1) asc, title asc) {\n  _id,\n  title,\n  "slug": slug.current,\n  sku,\n  inStock,\n  "image": images[0],\n  "category": category->{ title, "slug": slug.current },\n  "attributeLabels": attributeValues[]->label\n}': PRODUCT_LIST_QUERY_RESULT;
+    '*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!$available || inStock == true)\n] | order(select(inStock == true => 0, 1) asc, title asc) {\n  _id,\n  title,\n  "slug": slug.current,\n  sku,\n  inStock,\n  "image": images[0],\n  "category": category->{ title, "slug": slug.current },\n  "attributeLabels": attributeValues[]->label,\n  "brandLabels": attributeValues[@->attribute->slug.current == "brand"][]->label\n}': PRODUCT_LIST_QUERY_RESULT;
     '\n  *[_type == "attribute" && vertical == "automotive" && filterable == true] | order(sortOrder asc, title asc) {\n    _id,\n    title,\n    "key": slug.current,\n    "values": *[_type == "attributeValue" && attribute._ref == ^._id] | order(sortOrder asc, label asc) {\n      _id,\n      label,\n      "key": slug.current,\n      "count": count(*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!$available || inStock == true)\n && references(^._id)])\n    }[count > 0]\n  }[count(values) > 0]\n': FACETS_QUERY_RESULT;
-    '\n  *[_type == "product" && vertical == "automotive" && slug.current == $slug][0] {\n    _id,\n    title,\n    "slug": slug.current,\n    sku,\n    inStock,\n    images,\n    description,\n    "categoryPath": [\n  category->parent->parent->{ title, "slug": slug.current },\n  category->parent->{ title, "slug": slug.current },\n  category->{ title, "slug": slug.current }\n][defined(slug)],\n    "attributeValues": attributeValues[]->{\n  label,\n  sortOrder,\n  "attribute": attribute->{ _id, title, sortOrder }\n}\n  }\n': PRODUCT_BY_SLUG_QUERY_RESULT;
+    '\n  *[_type == "product" && vertical == "automotive" && slug.current == $slug][0] {\n    _id,\n    title,\n    "slug": slug.current,\n    sku,\n    inStock,\n    images,\n    description,\n    seo,\n    "descriptionText": pt::text(description),\n    "categoryPath": [\n  category->parent->parent->{ title, "slug": slug.current },\n  category->parent->{ title, "slug": slug.current },\n  category->{ title, "slug": slug.current }\n][defined(slug)],\n    "attributeValues": attributeValues[]->{\n  label,\n  sortOrder,\n  "attribute": attribute->{ _id, title, sortOrder }\n}\n  }\n': PRODUCT_BY_SLUG_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && _id in $ids] { _id, inStock }\n': PRODUCT_AVAILABILITY_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && _id in $ids] {\n    _id,\n    title,\n    sku,\n    inStock,\n    "categoryPath": [\n  category->parent->parent->{ title, "slug": slug.current },\n  category->parent->{ title, "slug": slug.current },\n  category->{ title, "slug": slug.current }\n][defined(slug)],\n    "attributeValues": attributeValues[]->{\n  label,\n  sortOrder,\n  "attribute": attribute->{ _id, title, sortOrder }\n}\n  }\n': QUOTE_PRODUCTS_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && defined(slug.current)] { "slug": slug.current, _updatedAt }\n': SITEMAP_QUERY_RESULT;
     '\n  *[_type == "testimonial" && vertical == "automotive"] | order(sortOrder asc, _createdAt asc) {\n    _id,\n    quote,\n    name,\n    role,\n    city,\n    rating\n  }\n': TESTIMONIALS_QUERY_RESULT;
     '\n  *[_type == "serviceArea" && vertical == "automotive"][0] {\n    region,\n    description,\n    cities\n  }\n': SERVICE_AREA_QUERY_RESULT;
+    '*[_type == "category" && vertical == "automotive" && level == 1 && defined(slug.current) && defined(landing.heading) && defined(landing.introduction) && defined(landing.seo.title) && defined(landing.seo.description) && count(landing.sections) >= 3 && count(landing.faqs) >= 4 && slug.current == $slug][0]{\n  _id, title, "slug": slug.current, landing,\n  "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc){_id, title, "slug": slug.current}\n}': SEO_CATEGORY_QUERY_RESULT;
+    '*[_type == "serviceAreaLandingPage" && vertical == "automotive" && defined(slug.current) && serviceArea->vertical == "automotive" && city in serviceArea->cities && defined(content.heading) && defined(content.introduction) && defined(content.seo.title) && defined(content.seo.description) && count(content.sections) >= 3 && count(content.faqs) >= 4 && slug.current == $slug][0]{\n  _id, city, "slug": slug.current, content\n}': SEO_CITY_QUERY_RESULT;
+    '{\n  "categories": *[_type == "category" && vertical == "automotive" && level == 1 && defined(slug.current) && defined(landing.heading) && defined(landing.introduction) && defined(landing.seo.title) && defined(landing.seo.description) && count(landing.sections) >= 3 && count(landing.faqs) >= 4] | order(sortOrder asc, title asc){title, "slug": slug.current, _updatedAt},\n  "cities": *[_type == "serviceAreaLandingPage" && vertical == "automotive" && defined(slug.current) && serviceArea->vertical == "automotive" && city in serviceArea->cities && defined(content.heading) && defined(content.introduction) && defined(content.seo.title) && defined(content.seo.description) && count(content.sections) >= 3 && count(content.faqs) >= 4] | order(city asc){city, "slug": slug.current, _updatedAt}\n}': SEO_LINKS_QUERY_RESULT;
     '{\n  "total": count(*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n]),\n  "items": *[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n] | order(title asc) [$start...$end] {\n  _id,\n  title,\n  "slug": slug.current,\n  sku,\n  inStock,\n  "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],\n  "attributes": attributeValues[]->label\n}\n}': PRODUCT_SEARCH_QUERY_RESULT;
     '{\n  "total": count(*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n && _id in path("drafts.**") && !defined(*[_type == "product" && _id == string::split(^._id, "drafts.")[1]][0]._id)]),\n  "items": *[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!defined($inStock) || inStock == $inStock)\n  && (!defined($skus) || sku in $skus)\n && _id in path("drafts.**") && !defined(*[_type == "product" && _id == string::split(^._id, "drafts.")[1]][0]._id)] | order(title asc) [$start...$end] {\n  _id,\n  title,\n  "slug": slug.current,\n  sku,\n  inStock,\n  "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],\n  "attributes": attributeValues[]->label\n}\n}': HIDDEN_PRODUCT_SEARCH_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && _id == $docId][0] {\n    _id,\n    _updatedAt,\n    title,\n    "slug": slug.current,\n    sku,\n    inStock,\n    "category": category->{ _id, title, "slug": slug.current, level },\n    "categoryPath": [category->parent->parent->title, category->parent->title, category->title][defined(@)],\n    "attributes": attributeValues[]->{\n      _id,\n      label,\n      "slug": slug.current,\n      "attribute": attribute->{ title, "slug": slug.current }\n    },\n    "images": images[]{ "url": asset->url, alt },\n    description\n  }\n': PRODUCT_DETAIL_QUERY_RESULT;

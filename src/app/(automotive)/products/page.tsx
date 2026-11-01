@@ -8,7 +8,20 @@ import { FacetFilters } from "@/features/catalog/components/FacetFilters";
 import { ProductCard } from "@/features/catalog/components/ProductCard";
 import { parseCatalogFilters } from "@/features/catalog/filters";
 
-export const metadata: Metadata = { title: "Products" };
+export async function generateMetadata({ searchParams }: PageProps<"/products">): Promise<Metadata> {
+  const filters = parseCatalogFilters(await searchParams);
+  const category = filters.category ? await getCategory(filters.category) : null;
+  const title = category ? `Wholesale ${category.title}` : "Wholesale Automotive Products";
+  const description = category
+    ? `Browse wholesale ${category.title.toLowerCase()} for automotive shops in Southwestern Ontario. Compare specifications and pack sizes, then request pricing from CA Traders.`
+    : "Browse wholesale engine oils, transmission fluids, coolants, filters and shop supplies. Request pricing and availability from CA Traders in Southwestern Ontario.";
+  return {
+    title, description,
+    alternates: { canonical: category ? `/products?category=${encodeURIComponent(filters.category!)}` : "/products" },
+    ...(filters.q ? { robots: { index: false, follow: true } } : {}),
+    openGraph: { title, description },
+  };
+}
 
 const categoryHref = (slug: string) => `/products?category=${encodeURIComponent(slug)}` as Route;
 
