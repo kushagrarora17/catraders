@@ -42,6 +42,34 @@ test.describe("SEO landing pages", () => {
     );
     await mutate(page.request, [
       {
+        create: {
+          _id: "seo-brand",
+          _type: "attribute",
+          vertical: "automotive",
+          title: "Brand",
+          slug: { current: "brand" },
+        },
+      },
+      {
+        create: {
+          _id: "seo-castrol",
+          _type: "attributeValue",
+          attribute: { _type: "reference", _ref: "seo-brand" },
+          label: "Castrol",
+          slug: { current: "castrol" },
+        },
+      },
+      {
+        patch: {
+          id: "prod-castrol-edge-5w30-4l",
+          set: {
+            attributeValues: [
+              { _type: "reference", _ref: "seo-castrol", _key: "brand" },
+            ],
+          },
+        },
+      },
+      {
         patch: {
           id: "cat-engine-oil",
           set: {
