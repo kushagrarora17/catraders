@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLandingLinks } from "@/features/catalog/api";
 import { Container } from "@/components/ui/container";
 import { BUSINESS_NAME, DESCRIPTION, EMAIL, PHONE_DISPLAY, PHONE_E164 } from "../contact";
 import { NAV_LINKS, PRODUCT_LINKS, CONTACT_HREF } from "../nav";
@@ -6,7 +7,8 @@ import { Logo } from "./Logo";
 
 const linkClass = "text-sm text-muted-foreground transition-colors hover:text-highlight";
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const links = await getLandingLinks();
   return (
     <footer className="border-t-3 border-primary bg-background">
       <Container className="grid gap-10 py-14 md:grid-cols-4">
@@ -40,7 +42,7 @@ export function SiteFooter() {
           <ul className="flex flex-col gap-2.5">
             {PRODUCT_LINKS.map(({ label, slug }) => (
               <li key={slug}>
-                <Link href={`/products?category=${slug}`} className={linkClass}>
+                <Link href={links.categories.some((category) => category.slug === slug) ? `/categories/${slug}` : `/products?category=${slug}`} className={linkClass}>
                   {label}
                 </Link>
               </li>

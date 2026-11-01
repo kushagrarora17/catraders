@@ -13,6 +13,7 @@ const TAG_BY_TYPE: Record<string, string> = {
   attributeValue: CATALOG_TAG,
   testimonial: TESTIMONIALS_TAG,
   serviceArea: SERVICE_AREA_TAG,
+  serviceAreaLandingPage: SERVICE_AREA_TAG,
 };
 
 export async function POST(req: NextRequest) {

@@ -41,7 +41,8 @@ const PRODUCT_CARD_PROJECTION = `{
   inStock,
   "image": images[0],
   "category": category->{ title, "slug": slug.current },
-  "attributeLabels": attributeValues[]->label
+  "attributeLabels": attributeValues[]->label,
+  "brandLabels": attributeValues[@->attribute->slug.current == "brand"][]->label
 }`;
 
 export const PRODUCT_LIST_QUERY = defineQuery(
@@ -88,6 +89,8 @@ export const PRODUCT_BY_SLUG_QUERY = defineQuery(`
     inStock,
     images,
     description,
+    seo,
+    "descriptionText": pt::text(description),
     "categoryPath": ${CATEGORY_PATH_PROJECTION},
     "attributeValues": ${PRODUCT_ATTRIBUTE_VALUES_PROJECTION}
   }

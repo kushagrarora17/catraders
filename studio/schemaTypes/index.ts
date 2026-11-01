@@ -1,3 +1,5 @@
+import {seo, landingContent} from './objects/landing-content'
+import {serviceAreaLandingPage} from './documents/service-area-landing-page'
 import type {Template} from 'sanity'
 import {attribute} from './documents/attribute'
 import {attributeValue} from './documents/attribute-value'
@@ -6,7 +8,7 @@ import {product} from './documents/product'
 import {serviceArea} from './documents/service-area'
 import {testimonial} from './documents/testimonial'
 
-export const schemaTypes = [product, category, attribute, attributeValue, testimonial, serviceArea]
+export const schemaTypes = [product, category, attribute, attributeValue, testimonial, serviceArea, seo, landingContent, serviceAreaLandingPage]
 
 // Used by the desk structure to pre-fill fields when creating from a filtered list.
 export const schemaTemplates: Template[] = [

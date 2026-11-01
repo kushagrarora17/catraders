@@ -1,4 +1,6 @@
 import "server-only";
+import { SEO_CITY_QUERY } from "@/features/seo/queries";
+import type { SEO_CITY_QUERY_RESULT } from "@/sanity/types";
 import { client } from "@/sanity/client";
 import type { SERVICE_AREA_QUERY_RESULT, TESTIMONIALS_QUERY_RESULT } from "@/sanity/types";
 import { SERVICE_AREA_QUERY, TESTIMONIALS_QUERY } from "./queries";
@@ -23,4 +25,10 @@ export function getServiceArea() {
     {},
     { cache: "force-cache", next: { tags: [SERVICE_AREA_TAG] } },
   );
+}
+
+export function getCityLanding(slug: string) {
+  return client.fetch<SEO_CITY_QUERY_RESULT>(SEO_CITY_QUERY, { slug }, {
+    cache: "force-cache", next: { tags: [SERVICE_AREA_TAG] },
+  });
 }

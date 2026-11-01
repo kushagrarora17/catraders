@@ -23,6 +23,7 @@ export const product = defineType({
       validation: (rule) => rule.required(),
     }),
     verticalField,
+    defineField({name: 'seo', type: 'seo'}),
     defineField({
       name: 'sku',
       title: 'Part / SKU Number',

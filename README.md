@@ -153,7 +153,7 @@ Create a webhook at [sanity.io/manage](https://www.sanity.io/manage/project/51ng
 | URL | `https://<your-host>/api/webhooks/sanity` |
 | Dataset | `production` |
 | Trigger on | Create, Update, Delete |
-| Filter | `_type in ["product", "category", "attribute", "attributeValue", "testimonial", "serviceArea"]` |
+| Filter | `_type in ["product", "category", "attribute", "attributeValue", "testimonial", "serviceArea", "serviceAreaLandingPage"]` |
 | Projection | `{_type, vertical}` |
 | Secret | Same value as `SANITY_WEBHOOK_SECRET` |
 

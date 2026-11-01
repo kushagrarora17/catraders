@@ -22,12 +22,11 @@ export const coverageOptions: CoverageReportOptions = {
   name: "Catraders e2e coverage",
   outputDir: COVERAGE_DIR,
   reports: ["v8", "console-summary", "lcovonly", "json-summary"],
-  // Compiled chunks (server and browser). Route entry stubs, externals and dependency-only chunks
-  // have no source maps into src/, so skip them; dependencies inside app chunks are dropped by
-  // sourceFilter.
+  // Shared chunks can be named after a dependency while containing application components.
+  // Keep those chunks; sourceFilter removes dependency sources from the report.
   entryFilter: (entry) =>
     /\/(\.next\/server|_next\/static)\/chunks\//.test(entry.url) &&
-    !/\[externals\]|_next-internal_|_actions_|\/node_modules_/.test(entry.url),
+    !/\[externals\]|_next-internal_|_actions_/.test(entry.url),
   // Source map paths look like `[project]/src/...`, `turbopack:///[project]/src/...` or `webpack://_N_E/./src/...`.
   sourcePath: (filePath) => {
     const index = filePath.indexOf("src/");

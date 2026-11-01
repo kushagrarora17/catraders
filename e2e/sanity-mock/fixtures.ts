@@ -13,6 +13,18 @@ const block = (text: string, key: string) => ({
   children: [{ _type: "span", _key: `${key}s`, text, marks: [] }],
 });
 
+const landing = (heading: string) => ({
+  _type: "landingContent", heading,
+  seo: { title: heading, description: `${heading}: compare applications and request wholesale pricing.` },
+  introduction: "Choose products by the required application and request a quote for your workshop.",
+  sections: ["Definition", "Compatibility", "Ordering"].map((heading, i) => ({
+    _type: "editorialSection", _key: `section-${i}`, heading,
+    body: [block(`Check the exact product specification before selecting ${heading.toLowerCase()} options.`, `body-${i}`)],
+  })),
+  comparison: [{ _key: "compare", option: "Premix", usage: "Use as labelled", selection: "Check the vehicle requirement" }],
+  faqs: ["Can I request pricing?", "How is compatibility checked?", "Is delivery confirmed?", "Can I order mixed products?"].map((question, i) => ({ _key: `faq-${i}`, question, answer: "Send the exact product and delivery details for confirmation." })),
+});
+
 const category = (id: string, title: string, level: number, parent?: string, sortOrder?: number): Doc => ({
   _id: id,
   _type: "category",
@@ -67,7 +79,13 @@ export function seedDocuments(): Doc[] {
     category("cat-passenger-car", "Passenger Car", 2, "cat-engine-oil", 1),
     category("cat-synthetic", "Synthetic", 3, "cat-passenger-car", 1),
     category("cat-conventional", "Conventional", 3, "cat-passenger-car", 2),
-    category("cat-coolants", "Coolants", 1, undefined, 2),
+    { ...category("cat-coolants", "Coolants", 1, undefined, 2), landing: landing("Wholesale Coolants"), _updatedAt: "2026-10-01T00:00:00Z" },
+    ...[
+      { _id: "city-windsor", city: "Windsor", slug: slug("windsor") },
+      { _id: "drafts.city-london", city: "London", slug: slug("london") },
+      { _id: "city-outside", city: "Toronto", slug: slug("toronto") },
+      { _id: "city-other-vertical", city: "Kitchener", slug: slug("kitchener"), vertical: "baby" },
+    ].map((city) => ({ _type: "serviceAreaLandingPage", vertical: "automotive", serviceArea: ref("serviceArea"), content: landing(`Wholesale Supplies ${city.city}`), _updatedAt: "2026-10-01T00:00:00Z", ...city })),
     category("cat-ready-to-use", "Ready to Use", 2, "cat-coolants"),
 
     attribute("attr-viscosity", "Viscosity Grade", true, 1),

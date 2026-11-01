@@ -18,7 +18,19 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/products/[slug]">): Promise<Metadata> {
   const product = await getProduct((await params).slug);
-  return { title: product?.title ?? "Product not found" };
+  if (!product) return { title: "Product not found", robots: { index: false } };
+  const details = product.attributeValues?.flatMap((value) => value?.label ? [value.label] : []).join(", ");
+  const fallback = `${product.title}${details ? ` — ${details}` : ""}. Request wholesale pricing from CA Traders in Southwestern Ontario.`;
+  const description = product.seo?.description?.trim() || (product.descriptionText?.trim() || fallback).replace(/\s+/g, " ").slice(0, 180);
+  const title = product.seo?.title?.trim() || product.title;
+  return {
+    title, description,
+    alternates: { canonical: `/products/${product.slug}` },
+    openGraph: {
+      title, description, url: `/products/${product.slug}`,
+      ...(product.images?.[0]?.asset ? { images: [{ url: urlFor(product.images[0]).width(1200).url(), alt: product.images[0].alt ?? product.title }] } : {}),
+    },
+  };
 }
 
 export default async function ProductPage({ params }: PageProps<"/products/[slug]">) {
