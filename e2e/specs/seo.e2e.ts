@@ -40,10 +40,36 @@ test.describe("SEO landing pages", () => {
       "content",
       /compare applications/,
     );
-    await mutate(page.request, [{patch: {id: "cat-engine-oil", set: {landing: { _type: "landingContent", heading: "Engine Oil Guide", seo: {title: "Engine Oil", description: "Wholesale engine oil"}, introduction: "Engine oil buying guide", sections: ["one", "two", "three"].map((_key) => ({_key, heading: _key, body: []})), faqs: ["one", "two", "three", "four"].map((_key) => ({_key, question: _key, answer: _key})) }}}}]);
-    await sendWebhook(page.request, JSON.stringify({_type: "category"}));
+    await mutate(page.request, [
+      {
+        patch: {
+          id: "cat-engine-oil",
+          set: {
+            landing: {
+              _type: "landingContent",
+              heading: "Engine Oil Guide",
+              seo: { title: "Engine Oil", description: "Wholesale engine oil" },
+              introduction: "Engine oil buying guide",
+              sections: ["one", "two", "three"].map((_key) => ({
+                _key,
+                heading: _key,
+                body: [],
+              })),
+              faqs: ["one", "two", "three", "four"].map((_key) => ({
+                _key,
+                question: _key,
+                answer: _key,
+              })),
+            },
+          },
+        },
+      },
+    ]);
+    await sendWebhook(page.request, JSON.stringify({ _type: "category" }));
     await page.goto("/categories/engine-oil");
-    await expect(page.getByText("Castrol", {exact: true}).first()).toBeVisible();
+    await expect(
+      page.getByText("Castrol", { exact: true }).first(),
+    ).toBeVisible();
     const breadcrumb = JSON.parse(
       (await page
         .locator('script[type="application/ld+json"]')

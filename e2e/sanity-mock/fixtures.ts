@@ -88,8 +88,6 @@ export function seedDocuments(): Doc[] {
     ].map((city) => ({ _type: "serviceAreaLandingPage", vertical: "automotive", serviceArea: ref("serviceArea"), content: landing(`Wholesale Supplies ${city.city}`), _updatedAt: "2026-10-01T00:00:00Z", ...city })),
     category("cat-ready-to-use", "Ready to Use", 2, "cat-coolants"),
 
-    attribute("attr-brand", "Brand", false, 5),
-    value("val-brand-castrol", "attr-brand", "Castrol", "castrol"),
     attribute("attr-viscosity", "Viscosity Grade", true, 1),
     attribute("attr-pack-size", "Pack Size", true, 2),
     attribute("attr-specification", "Specification", true, 3, true),
@@ -108,7 +106,7 @@ export function seedDocuments(): Doc[] {
       title: "Castrol EDGE 5W-30 4L",
       sku: "CAS-EDGE-5W30-4L",
       categoryId: "cat-synthetic",
-      values: ["val-5w-30", "val-4-l", "val-api-sp", "val-acea-c3", "val-brand-castrol"],
+      values: ["val-5w-30", "val-4-l", "val-api-sp", "val-acea-c3"],
       extra: {
         images: [
           {
