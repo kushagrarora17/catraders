@@ -26,6 +26,24 @@ export const test = base.extend<{ autoCoverage: void }, { seedContent: void }>({
   ],
   autoCoverage: [
     async ({ page }, use) => {
+      await page.route("https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit", (route) =>
+        route.fulfill({
+          contentType: "application/javascript",
+          body: `window.turnstile = {
+            render(container, options) {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'cf-turnstile-response';
+              input.value = 'e2e-' + options.action;
+              input.id = 'turnstile-' + options.action;
+              container.appendChild(input);
+              options.callback();
+              return input.id;
+            },
+            remove(id) { document.getElementById(id)?.remove(); }
+          };`,
+        }),
+      );
       await page.route("**/_next/image?**", (route) => route.fulfill({ contentType: "image/png", body: PIXEL }));
       await page.coverage.startJSCoverage({ resetOnNavigation: false });
       await use();

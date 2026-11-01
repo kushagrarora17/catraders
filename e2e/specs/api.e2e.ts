@@ -12,6 +12,7 @@ const customer = {
 };
 const castrolItem = { productId: "prod-castrol-edge-5w30-4l", title: "Castrol EDGE", sku: "CAS-EDGE-5W30-4L", quantity: 2 };
 const inquiry = {
+  "cf-turnstile-response": "e2e-inquiry",
   name: "Jordan Lee",
   business: "Lee Auto Repair",
   city: "Windsor",
@@ -44,9 +45,18 @@ test.describe("GET /api/availability", () => {
 });
 
 test.describe("POST /api/quotes", () => {
+  test("rejects missing and invalid verification", async ({ request }) => {
+    for (const token of [undefined, "invalid-token"]) {
+      const response = await request.post("/api/quotes", {
+        data: { customer, items: [castrolItem], "cf-turnstile-response": token },
+      });
+      expect(response.status()).toBe(403);
+      expect(await response.json()).toMatchObject({ error: "VERIFICATION_FAILED" });
+    }
+  });
   test("stores a quote once per idempotency key and emails it", async ({ request }) => {
     const key = randomUUID();
-    const body = { customer, items: [castrolItem], notes: "Deliver Monday" };
+    const body = { "cf-turnstile-response": "e2e-quote", customer, items: [castrolItem], notes: "Deliver Monday" };
     const first = await request.post("/api/quotes", { headers: { "Idempotency-Key": key }, data: body });
     expect(first.status()).toBe(201);
     const { referenceNumber } = await first.json();
@@ -74,12 +84,12 @@ test.describe("POST /api/quotes", () => {
       expect.arrayContaining([{ path: "customer.email", message: "Enter a valid email address" }]),
     );
 
-    const unknown = await post(JSON.stringify({ customer, items: [{ ...castrolItem, productId: "missing" }] }));
+    const unknown = await post(JSON.stringify({ "cf-turnstile-response": "e2e-quote", customer, items: [{ ...castrolItem, productId: "missing" }] }));
     expect(unknown.status()).toBe(400);
     expect(await unknown.json()).toMatchObject({ error: "UNKNOWN_PRODUCTS", productIds: ["missing"] });
 
     const sold = await post(
-      JSON.stringify({ customer, items: [{ ...castrolItem, productId: "prod-valvoline-10w40-4l" }] }),
+      JSON.stringify({ "cf-turnstile-response": "e2e-quote", customer, items: [{ ...castrolItem, productId: "prod-valvoline-10w40-4l" }] }),
     );
     expect(sold.status()).toBe(201);
     expect((await sold.json()).referenceNumber).toMatch(/^RFQ-\d{4}-\d{5}$/);
@@ -87,6 +97,15 @@ test.describe("POST /api/quotes", () => {
 });
 
 test.describe("POST /api/inquiries", () => {
+  test("rejects missing and invalid verification", async ({ request }) => {
+    for (const token of [undefined, "invalid-token"]) {
+      const response = await request.post("/api/inquiries", {
+        data: { ...inquiry, "cf-turnstile-response": token },
+      });
+      expect(response.status()).toBe(403);
+      expect(await response.json()).toMatchObject({ error: "VERIFICATION_FAILED" });
+    }
+  });
   test("stores an inquiry once per idempotency key", async ({ request }) => {
     const key = randomUUID();
     const first = await request.post("/api/inquiries", { headers: { "Idempotency-Key": key }, data: inquiry });

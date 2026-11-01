@@ -1,5 +1,6 @@
 import { after, type NextRequest, NextResponse } from "next/server";
 import { HONEYPOT_FIELD, type InquiryResponse, inquirySchema } from "@/features/inquiry/schema";
+import { verifyTurnstile } from "@/server/turnstile";
 import { IDEMPOTENCY_HEADER, parseIdempotencyKey, toFieldIssues } from "@/lib/validation";
 import { getDb } from "@/server/db";
 import { sendInquiryEmails } from "@/server/inquiries/email";
@@ -40,6 +41,11 @@ export async function POST(req: NextRequest) {
       },
       400,
     );
+  }
+
+  const token = (json as Record<string, unknown>)["cf-turnstile-response"];
+  if (!(await verifyTurnstile(token, "inquiry"))) {
+    return respond({ success: false, error: "VERIFICATION_FAILED", message: "Verification failed. Please try again." }, 403);
   }
 
   try {

@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useRef, useState } from "react";
+import { Turnstile } from "@/components/Turnstile";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { useHydrated } from "@/lib/useHydrated";
@@ -13,10 +14,11 @@ const FIELD_ORDER = ["name", "business", "city", "phone", "email", "category", "
 const OTHER_CITY = "__other__";
 
 /** `cities` are the service-area cities from Sanity; without any, City is a plain text field. */
-export function InquiryForm({ cities }: { cities: string[] }) {
+export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; turnstileSiteKey?: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   // One key per inquiry: retries of the same submission reuse it, so the API stores it once.
   const idempotencyKey = useRef<string | null>(null);
+  const [verificationAttempt, setVerificationAttempt] = useState(0);
   const hydrated = useHydrated();
   const [issues, setIssues] = useState<FieldIssue[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +52,12 @@ export function InquiryForm({ cities }: { cities: string[] }) {
       return;
     }
 
+    const token = String(new FormData(form).get("cf-turnstile-response") ?? "");
+    if (turnstileSiteKey && !token) {
+      setError("Please complete the verification before submitting.");
+      return;
+    }
+
     setPending(true);
     setIssues([]);
     idempotencyKey.current ??= crypto.randomUUID();
@@ -57,7 +65,7 @@ export function InquiryForm({ cities }: { cities: string[] }) {
       const res = await fetch("/api/inquiries", {
         method: "POST",
         headers: { "content-type": "application/json", [IDEMPOTENCY_HEADER]: idempotencyKey.current },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, "cf-turnstile-response": token }),
       });
       const body = (await res.json()) as InquiryResponse;
       if (body.success) {
@@ -72,6 +80,7 @@ export function InquiryForm({ cities }: { cities: string[] }) {
     } catch {
       setError("Network error. Please try again, or call us directly.");
     } finally {
+      setVerificationAttempt((attempt) => attempt + 1);
       setPending(false);
     }
   }
@@ -177,6 +186,8 @@ export function InquiryForm({ cities }: { cities: string[] }) {
         <label htmlFor="inquiry-website">Website</label>
         <input id="inquiry-website" name={HONEYPOT_FIELD} type="text" tabIndex={-1} autoComplete="off" />
       </div>
+
+      <Turnstile key={verificationAttempt} siteKey={turnstileSiteKey} action="inquiry" />
 
       {error && (
         <p role="alert" className="text-destructive">

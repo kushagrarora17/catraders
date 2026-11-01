@@ -79,6 +79,9 @@ resource "azurerm_linux_web_app" "main" {
     EMAIL_SENDER_ADDRESS                  = local.email_sender_address
     QUOTE_NOTIFICATION_EMAIL              = var.quote_notification_email
 
+    TURNSTILE_SITE_KEY   = "0x4AAAAAAFvcsO65-TpveKn1"
+    TURNSTILE_SECRET_KEY = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/turnstile-secret-key)"
+
     # Sign-in for the MCP server (/api/mcp); see the `mcp` output.
     MCP_ADMIN_PASSWORD = local.key_vault_ref.mcp_admin_password
     MCP_JWT_SECRET     = local.key_vault_ref.mcp_jwt_secret

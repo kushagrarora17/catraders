@@ -4,6 +4,8 @@ import { Container } from "@/components/ui/container";
 import { QuoteCart } from "@/features/quote-cart/components/QuoteCart";
 import { CONTACT_HREF } from "@/features/site/nav";
 
+import { getTurnstileSiteKey } from "@/server/turnstile";
+
 export const metadata: Metadata = { title: "Quote list" };
 
 export default function QuotePage() {
@@ -19,7 +21,7 @@ export default function QuotePage() {
           .
         </p>
       </div>
-      <QuoteCart />
+      <QuoteCart turnstileSiteKey={getTurnstileSiteKey()} />
     </Container>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useRef, useState } from "react";
+import { Turnstile } from "@/components/Turnstile";
 import { IDEMPOTENCY_HEADER } from "@/lib/validation";
 import {
   type FieldIssue,
@@ -12,6 +13,7 @@ import type { QuoteItem } from "../store/useQuoteStore";
 
 interface QuoteFormProps {
   items: QuoteItem[];
+  turnstileSiteKey?: string;
   disabled: boolean;
   onSubmitted: (referenceNumber: string) => void;
   onUnavailable: (productIds: string[]) => void;
@@ -25,7 +27,8 @@ const FIELDS = [
   { name: "company", label: "Business name", type: "text", autoComplete: "organization", required: true },
 ] as const;
 
-export function QuoteForm({ items, disabled, onSubmitted, onUnavailable }: QuoteFormProps) {
+export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnstileSiteKey }: QuoteFormProps) {
+  const [verificationAttempt, setVerificationAttempt] = useState(0);
   const [issues, setIssues] = useState<FieldIssue[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -56,6 +59,12 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable }: Quote
       return;
     }
 
+    const token = text("cf-turnstile-response");
+    if (turnstileSiteKey && !token) {
+      setError("Please complete the verification before submitting.");
+      return;
+    }
+
     setPending(true);
     setIssues([]);
     setError(null);
@@ -64,7 +73,7 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable }: Quote
       const res = await fetch("/api/quotes", {
         method: "POST",
         headers: { "content-type": "application/json", [IDEMPOTENCY_HEADER]: idempotencyKey.current },
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify({ ...parsed.data, "cf-turnstile-response": token }),
       });
       const body = (await res.json()) as QuoteResponse;
       if (body.success) {
@@ -77,6 +86,7 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable }: Quote
     } catch {
       setError("Network error. Please try again.");
     } finally {
+      setVerificationAttempt((attempt) => attempt + 1);
       setPending(false);
     }
   }
@@ -118,6 +128,8 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable }: Quote
         />
         {issueFor("notes") && <p className="mt-1 text-destructive">{issueFor("notes")}</p>}
       </div>
+
+      <Turnstile key={verificationAttempt} siteKey={turnstileSiteKey} action="quote" />
 
       {(error || formIssues.length > 0) && (
         <div role="alert" className="text-destructive">
