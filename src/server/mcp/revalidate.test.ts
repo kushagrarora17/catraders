@@ -66,7 +66,7 @@ describe("MCP cache revalidation", () => {
     expect(hits.every((hit) => hit.token === "test-secret")).toBe(true);
   });
 
-  test("rejects when the loopback route does not accept the tag", async () => {
+  test("returns a warning when the loopback route does not accept the tag", async () => {
     server = createServer((_req, res) => {
       res.writeHead(401);
       res.end("no");
@@ -77,7 +77,7 @@ describe("MCP cache revalidation", () => {
     process.env.PORT = String(address.port);
     process.env.SANITY_WEBHOOK_SECRET = "test-secret";
 
-    await expect(revalidateReviews()).rejects.toThrow(/401/);
+    expect((await revalidateReviews()).cacheWarning).toContain("write succeeded");
   });
 
   test("the loopback route expires only a known tag and only with the webhook secret", async () => {

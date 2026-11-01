@@ -26,7 +26,7 @@ Secrets stay out of state where the provider allows it:
 
 - The Postgres admin password and the Sanity webhook secret are **ephemeral** random values, passed to Azure through **write-only** arguments. They never appear in plan or state.
 - The ACS connection string is a computed attribute of the ACS resource, so it's in state. The state account is protected by RBAC.
-- `database-url-app` is different on purpose. Terraform creates the secret, then `lifecycle.ignore_changes` on `value` so a later apply does not overwrite the URL. The password is set with `az keyvault secret set` (below) and is not in the configuration. The provider reads that value back into state; the state account is the same RBAC-protected one. Write-only `value_wo` would replace a hand-set URL on the apply that imports it, because importing leaves `value_wo_version` unset.
+- `database-url-app` is managed outside Terraform. Set it directly in Key Vault before starting the app; never import its value into state.
 
 ## First-time setup
 
@@ -78,7 +78,7 @@ terraform apply -target=azurerm_linux_web_app.main
 terraform apply
 ```
 
-The firewall rules are one per address in the web app's `possible_outbound_ip_address_list`, and that list does not exist until the app does, so the first command creates the app and the second adds the rules. Postgres is the slow part. This leaves `database-url-app` set to the placeholder `unset` until step 5. An existing production stack should do step 5 before applying this configuration; it already has a web app, so a single apply is enough once the secret is imported.
+The first apply creates the web app so its possible outbound IPs are available; the full apply creates the IP rules. Set the externally managed app secret in step 5 before expecting database-backed requests to work.
 
 **3. Configure GitHub Actions.**
 
@@ -128,16 +128,11 @@ printf '%s' "postgres://catraders_app:<password>@${FQDN}:5432/catraders?sslmode=
   | az keyvault secret set --vault-name "$VAULT" --name database-url-app --file /dev/stdin
 ```
 
-4. If Terraform state does not already contain this secret, import it before applying. Skip the import when state already has `azurerm_key_vault_secret.database_url_app` (the first apply of a new stack creates it). Applying while the secret exists in Azure but not in state stops with "already exists" and does not overwrite the value.
+4. Do not import the app secret. For existing stacks, the Terraform `removed` block removes it from state without deleting it from Key Vault. Verify the plan shows no secret deletion before applying.
 
-```bash
-SECRET_ID="$(az keyvault secret show --vault-name "$VAULT" --name database-url-app --query id -o tsv)"
-terraform import azurerm_key_vault_secret.database_url_app "$SECRET_ID"
-```
+5. For a migration from the broad rule, first apply with `-var=postgres_allow_azure_services=true`, verify every possible outbound IP has a working rule, then apply with `-var=postgres_allow_azure_services=false`. The two applies are required; dependencies cannot guarantee deletion order.
 
-5. `terraform apply`. That removes the 0.0.0.0 rule (unless `postgres_allow_azure_services` is true), adds a firewall rule for each of the web app's possible outbound IPs, and points the app setting `DATABASE_URL` at `database-url-app`. The 0.0.0.0 rule is destroyed only after those IP rules exist. Rules named `github-runner-*` are not in state; the deploy workflow still adds and removes them.
-
-Step 2 is the two-apply sequence for a stack that has no web app yet. Production already has one, so after the import a single apply is enough.
+Production already has all app IP rules and no broad rule, so no firewall transition is needed.
 
 **6. Point Sanity at the site.** Use `terraform output sanity_webhook` for the URL and for the command that reads the secret. Create the webhook as described in the root README.
 
@@ -150,7 +145,7 @@ To roll the lockdown back: point `DATABASE_URL` at the `database-url` reference 
 | Task | How |
 | --- | --- |
 | Rotate the admin DB password | Bump `postgres_password_version`, then `terraform apply`. The server and the `database-url` secret (migrations) change together. The web app keeps using `database-url-app`. |
-| Rotate the app DB password | `ALTER ROLE catraders_app PASSWORD '...'`, then `az keyvault secret set` on `database-url-app` with the new URL, then restart the web app. Terraform ignores that secret's value, so the next apply leaves it. |
+| Rotate the app DB password | `ALTER ROLE catraders_app PASSWORD '...'`, then `az keyvault secret set` on `database-url-app` with the new URL, then restart the web app. Terraform does not manage that secret, so the next apply leaves it. |
 | Rotate the webhook secret | Bump `sanity_webhook_secret_version`, apply, update the secret in Sanity, then restart the web app. |
 | Scale up | Change `app_service_sku` (e.g. `P0v3`) or `postgres_sku` (e.g. `GP_Standard_D2ds_v5`). An App Service SKU or tier change can move the scale unit and replace the outbound IPs; update the firewall in the same apply (see below). |
 | Outbound IPs changed | The app cannot reach Postgres until the `webapp-*` rules match. See [Postgres firewall](#postgres-firewall). |
@@ -192,3 +187,7 @@ The deploy identity can already read both sides, so this workflow grants nothing
 - The web app connects as `catraders_app` (`db/catraders_app.sql`, secret `database-url-app`). Migrations connect as `catraders_admin` (`database-url`).
 - With `postgres_allow_azure_services` left false, only the web app's possible outbound IPs, `postgres_allowed_ip_ranges`, and in-flight `github-runner-*` rules can connect. Private networking would be a separate change.
 - Next's data cache is per instance. Before scaling the web app beyond one instance, add a shared cache handler (see the root README).
+
+## Removing the app credential from state
+
+The removed block forgets the app secret without deleting it in Azure. Apply and verify this before rotating the app password. Rotate the existing catraders_app password, immediately update database-url-app, refresh App Service Key Vault references, and restart. Expect a brief database interruption. Historical state versions retain the old credential, which rotation invalidates. Never print secret values or place them in command arguments.

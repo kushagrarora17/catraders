@@ -127,14 +127,16 @@ export function registerImportTool(server: McpServer) {
         createMissingValues,
       });
 
+      let cacheResult = {};
       let written = 0;
       if (!dryRun) {
         written = await applyPlan(plan);
-        if (written) await revalidateCatalog();
+        if (written) cacheResult = await revalidateCatalog();
       }
 
       const shown = plan.rows.filter((r) => r.action !== "unchanged");
       return ok({
+        ...cacheResult,
         dryRun,
         ...(dryRun ? { note: "Nothing was written. Repeat with dryRun false to apply." } : { documentsWritten: written }),
         summary: summarize(plan.rows),

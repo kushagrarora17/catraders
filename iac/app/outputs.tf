@@ -65,8 +65,8 @@ output "database_url_command" {
 }
 
 output "database_url_app_secret_name" {
-  description = "Key Vault secret the web app reads (catraders_app). Terraform ignores its value; set it out of band. See iac/README.md."
-  value       = azurerm_key_vault_secret.database_url_app.name
+  description = "Key Vault secret the web app reads (catraders_app). Managed outside Terraform; set it out of band. See iac/README.md."
+  value       = "database-url-app"
 }
 
 output "mcp" {

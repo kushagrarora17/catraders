@@ -58,8 +58,8 @@ export function registerReviewTools(server: McpServer) {
           rating: 5,
           ...fields,
         });
-        await revalidateReviews();
-        return ok({ id: created._id, created: true });
+        const cacheResult = await revalidateReviews();
+        return ok({ ...cacheResult, id: created._id, created: true });
       }
 
       const published = baseId(id);
@@ -74,8 +74,8 @@ export function registerReviewTools(server: McpServer) {
       if (!Object.keys(fields).length) return fail("Nothing to update: pass at least one field to change");
 
       await client.patch(existing._id).set(fields).commit();
-      await revalidateReviews();
-      return ok({ id: published, created: false, visible: !!live });
+      const cacheResult = await revalidateReviews();
+      return ok({ ...cacheResult, id: published, created: false, visible: !!live });
     },
   );
 }

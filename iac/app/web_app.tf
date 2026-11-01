@@ -10,7 +10,6 @@ resource "azurerm_service_plan" "main" {
 locals {
   key_vault_ref = {
     for key, secret in {
-      database_url_app      = azurerm_key_vault_secret.database_url_app
       sanity_webhook_secret = azurerm_key_vault_secret.sanity_webhook_secret
       acs_connection_string = azurerm_key_vault_secret.acs_connection_string
       mcp_admin_password    = azurerm_key_vault_secret.mcp_admin_password
@@ -74,7 +73,7 @@ resource "azurerm_linux_web_app" "main" {
     SANITY_WEBHOOK_SECRET = local.key_vault_ref.sanity_webhook_secret
 
     # Least-privilege role. Migrations keep using the admin secret database-url.
-    DATABASE_URL = local.key_vault_ref.database_url_app
+    DATABASE_URL = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/database-url-app)"
 
     AZURE_COMMUNICATION_CONNECTION_STRING = local.key_vault_ref.acs_connection_string
     EMAIL_SENDER_ADDRESS                  = local.email_sender_address
