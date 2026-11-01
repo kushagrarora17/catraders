@@ -1,5 +1,6 @@
 import { after, type NextRequest, NextResponse } from "next/server";
 import { type QuoteResponse, quoteRequestSchema, toFieldIssues } from "@/features/quote-cart/schema";
+import { verifyTurnstile } from "@/server/turnstile";
 import { IDEMPOTENCY_HEADER, parseIdempotencyKey } from "@/lib/validation";
 import { sendQuoteEmails } from "@/server/quotes/email";
 import { submitQuoteRequest } from "@/server/quotes/service";
@@ -32,6 +33,11 @@ export async function POST(req: NextRequest) {
       },
       400,
     );
+  }
+
+  const token = (json as Record<string, unknown>)["cf-turnstile-response"];
+  if (!(await verifyTurnstile(token, "quote"))) {
+    return respond({ success: false, error: "VERIFICATION_FAILED", message: "Verification failed. Please try again." }, 403);
   }
 
   try {

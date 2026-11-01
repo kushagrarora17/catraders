@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTurnstileSiteKey } from "@/server/turnstile";
 import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { InquiryForm } from "@/features/inquiry/components/InquiryForm";
@@ -59,7 +60,7 @@ export async function Contact() {
             for itemized pricing.
           </p>
           <div className="mt-4">
-            <InquiryForm cities={area?.cities ?? []} />
+            <InquiryForm cities={area?.cities ?? []} turnstileSiteKey={getTurnstileSiteKey()} />
           </div>
         </div>
       </Container>

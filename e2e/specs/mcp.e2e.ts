@@ -386,13 +386,14 @@ test.describe("quote requests and inquiries", () => {
   test("list, read and update request status", async ({ request }) => {
     const quote = await request.post("/api/quotes", {
       data: {
+        "cf-turnstile-response": "e2e-quote",
         customer: { name: "Pat", email: "kush-claude@agentmail.to", phone: "519-555-0199", city: "Windsor", company: "Pat's Garage" },
         items: [{ productId: "prod-castrol-edge-5w30-4l", title: "Castrol", quantity: 1 }],
       },
     });
     const rfq = (await quote.json()).referenceNumber as string;
     const inquiry = await request.post("/api/inquiries", {
-      data: { name: "Pat", business: "Pat's Garage", city: "Windsor", email: "kush-claude@agentmail.to", phone: "519-555-0199", category: "" },
+      data: { "cf-turnstile-response": "e2e-inquiry", name: "Pat", business: "Pat's Garage", city: "Windsor", email: "kush-claude@agentmail.to", phone: "519-555-0199", category: "" },
     });
     const inq = (await inquiry.json()).referenceNumber as string;
 

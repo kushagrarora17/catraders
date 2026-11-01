@@ -6,7 +6,7 @@ import { RAW_BUILD_DIR, RAW_SERVER_DIR } from "./e2e/coverage";
 // a mock Sanity API (e2e/sanity-mock) and the Postgres in DATABASE_URL. `bun run test:e2e` runs the
 // specs and then writes the coverage report (e2e/coverage-report.ts).
 const nextBin = "node node_modules/next/dist/bin/next";
-const flush = `NODE_OPTIONS="--import ${process.cwd()}/e2e/flush-coverage.mjs"`;
+const flush = `NODE_OPTIONS="--import ${process.cwd()}/e2e/flush-coverage.mjs --import ${process.cwd()}/e2e/turnstile-mock.mjs"`;
 const skipBuild = process.env.E2E_SKIP_BUILD === "1";
 
 export default defineConfig({

@@ -18,6 +18,8 @@ export const appEnv: Record<string, string> = {
   // next start -p uses this same port. MCP cache flushes call back to it.
   PORT: String(APP_PORT),
   SITE_URL,
+  TURNSTILE_SITE_KEY: "e2e-site-key",
+  TURNSTILE_SECRET_KEY: "e2e-turnstile-secret",
   // Deliberately not DATABASE_URL, which may come from .env.local and point somewhere real.
   DATABASE_URL: process.env.E2E_DATABASE_URL ?? "postgres://catraders:catraders@localhost:5432/catraders",
   SANITY_PROJECT_ID: "51ngrb7a",

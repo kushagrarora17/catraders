@@ -9,7 +9,7 @@ import { QuoteForm } from "./QuoteForm";
 
 type Availability = Record<string, { exists: boolean; inStock: boolean }>;
 
-export function QuoteCart() {
+export function QuoteCart({ turnstileSiteKey }: { turnstileSiteKey?: string }) {
   const hydrated = useHydrated();
   const items = useQuoteStore((s) => s.items);
   const updateQuantity = useQuoteStore((s) => s.updateQuantity);
@@ -126,6 +126,7 @@ export function QuoteCart() {
           <p className="text-sm text-destructive">Remove unavailable products before submitting.</p>
         )}
         <QuoteForm
+          turnstileSiteKey={turnstileSiteKey}
           items={items}
           disabled={hasUnavailable}
           onSubmitted={(ref) => {
