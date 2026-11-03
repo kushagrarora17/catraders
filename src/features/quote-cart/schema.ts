@@ -6,7 +6,7 @@ export { type FieldIssue, toFieldIssues };
 export const MAX_QUOTE_ITEMS = 50;
 export const MAX_ITEM_QUANTITY = 10_000;
 
-export const quoteItemSchema = z.object({
+const quoteItemSchema = z.object({
   productId: z
     .string()
     .trim()
@@ -38,7 +38,6 @@ export const quoteRequestSchema = z.object({
   notes: optionalText(2000),
 });
 
-export type QuoteRequestInput = z.input<typeof quoteRequestSchema>;
 export type QuoteRequest = z.output<typeof quoteRequestSchema>;
 
 /** Response bodies of POST /api/quotes. */

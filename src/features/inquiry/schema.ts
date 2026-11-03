@@ -32,7 +32,6 @@ export const inquirySchema = z.object({
 /** Name of the hidden honeypot field; checked by the API before validation (unknown keys are stripped). */
 export const HONEYPOT_FIELD = "website";
 
-export type InquiryInput = z.input<typeof inquirySchema>;
 export type Inquiry = z.output<typeof inquirySchema>;
 
 /** Response bodies of POST /api/inquiries. */

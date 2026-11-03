@@ -92,7 +92,7 @@ export interface ProductFields {
   images?: unknown[];
 }
 
-export const reference = (id: string) => ({ _type: "reference" as const, _ref: id, _key: newKey() });
+const reference = (id: string) => ({ _type: "reference" as const, _ref: id, _key: newKey() });
 
 /** A complete, published product document. Matches the shape the Studio schema produces. */
 export function buildProductDocument(id: string, fields: ProductFields) {

@@ -1,8 +1,8 @@
 import { captureFormSubmission } from "@/server/form-analytics";
 import { after, type NextRequest, NextResponse } from "next/server";
 import { HONEYPOT_FIELD, type InquiryResponse, inquirySchema } from "@/features/inquiry/schema";
-import { verifyTurnstile } from "@/server/turnstile";
-import { IDEMPOTENCY_HEADER, parseIdempotencyKey, toFieldIssues } from "@/lib/validation";
+import { readFormBody, validateFormSubmission } from "@/server/form-request";
+import { IDEMPOTENCY_HEADER, parseIdempotencyKey } from "@/lib/validation";
 import { getDb } from "@/server/db";
 import { sendInquiryEmails } from "@/server/inquiries/email";
 import { insertInquiry } from "@/server/inquiries/repository";
@@ -14,40 +14,17 @@ const SUCCESS_MESSAGE = "Inquiry received. We'll respond within 24 hours.";
 const respond = (body: InquiryResponse, status: number) => NextResponse.json(body, { status });
 
 export async function POST(req: NextRequest) {
-  const raw = await req.text();
-  if (raw.length > MAX_BODY_BYTES) {
-    return respond({ success: false, error: "PAYLOAD_TOO_LARGE", message: "Request body is too large." }, 413);
-  }
-
-  let json: unknown;
-  try {
-    json = JSON.parse(raw);
-  } catch {
-    return respond({ success: false, error: "INVALID_JSON", message: "Request body must be valid JSON." }, 400);
-  }
+  const body = await readFormBody(req, MAX_BODY_BYTES);
+  if (!body.ok) return body.response;
+  const json = body.data;
 
   // Honeypot filled in: pretend success so bots don't learn to adapt, but store nothing.
   if (typeof json === "object" && json !== null && (json as Record<string, unknown>)[HONEYPOT_FIELD]) {
     return respond({ success: true, referenceNumber: generateReferenceNumber(new Date(), "INQ"), message: SUCCESS_MESSAGE }, 201);
   }
 
-  const parsed = inquirySchema.safeParse(json);
-  if (!parsed.success) {
-    return respond(
-      {
-        success: false,
-        error: "VALIDATION_FAILED",
-        message: "Please correct the highlighted fields.",
-        issues: toFieldIssues(parsed.error),
-      },
-      400,
-    );
-  }
-
-  const token = (json as Record<string, unknown>)["cf-turnstile-response"];
-  if (!(await verifyTurnstile(token, "inquiry"))) {
-    return respond({ success: false, error: "VERIFICATION_FAILED", message: "Verification failed. Please try again." }, 403);
-  }
+  const parsed = await validateFormSubmission(json, inquirySchema, "inquiry");
+  if (!parsed.ok) return parsed.response;
 
   try {
     const inquiry = parsed.data;
