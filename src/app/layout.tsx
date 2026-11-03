@@ -57,7 +57,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', '${GA_MEASUREMENT_ID}');`}
+if (!/^(localhost|127\\.0\\.0\\.1|\\[::1\\])$/.test(window.location.hostname)) {
+gtag('config', '${GA_MEASUREMENT_ID}');
+}`}
         </Script>
       </body>
     </html>
