@@ -4,7 +4,7 @@ const projectToken = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
 
 if (projectToken) {
   posthog.init(projectToken, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+    api_host: "https://m.caelitelube.com",
     defaults: "2026-08-30",
   });
 }
