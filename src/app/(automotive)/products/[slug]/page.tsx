@@ -39,6 +39,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
 
   const attributes = groupAttributeValues(product.attributeValues);
   const categoryPath = product.categoryPath.flatMap((c) => (c ? [c] : []));
+  const images = product.images?.filter((image) => image.asset) ?? [];
 
   return (
     <Container className="py-8">
@@ -53,22 +54,23 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
       />
 
       <div className="grid gap-8 md:grid-cols-2">
-        <div className="space-y-2">
-          {product.images?.length ? (
-            product.images.map((image) =>
+        <div className="min-w-0 space-y-4">
+          {images.length ? (
+            images.map((image) =>
               image.asset ? (
-                <Image
-                  key={image._key}
-                  src={urlFor(image).width(800).url()}
-                  alt={image.alt ?? product.title}
-                  width={800}
-                  height={600}
-                  className="w-full rounded-xs"
-                />
+                <div key={image._key} className="relative aspect-square w-full rounded-xs bg-white">
+                  <Image
+                    src={urlFor(image.asset).width(1200).height(1200).fit("max").url()}
+                    alt={image.alt ?? product.title}
+                    fill
+                    sizes="(min-width: 1280px) 584px, (min-width: 768px) 50vw, 100vw"
+                    className="object-contain p-4 sm:p-6"
+                  />
+                </div>
               ) : null,
             )
           ) : (
-            <div className="aspect-[4/3] w-full rounded-xs bg-card" />
+            <div className="aspect-square w-full rounded-xs bg-card" />
           )}
         </div>
 
