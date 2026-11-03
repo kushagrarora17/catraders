@@ -2,14 +2,16 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { notFound } from "next/navigation";
-import { getCategory, getFacets, getProducts } from "@/features/catalog/api";
+import { getCategory, getFacets, getProductCount, getProducts } from "@/features/catalog/api";
 import { Breadcrumbs, type Crumb } from "@/features/catalog/components/Breadcrumbs";
 import { FacetFilters } from "@/features/catalog/components/FacetFilters";
 import { ProductCard } from "@/features/catalog/components/ProductCard";
-import { parseCatalogFilters } from "@/features/catalog/filters";
+import { catalogPageHref, type CatalogFilters, parseCatalogFilters, parseCatalogPage, PRODUCTS_PER_PAGE } from "@/features/catalog/filters";
 
 export async function generateMetadata({ searchParams }: PageProps<"/products">): Promise<Metadata> {
-  const filters = parseCatalogFilters(await searchParams);
+  const params = await searchParams;
+  const filters = parseCatalogFilters(params);
+  const page = parseCatalogPage(params);
   const category = filters.category ? await getCategory(filters.category) : null;
   const title = category ? `Wholesale ${category.title}` : "Wholesale Automotive Products";
   const description = category
@@ -17,7 +19,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/products">)
     : "Browse wholesale engine oils, transmission fluids, coolants, filters and shop supplies. Request pricing and availability from CA Traders in Southwestern Ontario.";
   return {
     title, description,
-    alternates: { canonical: category ? `/products?category=${encodeURIComponent(filters.category!)}` : "/products" },
+    alternates: { canonical: catalogPageHref({ ...filters, q: null, available: false, attributes: {} }, page) },
     ...(filters.q ? { robots: { index: false, follow: true } } : {}),
     openGraph: { title, description },
   };
@@ -25,14 +27,38 @@ export async function generateMetadata({ searchParams }: PageProps<"/products">)
 
 const categoryHref = (slug: string) => `/products?category=${encodeURIComponent(slug)}` as Route;
 
+function Pagination({ filters, page, total }: { filters: CatalogFilters; page: number; total: number }) {
+  const totalPages = Math.ceil(total / PRODUCTS_PER_PAGE);
+  if (totalPages <= 1) return null;
+  return (
+    <nav aria-label="Pagination" className="mt-6 flex flex-wrap items-center justify-between gap-4 text-sm">
+      {page > 1 ? (
+        <Link href={catalogPageHref(filters, page - 1) as Route} rel="prev" className="rounded-xs border border-border px-3 py-2 hover:border-primary">
+          Previous
+        </Link>
+      ) : <span />}
+      <span aria-current="page">Page {page} of {totalPages}</span>
+      {page < totalPages ? (
+        <Link href={catalogPageHref(filters, page + 1) as Route} rel="next" className="rounded-xs border border-border px-3 py-2 hover:border-primary">
+          Next
+        </Link>
+      ) : <span />}
+    </nav>
+  );
+}
+
 export default async function ProductsPage({ searchParams }: PageProps<"/products">) {
-  const filters = parseCatalogFilters(await searchParams);
-  const [category, products, facets] = await Promise.all([
+  const params = await searchParams;
+  const filters = parseCatalogFilters(params);
+  const page = parseCatalogPage(params);
+  const [category, products, facets, total] = await Promise.all([
     filters.category ? getCategory(filters.category) : null,
-    getProducts(filters),
+    getProducts(filters, page),
     getFacets(filters),
+    getProductCount(filters),
   ]);
   if (filters.category && !category) notFound();
+  if (page > 1 && !products.length) notFound();
 
   const crumbs: Crumb[] = [
     { title: "Home", href: "/" },
@@ -68,7 +94,9 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
         </aside>
         <section>
           <p className="mb-3 text-sm text-muted-foreground">
-            {products.length} product{products.length === 1 ? "" : "s"}
+            {total > PRODUCTS_PER_PAGE
+              ? `Showing ${(page - 1) * PRODUCTS_PER_PAGE + 1}–${Math.min(page * PRODUCTS_PER_PAGE, total)} of ${total} products`
+              : `${total} product${total === 1 ? "" : "s"}`}
           </p>
           {products.length ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -79,6 +107,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
           ) : (
             <p className="text-muted-foreground">No products match these filters.</p>
           )}
+          <Pagination filters={filters} page={page} total={total} />
         </section>
       </div>
     </Container>

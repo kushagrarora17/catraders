@@ -46,12 +46,22 @@ const PRODUCT_CARD_PROJECTION = `{
 }`;
 
 export const PRODUCT_LIST_QUERY = defineQuery(
-  `*[${PRODUCT_LIST_FILTER}] | order(select(inStock == true => 0, 1) asc, title asc) ${PRODUCT_CARD_PROJECTION}`,
+  `*[${PRODUCT_LIST_FILTER}] | order(select(inStock == true => 0, 1) asc, title asc, _id asc) ${PRODUCT_CARD_PROJECTION}`,
 );
 
 /** Same shape as PRODUCT_LIST_QUERY, with extra `&& …` attribute clauses spliced in. */
-export function productListQueryWithFilters(extraFilter: string) {
-  return `*[${PRODUCT_LIST_FILTER} ${extraFilter}] | order(select(inStock == true => 0, 1) asc, title asc) ${PRODUCT_CARD_PROJECTION}`;
+export function productListQueryWithFilters(extraFilter: string, range?: { start: number; end: number }) {
+  if (range && (!Number.isSafeInteger(range.start) || !Number.isSafeInteger(range.end) || range.start < 0 || range.end <= range.start)) {
+    throw new RangeError("Invalid product page range");
+  }
+  const slice = range ? `[${range.start}...${range.end}]` : "";
+  return `*[${PRODUCT_LIST_FILTER} ${extraFilter}] | order(select(inStock == true => 0, 1) asc, title asc, _id asc)${slice} ${PRODUCT_CARD_PROJECTION}`;
+}
+
+export const PRODUCT_COUNT_QUERY = defineQuery(`count(*[${PRODUCT_LIST_FILTER}])`);
+
+export function productCountQueryWithFilters(extraFilter: string) {
+  return `count(*[${PRODUCT_LIST_FILTER} ${extraFilter}])`;
 }
 
 export const FACETS_QUERY = defineQuery(`

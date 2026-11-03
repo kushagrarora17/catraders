@@ -1,4 +1,6 @@
 import { expect, test } from "../test";
+import { MOCK_URL } from "../env";
+import { mockDoc, resetContent, sendWebhook } from "../helpers";
 
 test.describe("product listing", () => {
   test("lists automotive products only, with facets", async ({ page }) => {
@@ -63,6 +65,57 @@ test.describe("product listing", () => {
   test("unknown categories are 404s", async ({ page }) => {
     const res = await page.goto("/products?category=does-not-exist");
     expect(res?.status()).toBe(404);
+  });
+
+  test("paginates on the server with full facet counts and preserved filters", async ({ page, request }) => {
+    const product = await mockDoc(request, "prod-castrol-edge-5w30-4l");
+    try {
+      const response = await request.post(`${MOCK_URL}/v2026-09-01/data/mutate/production`, {
+        data: { mutations: Array.from({ length: 25 }, (_, index) => ({ create: {
+          ...product,
+          _id: `pagination-${String(index).padStart(2, "0")}`,
+          title: "Pagination oil",
+          slug: { _type: "slug", current: `pagination-${index}` },
+        } })) },
+      });
+      expect(response.ok()).toBe(true);
+      await sendWebhook(request, JSON.stringify({ _type: "product" }));
+
+      const filters = "category=synthetic&q=pagination&available=1&viscosity=5w-30&viscosity=0w-20&pack-size=4-l";
+      await page.goto(`/products?${filters}`);
+      await expect(page.locator("article")).toHaveCount(24);
+      await expect(page.getByText("Showing 1–24 of 25 products")).toBeVisible();
+      await expect(page.getByLabel("4 L (25)")).toBeVisible();
+      const nextHref = await page.getByRole("link", { name: "Next", exact: true }).getAttribute("href");
+      const next = new URL(nextHref!, "http://localhost");
+      expect(next.searchParams.getAll("viscosity")).toEqual(["5w-30", "0w-20"]);
+      expect(next.searchParams.get("page")).toBe("2");
+
+      await page.getByRole("link", { name: "Next", exact: true }).click();
+      await expect(page.locator("article")).toHaveCount(1);
+      await expect(page.getByText("Showing 25–25 of 25 products")).toBeVisible();
+      await expect(page.getByText("Page 2 of 2")).toBeVisible();
+      await expect(page.getByLabel("4 L (25)")).toBeVisible();
+      await expect(page.getByRole("link", { name: "Next", exact: true })).toHaveCount(0);
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/products\?category=synthetic&page=2$/);
+      await page.getByRole("link", { name: "Previous", exact: true }).click();
+      await expect(page.locator("article")).toHaveCount(24);
+      expect(new URL(page.url()).searchParams.has("page")).toBe(false);
+      await page.goBack();
+      await expect(page.locator("article")).toHaveCount(1);
+
+      await page.getByLabel("Search", { exact: true }).fill("castrol");
+      await page.getByRole("button", { name: "Apply", exact: true }).click();
+      await expect(page.getByText("1 product", { exact: true })).toBeVisible();
+      expect(new URL(page.url()).searchParams.has("page")).toBe(false);
+      await expect(page.getByRole("navigation", { name: "Pagination" })).toHaveCount(0);
+
+      expect((await page.goto(`/products?${filters}&page=3`))?.status()).toBe(404);
+      expect((await page.goto("/products?page=-1"))?.status()).toBe(200);
+      await expect(page.locator("article")).toHaveCount(24);
+    } finally {
+      await resetContent(request);
+    }
   });
 });
 
