@@ -1,0 +1,24 @@
+{
+  "title": "CA Traders API catalog",
+  "apis": [
+    {
+      "href": "/api/availability",
+      "method": "GET",
+      "description": "Get automotive product availability. Pass comma-separated product IDs in the ids query parameter."
+    },
+    {
+      "href": "/api/quotes",
+      "method": "POST",
+      "description": "Submit an automotive request for quote. Use /quote to review the quote cart and required contact details."
+    },
+    {
+      "href": "/api/inquiries",
+      "method": "POST",
+      "description": "Submit a general business inquiry. The contact form on / provides the required fields."
+    },
+    {
+      "href": "/api/mcp",
+      "description": "Model Context Protocol server for catalog and RFQ management using Streamable HTTP. Requires administrator sign-in and an OAuth bearer token; returns 503 when MCP access is not configured."
+    }
+  ]
+}

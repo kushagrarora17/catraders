@@ -26,6 +26,14 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/",
+        headers: [{ key: "Link", value: '</.well-known/api-catalog>; rel="api-catalog"; type="application/json"' }],
+      },
+      {
+        source: "/.well-known/api-catalog",
+        headers: [{ key: "Content-Type", value: "application/json" }],
+      },
+      {
         source: "/:path*",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
