@@ -54,6 +54,7 @@ export function MobileNav() {
               <li key={link.href}>
                 <Link
                   href={link.href}
+                  prefetch={true}
                   onClick={() => setOpen(false)}
                   className="block py-3 text-sm font-medium uppercase tracking-widest text-muted-foreground hover:text-highlight"
                 >
