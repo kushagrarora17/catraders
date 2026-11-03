@@ -116,8 +116,12 @@ jobs:
         env:
           # Optional repo variable for a custom domain; defaults to the web app's hostname.
           SITE_URL: ${{ vars.SITE_URL || format('https://{0}.azurewebsites.net', vars.AZURE_WEBAPP_NAME) }}
+          NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ vars.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN }}
+          NEXT_PUBLIC_POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST || 'https://m.caelitelube.com' }}
         run: |
-          docker build -f docker/Dockerfile --build-arg SITE_URL="$SITE_URL" -t "$IMAGE" .
+          docker build -f docker/Dockerfile --build-arg SITE_URL="$SITE_URL" \
+            --build-arg NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN="$NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN" \
+            --build-arg NEXT_PUBLIC_POSTHOG_HOST="$NEXT_PUBLIC_POSTHOG_HOST" -t "$IMAGE" .
           docker push "$IMAGE"
 
       # The Postgres server only accepts listed IPs, so open a rule for this runner, migrate, and
