@@ -1,0 +1,29 @@
+.navigation-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 9999;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  background: rgb(255 255 255 / 12%);
+}
+
+.navigation-progress-bar {
+  display: block;
+  width: 35%;
+  height: 100%;
+  background: #f59e0b;
+  animation: navigation-progress 1.2s ease-in-out infinite;
+}
+
+@keyframes navigation-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(386%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navigation-progress-bar {
+    width: 100%;
+    animation: none;
+  }
+}
