@@ -17,7 +17,7 @@ export const categoryGuides: Record<string, Guide> = {
     description:
       "Compare synthetic, semi-synthetic and diesel engine oils. Browse wholesale brands, viscosity grades and pack sizes for shops across Southwestern Ontario.",
     introduction:
-      "Build an engine-oil range around the vehicles your shop actually services. CA Traders supplies wholesale automotive lubricants to mechanics, repair shops and dealerships across Southwestern Ontario. Explore passenger-car motor oils and heavy-duty diesel oils, compare the specifications behind the label, and send us your required products and quantities for a quote.",
+      "CA Traders supplies wholesale engine oils to mechanics, repair shops and dealerships across Southwestern Ontario. Find passenger-car and heavy-duty diesel oils for the vehicles you service. Compare specifications, choose your pack sizes and send us the products and quantities you need for a quote.",
     keywords: [
       "wholesale engine oil",
       "synthetic motor oil supplier",
@@ -28,8 +28,8 @@ export const categoryGuides: Record<string, Guide> = {
       [
         "What is engine oil?",
         [
-          "Engine oil is a formulated lubricant that circulates through an engine. Alongside lubrication, it helps manage heat, cleanliness and contaminants as part of the engine’s lubrication system. Base oils and additive packages work together; a viscosity grade alone does not describe the complete performance of a finished oil.",
-          "For a workshop, choosing oil is both a technical and an inventory decision. A familiar brand name can help customers recognise a product, but the actual selection must match the vehicle manufacturer’s requirement. Keep the viscosity, performance standard, approval status and pack size together when recording an item on a purchase order.",
+          "Engine oil lubricates moving parts and helps control heat and contaminants as it circulates through the engine. Its performance depends on both the base oil and additives. Viscosity describes only part of what an oil does.",
+          "Choose oil that meets the vehicle manufacturer’s requirements, even when a customer asks for a familiar brand. Record the viscosity, performance standard, approval status and pack size on the purchase order so you can check suitability and manage stock.",
         ],
       ],
       [
@@ -63,7 +63,7 @@ export const categoryGuides: Record<string, Guide> = {
       [
         "Brands, pack sizes and comparing quotations",
         [
-          "Our brand list below is drawn from products currently recorded in this category. It can include established lubricant names and specialist alternatives; being listed is not a claim that CA Traders is an authorised distributor or that a particular product is in stock today.",
+          "You will find established lubricant brands and specialist alternatives in the engine-oil catalog. Ask us to confirm current stock for the product you need. A catalog listing does not establish an authorised-distributor relationship.",
           "Compare quotes using the same product specification and total quantity. Include the number of containers, volume per container, preferred brand and whether an equivalent may be considered. For equivalency requests, give the original specification first so a lower price does not hide a different application or an unsuitable approval claim.",
         ],
       ],
@@ -71,7 +71,7 @@ export const categoryGuides: Record<string, Guide> = {
         "Request wholesale engine-oil pricing",
         [
           "Send the product name or SKU, viscosity, required approvals, pack size and quantity. Include your business name, delivery city and any timing requirement. If you are building a first order, separate essential service items from optional alternatives so we can respond clearly.",
-          "CA Traders serves the confirmed cities shown on our service-area pages. Pricing, stock, delivery timing and minimum order requirements are confirmed with your quote. A catalog listing is a starting point for a purchasing conversation rather than a guarantee of immediate supply.",
+          "CA Traders serves the cities listed in our service area. We confirm pricing, stock, delivery timing and minimum order requirements with your quote. Listed products may not be available for immediate supply.",
         ],
       ],
     ],
@@ -131,7 +131,7 @@ export const categoryGuides: Record<string, Guide> = {
     description:
       "Compare automatic, CVT and manual transmission fluids. Check application requirements and request wholesale pricing from CA Traders in Southwestern Ontario.",
     introduction:
-      "The right transmission fluid starts with the transmission specification, not the colour of the bottle. CA Traders helps automotive shops source wholesale automatic transmission fluid, CVT fluid and manual transmission fluid. Use this guide to structure your enquiry and explore catalog options for your workshop’s mix of vehicles.",
+      "CA Traders supplies wholesale automatic transmission fluid, CVT fluid and manual transmission fluid to automotive shops. Start with the specification for the transmission you are servicing, then compare catalog products. Include that specification with your quote request so we can discuss suitable options.",
     keywords: [
       "wholesale transmission fluid",
       "ATF supplier Ontario",
@@ -164,13 +164,13 @@ export const categoryGuides: Record<string, Guide> = {
         "Build a transmission-service buying list",
         [
           "Separate your stock list into automatic, CVT and manual applications, then record the exact specification for each line. Link fluid purchases to the workshop’s booked services and recurring vehicle applications. This makes it easier to see which products are routine stock and which should be ordered for a specific job.",
-          "Confirm the amount required for the actual procedure, not just the nominal system capacity. A drain-and-fill, component repair and other service operations can require different quantities. Follow the vehicle manufacturer’s method; the catalog is a product-selection tool, not a transmission-service procedure.",
+          "Check how much fluid the service procedure requires. A drain-and-fill can use a different quantity from a component repair or the nominal system capacity. Follow the vehicle manufacturer’s service method when calculating your order.",
         ],
       ],
       [
         "Brand and pack-size choices",
         [
-          "The brands shown on this page come from current transmission-fluid catalog records. Compare like-for-like applications before weighing brand preference. When a customer requests an original-equipment branded fluid, note whether alternatives may be considered rather than silently replacing it with another line.",
+          "Compare transmission fluids for the same application before choosing a brand. The brands listed here have products in our catalog. If a customer requests an original-equipment branded fluid, confirm whether they will consider an alternative before requesting one.",
           "Ask for the exact available pack size, container count and unit quantity. Keep specialist CVT and manual fluids labelled separately from other lubricants. For occasional applications, a manageable pack can be more practical than holding a large quantity that will not turn over quickly.",
         ],
       ],
@@ -245,7 +245,7 @@ export const categoryGuides: Record<string, Guide> = {
     description:
       "Compare ready-to-use coolant and concentrate, OAT and HOAT. Explore wholesale automotive coolant options and request pricing across Southwestern Ontario.",
     introduction:
-      "Choose coolant by the vehicle’s required specification and the exact product instructions. CA Traders supplies wholesale automotive coolant and antifreeze for workshops across Southwestern Ontario. Explore ready-to-use and concentrate options, understand the difference between chemistry and colour, and prepare a quote request that makes compatibility checks clear.",
+      "CA Traders supplies wholesale automotive coolant and antifreeze to workshops across Southwestern Ontario. Browse ready-to-use products and concentrates, and check each against the vehicle’s required specification. Coolant chemistry, concentration and product instructions all matter when choosing what to order.",
     keywords: [
       "wholesale coolant",
       "antifreeze supplier Ontario",
@@ -279,7 +279,7 @@ export const categoryGuides: Record<string, Guide> = {
         "Compatibility and mixing questions",
         [
           "Use the vehicle handbook or service information to identify the coolant requirement. Compare it with the exact product data, including approval or suitability wording. Avoid assuming that an advertised extended-life or multi-vehicle product is suitable for every engine and cooling-system component.",
-          "Do not combine unknown products on the basis of colour alone. Follow the vehicle and fluid manufacturer’s service guidance when changing chemistry or dealing with an unidentified fill. This page explains purchasing choices; it does not replace the workshop’s service procedure or a diagnosis of cooling-system contamination.",
+          "Do not combine unknown products on the basis of colour alone. Follow the vehicle and fluid manufacturer’s service guidance when changing chemistry or dealing with an unidentified fill. Use the workshop’s service procedure and investigate any cooling-system contamination before filling.",
         ],
       ],
       [
@@ -292,8 +292,8 @@ export const categoryGuides: Record<string, Guide> = {
       [
         "Brands and quotation comparisons",
         [
-          "Any brand names shown below are drawn from the current coolant catalog, where brand attributes are recorded. If a listing has no brand label, use its title or SKU in your request and ask for the supporting product information. We do not assign a brand based on its colour or infer one from another category.",
-          "For a meaningful price comparison, provide the coolant specification, product or brand preference, concentration, pack size and quantity. Say whether an alternative may be considered and whether the existing system fill is known. This gives the quotation a defined technical requirement.",
+          "The coolant catalog shows brand names where they are recorded. If a brand is missing, send the product title or SKU and ask us to confirm it with supporting product information. Colour or a brand listed in another category cannot identify it.",
+          "To compare coolant prices, specify the vehicle requirement, preferred product or brand, concentration, pack size and quantity. Tell us whether you will consider an alternative and whether you know what coolant is already in the system.",
         ],
       ],
       [
@@ -364,7 +364,7 @@ export const categoryGuides: Record<string, Guide> = {
     description:
       "Source oil filters, engine air filters and cabin air filters for your workshop. Compare applications and request wholesale pricing from CA Traders.",
     introduction:
-      "A filter order is most useful when every line can be matched to a vehicle or a verified part number. CA Traders supplies automotive filters to mechanics, repair shops and dealerships across Southwestern Ontario. Browse oil, engine air and cabin air filters, then send your application details and quantities for a wholesale quote.",
+      "CA Traders supplies oil, engine air and cabin air filters to mechanics, repair shops and dealerships across Southwestern Ontario. Browse by filter type, then send your verified part numbers or vehicle details and quantities for a wholesale quote.",
     keywords: [
       "wholesale automotive filters",
       "oil filter supplier Ontario",
@@ -373,7 +373,7 @@ export const categoryGuides: Record<string, Guide> = {
     ],
     sections: [
       [
-        "Three filter categories, three different jobs",
+        "Oil, engine air and cabin filters",
         [
           "Oil filters work within an engine’s lubrication system, engine air filters serve its intake air path, and cabin air filters serve the passenger-compartment ventilation system. Their names describe different applications; a maintenance order may include more than one, but they are not interchangeable products.",
           "Start your selection with the exact vehicle and the filter position you need. A cabin filter request should not be treated as an engine air filter request simply because both handle air. Our subcategory links separate the main filter families so you can narrow the search before comparing listings.",
@@ -410,7 +410,7 @@ export const categoryGuides: Record<string, Guide> = {
       [
         "Brands and what the catalog can confirm",
         [
-          "The brand section on this page uses recorded catalog attributes. Some filter listings may be identified primarily by a part number and may not have a brand attribute. In those cases, request the brand, application information and supporting documentation with your quote rather than assuming a particular supplier.",
+          "Some filters are listed by part number without a recorded brand. Include that number in your enquiry and ask us to confirm the brand, application and supporting documentation.",
           "Compare quotations on the same part or a verified equivalent, with the same unit quantity. If alternatives are acceptable, state that in your enquiry and keep fitment verification separate from price comparison. No brand ranking or universal compatibility is implied by a product’s position in the listing.",
         ],
       ],
@@ -478,7 +478,7 @@ export const categoryGuides: Record<string, Guide> = {
     description:
       "Explore fuel-system cleaners, engine flushes, oil additives and workshop chemicals. Compare intended uses and request wholesale pricing from CA Traders.",
     introduction:
-      "Automotive additives and chemicals should be selected for a defined task, with the application and instructions checked before use. CA Traders supplies wholesale products for automotive workshops across Southwestern Ontario. Explore fuel-system cleaners, engine flushes, oil additives and related chemicals without treating different treatments as interchangeable.",
+      "CA Traders supplies wholesale fuel-system cleaners, engine flushes, oil additives and other chemicals to automotive workshops across Southwestern Ontario. Choose a product for the job you need to do, and check its application and instructions before use. Each treatment has its own requirements.",
     keywords: [
       "wholesale automotive additives",
       "fuel injector cleaner wholesale",
@@ -489,7 +489,7 @@ export const categoryGuides: Record<string, Guide> = {
       [
         "What belongs in additives and chemicals?",
         [
-          "This category brings together products with different purposes: fuel-system cleaners, treatments used before an oil change, oil additives, power steering fluids and other workshop chemicals. Their shared category is a purchasing convenience rather than an indication that they work in the same system.",
+          "Fuel-system cleaners, pre-oil-change treatments, oil additives and power steering fluids have different uses. Although they are grouped together in the catalog, check the intended vehicle system for each product.",
           "Choose a product by the job it is intended to perform. Identify the vehicle system, the required product type and any manufacturer restrictions before comparing brands. A treatment should not replace the correct lubricant, the vehicle’s maintenance requirements or a diagnosis when a fault is present.",
         ],
       ],
@@ -497,7 +497,7 @@ export const categoryGuides: Record<string, Guide> = {
         "Fuel cleaners, flushes and oil additives compared",
         [
           "Fuel-system cleaners are intended for the applications and fuel types stated on the exact product. Engine flushes and oil additives are different product families with their own instructions. A product designed for a pre-change procedure must not be assumed suitable to remain in the system after that procedure.",
-          "Use the product label and current technical documentation to establish its intended use, quantity and sequence. This guide deliberately does not prescribe a universal treatment amount or duration. Instructions can differ even between products from the same brand, and the workshop must check the exact item selected.",
+          "Check the product label and current technical information for the treatment amount, duration and sequence. Instructions can differ even between products from the same brand, so use the guidance for the exact item you are ordering.",
         ],
       ],
       [
@@ -515,9 +515,9 @@ export const categoryGuides: Record<string, Guide> = {
         ],
       ],
       [
-        "Brands, product claims and sensible comparisons",
+        "Compare brands and product claims",
         [
-          "Brands recorded on current category products are listed below. They can include specialist additive suppliers and lubricant brands, but the presence of a brand does not mean every product in its range is stocked. Request the exact product title or SKU and check the label before comparing alternatives.",
+          "The catalog includes products from specialist additive suppliers and lubricant brands. Ask for the exact title or SKU you need; a listed brand’s full range may not be stocked. Check the product label when comparing alternatives.",
           "Compare intended application, quantity treated, packaging and instructions rather than bottle size alone. A smaller bottle and a larger bottle may be intended for different treatment quantities or different tasks. Claims about performance should come from the exact product documentation, not an assumption that all additives offer the same benefit.",
         ],
       ],
@@ -597,7 +597,7 @@ export const categoryGuides: Record<string, Guide> = {
     description:
       "Source gloves, hand soap, bags, rags, wipes and oil-change stickers. Build a practical wholesale shop-supply order with CA Traders in Southwestern Ontario.",
     introduction:
-      "A workshop needs more than fluids and parts to keep service work organised. CA Traders supplies wholesale shop consumables for automotive businesses across Southwestern Ontario. Explore gloves, hand soap, garbage bags, rags, wipes and oil-change stickers, then build a purchasing list with the sizes, quantities and pack units your team needs.",
+      "Order gloves, hand soap, garbage bags, rags, wipes and oil-change stickers from CA Traders. We supply wholesale consumables to automotive businesses across Southwestern Ontario. Include the sizes, quantities and pack units your team uses when requesting a quote.",
     keywords: [
       "wholesale shop supplies",
       "automotive workshop consumables",
@@ -608,7 +608,7 @@ export const categoryGuides: Record<string, Guide> = {
       [
         "What are automotive shop supplies?",
         [
-          "Shop supplies are the consumables used around service work rather than fitted as a vehicle-specific component. This category includes gloves, hand-cleaning products, bags, wiping products and service stickers. They support different tasks, so the right purchase starts with how and where a product will be used.",
+          "Shop supplies include gloves, hand-cleaning products, bags, wiping products and service stickers used around the workshop. Choose them for the task and where they will be used, just as you would check the application of a vehicle part.",
           "For a purchasing list, record more than the generic item name. A glove order needs a size and pack unit; a bag order needs dimensions and quantity; a wiping-product enquiry may need material and format. Clear descriptions make it easier to compare quotes and reduce avoidable substitutions.",
         ],
       ],
@@ -651,7 +651,7 @@ export const categoryGuides: Record<string, Guide> = {
         "Put together a wholesale shop-supply order",
         [
           "Send separate lines for gloves by size, hand soap by container, bags by dimensions, and wiping products or stickers by format. Include your business name, delivery city and requested quantities. Add oils, filters or workshop chemicals to the same enquiry as separately identified items.",
-          "CA Traders confirms current stock, pack formats, pricing, delivery timing and minimum order requirements when preparing your quote. Keep the confirmed item descriptions for your next reorder so changes in packaging or product choice are easy to identify rather than being carried forward unnoticed.",
+          "We confirm stock, pack formats, pricing, delivery timing and minimum order requirements with your quote. Save the agreed item descriptions for reordering, and check for any changes to products or packaging next time.",
         ],
       ],
     ],
@@ -723,19 +723,19 @@ const cityNotes: Record<
   }
 > = {
   Windsor: {
-    focus: "Build a specification-led lubricant order",
+    focus: "Order lubricants by specification",
     introduction:
-      "For a Windsor workshop ordering several lubricant grades, a clear specification list is more useful than a broad request for motor oil. CA Traders includes Windsor in its confirmed Southwestern Ontario service area. Use this page to plan a mixed wholesale enquiry and keep the application behind each product visible.",
+      "CA Traders supplies automotive workshops in Windsor as part of our Southwestern Ontario service area. Ordering several lubricant grades? List the full specification for each one so we can quote the products your shop needs, including any specialist oils for upcoming jobs.",
     sections: [
       [
         "Start with the vehicles booked into your bays",
         [
-          "Review the oil services already booked and list each required viscosity with its full performance specification. Keep products for different engine requirements on separate lines, even when they share the same grade. The result is a practical buying list that can be checked against vehicle service information.",
-          "For your Windsor business, include both regular service products and occasional specialist requirements, but mark which items are essential for an upcoming job. This gives the quotation a clear priority without assuming that every item will be available immediately.",
+          "List the viscosity and full performance specification for each oil service already booked. Keep different engine requirements on separate lines, even when the viscosity is the same, and check the list against vehicle service information.",
+          "Include regular service oils and any specialist products your Windsor shop needs. Flag items required for upcoming jobs so we know your priorities, and ask us to confirm availability.",
         ],
       ],
       [
-        "Compare a mixed basket on equal terms",
+        "Compare the same products and quantities",
         [
           "A useful comparison matches the exact product or a documented equivalent, the pack format and the total volume. Do not compare a container price without checking how much product it contains. If an alternative is acceptable, identify the specification that must be preserved.",
           "Add oil filters by verified part number and shop supplies by pack quantity. Keeping those lines separate prevents a low price on one product from obscuring a mismatch elsewhere in the order. Retain the confirmed quote as the reference for receiving and future reorders.",
@@ -749,7 +749,7 @@ const cityNotes: Record<
   LaSalle: {
     focus: "Set up a manageable first wholesale order",
     introduction:
-      "A first wholesale purchase does not need to cover every possible service job. For a LaSalle automotive business, start with the products you can identify and expect to use. LaSalle is in CA Traders’ confirmed service area; this guide helps turn an initial enquiry into a clear purchasing list.",
+      "CA Traders serves automotive businesses in LaSalle. For your first wholesale order, start with the products you expect to use on regular and upcoming jobs. Send a list of those items and quantities so we can confirm pack sizes, pricing and delivery arrangements.",
     sections: [
       [
         "Choose an opening range from actual demand",
@@ -762,18 +762,18 @@ const cityNotes: Record<
         "Make pack units visible from the start",
         [
           "An individual bottle, a multipack and a case are different purchasing units. State the number of containers and their size for lubricants, the part count for filters, and the box count for supplies. Ask for clarification if a catalog title does not make packaging clear.",
-          "Include your LaSalle receiving address and contact details in the enquiry. A confirmed location lets us discuss delivery arrangements for the actual business rather than treating a service-city listing as a fixed delivery promise. Save the final item descriptions to make the second order easier.",
+          "Send your LaSalle receiving address and contact details so we can discuss delivery arrangements for your business. Being in our service area does not guarantee a delivery date. Save the agreed product descriptions for your next order.",
         ],
       ],
     ],
     question: "Can a LaSalle shop request a small opening order?",
     answer:
-      "Send the products and quantities you need rather than assuming a fixed minimum. CA Traders will confirm minimum order requirements, available formats, pricing and delivery arrangements for the requested basket.",
+      "Send the products and quantities you need rather than assuming a fixed minimum. CA Traders will confirm minimum order requirements, available formats, pricing and delivery arrangements for the requested order.",
   },
   Tecumseh: {
     focus: "Organise routine filter replenishment",
     introduction:
-      "For Tecumseh shops preparing repeat filter orders, the most valuable stock record is an accurate part-number list. CA Traders serves Tecumseh as part of its confirmed coverage. This guide focuses on keeping oil, engine air and cabin filter enquiries clear while adding related workshop products to the same quote.",
+      "CA Traders serves automotive shops in Tecumseh. For repeat filter orders, keep a list of verified part numbers and quantities, with oil, engine air and cabin filters identified separately. You can request related workshop products in the same quote.",
     sections: [
       [
         "Separate the three filter families",
@@ -797,7 +797,7 @@ const cityNotes: Record<
   Amherstburg: {
     focus: "Choose stock formats for occasional applications",
     introduction:
-      "An Amherstburg workshop can plan specialist lubricant purchases without treating every product as a high-turnover stock line. Amherstburg is included in CA Traders’ confirmed service area. Use this guide to separate routine requirements from occasional applications and ask the right questions about packaging.",
+      "CA Traders serves workshops in Amherstburg. Keep specialist lubricants separate from the oils you use every day when planning an order. For occasional jobs, compare available pack sizes with the quantity you expect to use before committing shelf space to a larger container.",
     sections: [
       [
         "Identify what needs to be on the shelf",
@@ -821,7 +821,7 @@ const cityNotes: Record<
   Leamington: {
     focus: "Keep passenger-car and diesel requirements distinct",
     introduction:
-      "A mixed service list needs clear distinctions between passenger-car and diesel lubricant requirements. CA Traders includes Leamington in its confirmed service area. For businesses ordering across several vehicle types, this guide explains how to keep the intended application visible without making assumptions about compatibility.",
+      "CA Traders serves automotive businesses in Leamington. If your workshop services both passenger cars and diesel vehicles, list the full lubricant requirement for each application. Oils with the same grade or brand name can have different specifications.",
     sections: [
       [
         "Write the complete requirement for each application",
@@ -834,7 +834,7 @@ const cityNotes: Record<
         "Plan a mixed enquiry without merging unlike products",
         [
           "Keep diesel oils, passenger-car oils, transmission fluids and coolant on separate lines. State whether the quantity refers to containers or total litres, and note a preferred format if one is needed for your dispensing setup.",
-          "For your Leamington business, include the actual delivery address and receiving contact. If the order covers more than one application, mark essential items and acceptable alternatives explicitly. A clear quotation can then preserve the technical differences instead of reducing the request to a total volume of oil.",
+          "For your Leamington business, include the actual delivery address and receiving contact. If the order covers more than one application, mark essential items and acceptable alternatives explicitly. The quote should identify each oil and its specification as well as the total quantity.",
         ],
       ],
     ],
@@ -845,7 +845,7 @@ const cityNotes: Record<
   Kingsville: {
     focus: "Replenish everyday workshop consumables",
     introduction:
-      "For a Kingsville shop, routine supplies can be easy to overlook beside oils and parts. CA Traders serves Kingsville within its confirmed coverage. This purchasing guide focuses on clear quantities for gloves, wiping products, hand soap, bags and service stickers when preparing a wholesale enquiry.",
+      "CA Traders supplies workshops in Kingsville. Add gloves, wiping products, hand soap, bags and service stickers to your wholesale enquiry alongside oils and parts. Include sizes and pack quantities so we can quote what your team uses.",
     sections: [
       [
         "Count by product, size and pack",
@@ -870,7 +870,7 @@ const cityNotes: Record<
   "Chatham-Kent": {
     focus: "Specify the actual receiving location",
     introduction:
-      "A service-area name is a starting point, while delivery planning needs the actual receiving address. CA Traders lists Chatham-Kent in its confirmed Southwestern Ontario coverage. This guide helps businesses prepare a precise location-based enquiry alongside the product details needed for a wholesale quote.",
+      "CA Traders serves businesses in Chatham-Kent. Send your full receiving address with your product list so we can confirm delivery arrangements for your location. Include a receiving contact and any access or opening-hour requirements.",
     sections: [
       [
         "Separate billing details from delivery instructions",
@@ -895,7 +895,7 @@ const cityNotes: Record<
   Sarnia: {
     focus: "Prepare a careful coolant enquiry",
     introduction:
-      "A coolant order should identify the required specification and supplied concentration before price is compared. CA Traders includes Sarnia in its confirmed service area. This guide helps local automotive businesses distinguish ready-to-use coolant from concentrate and keep application checks attached to the purchase.",
+      "CA Traders serves automotive businesses in Sarnia. When requesting coolant, include the vehicle specification and say whether you need concentrate or ready-to-use product. Compare prices using the volume you can use at the required concentration.",
     sections: [
       [
         "Keep chemistry and concentration separate",
@@ -919,7 +919,7 @@ const cityNotes: Record<
   Strathroy: {
     focus: "Plan replenishment without over-ordering",
     introduction:
-      "A regular replenishment list can keep a Strathroy workshop’s purchasing focused on the products it uses. Strathroy is part of CA Traders’ confirmed service area. This guide explains how to prepare a repeat wholesale enquiry using current counts, booked work and clear product descriptions.",
+      "CA Traders serves workshops in Strathroy. Base your next wholesale order on current stock counts and booked work. Keep exact product descriptions and pack units on your reorder list, and check any changes since your last purchase.",
     sections: [
       [
         "Use a stock count with a defined unit",
@@ -941,22 +941,22 @@ const cityNotes: Record<
       "Yes, but review the exact products, specifications, pack units and quantities first. Highlight changes and any time-sensitive lines. Pricing, stock and delivery arrangements need confirmation for the new enquiry.",
   },
   London: {
-    focus: "Build a complete service basket",
+    focus: "Order oils, filters and supplies together",
     introduction:
-      "A London automotive shop can prepare one clear enquiry for lubricants, filters and everyday supplies while keeping each application distinct. London is a confirmed CA Traders service city. This guide focuses on building a complete workshop basket that is practical to quote, check and receive.",
+      "CA Traders supplies automotive shops in London. Request lubricants, filters and everyday supplies in one wholesale quote, with a separate line for each product. Include specifications, part numbers and pack quantities so you can check the quote against the work planned in your shop.",
     sections: [
       [
         "Group by job, then separate the product lines",
         [
           "Start with planned services and identify the oil or fluid, filter part number and associated consumables needed for each. Grouping by job helps reveal missing items, while separate purchase lines preserve the specification and quantity for every product.",
-          "For lubricants, list the required approvals as well as viscosity. For filters, provide verified part numbers. For supplies, identify size and packaging. This structure avoids a broad request for an oil-change package that leaves important application details unstated.",
+          "For lubricants, list the required approvals as well as viscosity. For filters, provide verified part numbers. For supplies, identify size and packaging. Include these details even if you are requesting a complete oil-change order.",
         ],
       ],
       [
-        "Compare the same basket across quotations",
+        "Compare quotes for the same order",
         [
           "Keep essential requirements fixed when comparing quotes: product specification, total quantity and pack format. Mark optional items separately so the total price can be understood without hiding changes in what is included.",
-          "State the London receiving address and contact, and ask for stock and delivery timing to be confirmed for the full basket. If a line cannot be supplied as requested, evaluate the documented alternative on its own merits rather than allowing a package price to decide technical compatibility.",
+          "State the London receiving address and contact, and ask for stock and delivery timing to be confirmed for the full order. If a line cannot be supplied as requested, evaluate the documented alternative on its own merits rather than allowing a package price to decide technical compatibility.",
         ],
       ],
     ],
@@ -968,7 +968,7 @@ const cityNotes: Record<
   "St. Thomas": {
     focus: "Identify transmission-fluid applications precisely",
     introduction:
-      "Transmission-fluid enquiries benefit from an exact specification rather than a general request for ATF. CA Traders serves St. Thomas within its confirmed coverage. This guide helps automotive businesses keep automatic, CVT and manual transmission requirements distinct when preparing a wholesale order.",
+      "CA Traders serves automotive businesses in St. Thomas. For a transmission-fluid quote, send the exact fluid specification and transmission details. Keep automatic, CVT and manual requirements separate, and order the quantity needed for the service procedure.",
     sections: [
       [
         "Identify the transmission before selecting fluid",
@@ -993,7 +993,7 @@ const cityNotes: Record<
   Tillsonburg: {
     focus: "Track pack sizes and units accurately",
     introduction:
-      "A quote is easier to compare when every quantity has a clear unit. CA Traders includes Tillsonburg in its confirmed service area. This guide focuses on pack sizes, container counts and usable quantities for workshops combining fluids, filters and consumables in a wholesale enquiry.",
+      "CA Traders serves workshops in Tillsonburg. When ordering fluids, filters and consumables together, give each quantity a clear unit. Container sizes, part counts and quantities per pack help you compare the quote and check the delivery.",
     sections: [
       [
         "Turn a quantity into an unambiguous request",
@@ -1017,7 +1017,7 @@ const cityNotes: Record<
   Woodstock: {
     focus: "Separate routine stock from booked-job requirements",
     introduction:
-      "A Woodstock workshop’s next enquiry can distinguish everyday replenishment from products reserved for a specific job. Woodstock is a confirmed CA Traders service city. This guide helps buyers keep those priorities visible without assuming that a catalog listing guarantees a service deadline.",
+      "CA Traders serves automotive workshops in Woodstock. Separate routine stock orders from products needed for booked jobs, and flag any requested dates. Ask us to confirm availability and delivery timing before relying on a product for a service deadline.",
     sections: [
       [
         "Mark the reason for each purchase",
@@ -1029,7 +1029,7 @@ const cityNotes: Record<
       [
         "Confirm timing before relying on a product",
         [
-          "Include any requested date as a requirement to discuss, not as an assumption about delivery. Ask for current stock and confirmed arrangements before promising a service completion date that depends on a particular supply item.",
+          "Tell us when you need the products. Confirm stock and delivery arrangements before promising a service completion date that depends on the order.",
           "Provide your Woodstock receiving address and contact, and keep any essential products separate from optional additions. If an alternative is proposed, check the application and quantity first. Record the final decision on the purchasing list used by both the buyer and the technician.",
         ],
       ],
@@ -1041,7 +1041,7 @@ const cityNotes: Record<
   Ingersoll: {
     focus: "Keep approved substitutions clear",
     introduction:
-      "An alternative product should preserve the requirement behind the original enquiry. CA Traders serves Ingersoll as part of its confirmed coverage. This guide helps workshops distinguish a lower-priced option from a technically suitable substitute and document the decision clearly.",
+      "CA Traders serves workshops in Ingersoll. If you are open to an alternative product, include the specification or verified part reference it must meet. Check technical suitability as well as price, and record the agreed product on your order.",
     sections: [
       [
         "State what must remain the same",
@@ -1065,7 +1065,7 @@ const cityNotes: Record<
   Stratford: {
     focus: "Check the product information behind a listing",
     introduction:
-      "A short catalog title is useful for finding a product, but it may not contain everything needed to approve its use. Stratford is in CA Traders’ confirmed service area. This guide helps workshops prepare enquiries where technical documentation and product identification matter as much as price.",
+      "CA Traders serves automotive shops in Stratford. If a catalog listing leaves a specification or application unclear, ask for the exact product’s technical or safety information before ordering. Include the requirement you need checked with your quote request.",
     sections: [
       [
         "Identify missing information before ordering",
@@ -1077,7 +1077,7 @@ const cityNotes: Record<
       [
         "Keep technical and commercial questions together",
         [
-          "Send one enquiry that separates product questions from quantity and delivery details. Include any relevant product reference and describe the missing fact you need confirmed. This is more useful than asking whether a broad category is good for a particular vehicle.",
+          "Include product questions in the same enquiry as your quantities and delivery details. Give the product reference, vehicle application and the information you need confirmed so we can address the specific question.",
           "Provide your Stratford receiving address and contact, then review the confirmed product information before accepting an alternative. Retain the final description with your service or stock record so later buyers can see which claim was checked and which product was actually ordered.",
         ],
       ],
@@ -1090,7 +1090,7 @@ const cityNotes: Record<
   Kitchener: {
     focus: "Standardise a multi-person workshop order",
     introduction:
-      "When several people contribute to purchasing, one clear list can prevent duplicate and conflicting requests. Kitchener is a confirmed CA Traders service city. This guide helps automotive businesses combine technician requirements into a quote that preserves the details needed for product selection.",
+      "CA Traders serves automotive businesses in Kitchener. Combine your technicians’ requests into one purchasing list, keeping specifications, part numbers and pack quantities with each item. Resolve duplicates and unclear applications before sending the list for a quote.",
     sections: [
       [
         "Collect requirements in a consistent format",
@@ -1103,7 +1103,7 @@ const cityNotes: Record<
         "Use one final version for quote and receiving",
         [
           "Combine confirmed lines into one list and distinguish essential items from optional additions. Record acceptable alternatives explicitly. If a product changes during the quotation discussion, update the final version rather than letting different team members hold different instructions.",
-          "For your Kitchener business, include the actual receiving location and contact even if billing is handled elsewhere. Ask for stock, pricing and delivery terms to be confirmed against that final basket. The same record can then guide receiving checks and future reorders.",
+          "For your Kitchener business, include the actual receiving location and contact even if billing is handled elsewhere. Ask for stock, pricing and delivery terms to be confirmed against that final order. The same record can then guide receiving checks and future reorders.",
         ],
       ],
     ],
@@ -1115,7 +1115,7 @@ const cityNotes: Record<
   Waterloo: {
     focus: "Keep maintenance records useful for reordering",
     introduction:
-      "The product recorded on a service job can become a useful reference for the next purchase. Waterloo is included in CA Traders’ confirmed coverage. This guide focuses on accurate descriptions for repeat lubricant and filter enquiries rather than relying on memory or a generic workshop shorthand.",
+      "CA Traders serves workshops in Waterloo. Use service records to identify the exact oils and filters you have used before, then check the current application before reordering. Keep any approved substitutions and changes to pack sizes on the new list.",
     sections: [
       [
         "Record the product that was actually used",
@@ -1127,7 +1127,7 @@ const cityNotes: Record<
       [
         "Build a repeat list with clear exceptions",
         [
-          "Separate frequently used products from specialist lines and review the quantity needed for upcoming work. Keep changes to brand preference, pack size or specification visible. A reorder should be an updated requirement, not an unchecked copy of a historical invoice.",
+          "Separate frequently used products from specialist lines and review the quantity needed for upcoming work. Keep changes to brand preference, pack size or specification visible. Check each reorder against current needs before copying an old invoice.",
           "Send your Waterloo receiving address and contact with the list. Confirm current stock and commercial terms for the new order, including any request tied to a booked service. Retain the final quote alongside the updated stock record so the next buyer can trace the agreed product and unit.",
         ],
       ],
@@ -1140,10 +1140,10 @@ const cityNotes: Record<
   Cambridge: {
     focus: "Match the quote to the receiving check",
     introduction:
-      "A detailed enquiry should remain useful when the products arrive. CA Traders lists Cambridge in its confirmed service area. This guide helps automotive businesses prepare a wholesale quote with enough product and packaging detail for a straightforward receiving check.",
+      "CA Traders serves automotive businesses in Cambridge. Include exact product names, specifications or part numbers, pack sizes and quantities in your enquiry. Those details give your receiving team a reference to check when the order arrives.",
     sections: [
       [
-        "Give each line a checkable identity",
+        "Identify each product on the order",
         [
           "Use an exact product name or SKU, specification where required, pack size and quantity. For filters, keep the part number prominent. For supplies, include the relevant size or dimensions. Avoid descriptions that only the person who placed the enquiry understands.",
           "If a brand alternative may be considered, retain the technical requirement beside that permission. This keeps an acceptable commercial change separate from an unverified application change and gives receiving staff a clear reference when checking labels.",
@@ -1153,7 +1153,7 @@ const cityNotes: Record<
         "Confirm differences before products are put into stock",
         [
           "Use the final quotation to compare the product received with the agreed description and total quantity. A change in container count may reflect a different pack size, so check both rather than assuming the quantities match. Keep any accepted substitution visible on the receiving list.",
-          "Provide the Cambridge delivery address, receiving contact and any access requirements in the enquiry. Ask for timing and availability to be confirmed for that location. A service-city page identifies coverage; it does not replace the order-specific discussion needed for delivery arrangements.",
+          "Provide the Cambridge delivery address, receiving contact and any access requirements in the enquiry. Ask for timing and availability to be confirmed for that location. We serve Cambridge, and delivery arrangements need to be confirmed for each order.",
         ],
       ],
     ],
@@ -1164,19 +1164,19 @@ const cityNotes: Record<
   Guelph: {
     focus: "Keep specialist products separate from general stock",
     introduction:
-      "A specialist fluid or chemical needs a more precise request than a general replenishment item. Guelph is in CA Traders’ confirmed service area. This guide helps workshops prepare an enquiry that keeps application-specific products identifiable alongside everyday oils, filters and supplies.",
+      "CA Traders serves workshops in Guelph. You can request specialist fluids and chemicals alongside everyday oils, filters and supplies. List specialist products separately with their application requirements, and flag any questions that need to be resolved before a job is scheduled.",
     sections: [
       [
         "Define the specialist requirement first",
         [
           "Start with the vehicle specification or the exact service task, then identify the proposed product. A less common oil approval, a specific transmission fluid or a particular chemical treatment should have its own line with the relevant technical requirement.",
-          "Do not widen a product’s application to simplify the basket. If a multi-vehicle option is suggested, compare its documented coverage with the original requirement. For chemicals, read the exact instructions and do not assume every product from a familiar brand has the same usage.",
+          "Do not widen a product’s application to simplify the order. If a multi-vehicle option is suggested, compare its documented coverage with the original requirement. For chemicals, read the exact instructions and do not assume every product from a familiar brand has the same usage.",
         ],
       ],
       [
-        "Order routine and specialist lines together clearly",
+        "Combine routine and specialist products",
         [
-          "Group the basket for convenience but keep specifications, pack units and quantities separate. Mark the specialist items that must be confirmed before a job is scheduled, and identify where alternatives may be considered. This avoids treating an unresolved application as a normal stock replenishment.",
+          "Group products in one order for convenience but keep specifications, pack units and quantities separate. Mark the specialist items that must be confirmed before a job is scheduled, and identify where alternatives may be considered. Resolve application questions before treating a specialist product as regular stock.",
           "Send your Guelph receiving details and any requested timing with the list. Review product information, current availability and commercial terms together before finalising the order. Keep the confirmed specialist product on the service record so a future enquiry starts from an accurate reference.",
         ],
       ],
@@ -1207,15 +1207,15 @@ export function cityGuide(city: string): Guide {
       [
         notes.focus,
         [
-          "Explore the category guides linked above for definitions, product comparisons, compatibility checks and current catalog options. Engine oils, transmission fluids, coolants, filters, additives and shop supplies are organised separately so the exact purchasing requirement remains visible.",
-          "Brand names shown on category pages come from current catalog records where available. A brand listing does not establish stock, an authorised-distributor relationship or suitability for a particular vehicle. Use the exact product information and ask for confirmation where the listing does not answer an application question.",
+          "Browse engine oils, transmission fluids, coolants, filters, additives and shop supplies by category. Each guide covers product differences and compatibility checks to help you choose catalog items for your order.",
+          "The catalog shows brands where they are recorded. Check the exact product information for vehicle suitability and ask us to confirm current stock. A brand listing does not establish an authorised-distributor relationship.",
         ],
       ],
       [
         `Request a quote for your ${city} business`,
         [
           "Send your business name, receiving address, contact information and product list. Give the product name or SKU, required specification or part number, pack size and quantity for each line. Mark any timing request and state whether alternatives may be considered.",
-          "CA Traders confirms pricing, current stock, delivery timing and minimum order requirements for the actual enquiry. The service-area listing confirms coverage, not a fixed route, a same-day commitment or a local storefront. Use the contact form, email or phone number on this page to discuss the order before relying on a delivery date.",
+          "We confirm pricing, stock, delivery timing and minimum order requirements for your order. Coverage in your city does not guarantee a fixed route, same-day delivery or a local storefront. Contact us by form, email or phone to agree on arrangements before relying on a delivery date.",
         ],
       ],
     ],
@@ -1226,7 +1226,7 @@ export function cityGuide(city: string): Guide {
         "Include pack size, quantity and any mandatory application requirement.",
       ],
       [
-        "Specification-led enquiry",
+        "Enquiry by specification",
         "You need a suitable catalog option for a defined requirement.",
         "Provide the exact vehicle specification or verified part reference before considering alternatives.",
       ],
@@ -1235,15 +1235,15 @@ export function cityGuide(city: string): Guide {
       [notes.question, notes.answer],
       [
         `Does CA Traders serve ${city}?`,
-        `${city} is included in our confirmed Southwestern Ontario service-area list. Send the complete business receiving address and requested products so we can confirm the arrangements for your enquiry.`,
+        `Yes. We serve ${city} as part of our Southwestern Ontario service area. Send your full business receiving address and product list so we can confirm arrangements for your order.`,
       ],
       [
         "Is there a fixed delivery day or minimum order?",
-        "Delivery timing and minimum order requirements are confirmed by quote. They can depend on the location, products and quantities, so do not assume a schedule or minimum from a catalog or service-area page.",
+        "We confirm delivery timing and minimum order requirements with your quote. These depend on your location, products and quantities. Contact us for the terms that apply to your order.",
       ],
       [
         "Can I request a mixed wholesale order?",
-        "Yes. Include lubricants, fluids, verified filter part numbers and shop consumables as separate lines, with clear pack units and quantities. We confirm current availability and pricing for the requested basket.",
+        "Yes. Include lubricants, fluids, verified filter part numbers and shop consumables as separate lines, with clear pack units and quantities. We confirm current availability and pricing for the requested order.",
       ],
       [
         "How do I check product compatibility?",

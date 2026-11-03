@@ -7,6 +7,7 @@ import { categoryGuides, cityGuide, type Guide } from "./seo-content";
 
 const client = getWriteClient();
 const apply = process.argv.includes("--apply");
+const updateExisting = process.argv.includes("--update-existing");
 const slugify = (value: string) =>
   value
     .toLowerCase()
@@ -55,7 +56,7 @@ function content(guide: Guide) {
 }
 
 type Category = { _id: string; _rev: string; slug: string; landing?: unknown };
-type CityPage = { _id: string; city: string; slug: string };
+type CityPage = { _id: string; _rev: string; city: string; slug: string };
 const raw = client.withConfig({ perspective: "raw" });
 const [categories, area, existingCities] = await Promise.all([
   raw.fetch<Category[]>(
@@ -65,7 +66,7 @@ const [categories, area, existingCities] = await Promise.all([
     '*[_type == "serviceArea" && vertical == "automotive" && _id == "serviceArea"][0]{_id, cities}',
   ),
   raw.fetch<CityPage[]>(
-    '*[_type == "serviceAreaLandingPage" && vertical == "automotive"]{_id, city, "slug": slug.current}',
+    '*[_type == "serviceAreaLandingPage" && vertical == "automotive"]{_id, _rev, city, "slug": slug.current}',
   ),
 ]);
 if (!area?.cities?.length)
@@ -80,20 +81,38 @@ const plans = Object.entries(categoryGuides).map(([slug, guide]) => {
   const hasDraft = categories.some(
     (entry) => entry._id === `drafts.${category._id}`,
   );
-  return { category, guide, skip: Boolean(category.landing || hasDraft) };
+  return {
+    category,
+    guide,
+    skip: hasDraft || Boolean(category.landing && !updateExisting),
+  };
 });
 const cityPlans = area.cities.map((city) => {
   const slug = slugify(city);
   const guide = cityGuide(city);
   if (existingCities.some((page) => page.slug === slug && page.city !== city))
     throw new Error(`City slug collision: ${slug}`);
+  const matches = existingCities.filter(
+    (page) =>
+      (page.city === city || page.slug === slug) &&
+      !page._id.startsWith("drafts."),
+  );
+  if (matches.length > 1)
+    throw new Error(`Expected at most one published city page: ${city}`);
+  const existing = matches[0];
+  const hasDraft = existingCities.some(
+    (page) =>
+      page._id.startsWith("drafts.") &&
+      (page.city === city ||
+        page.slug === slug ||
+        page._id === `drafts.${existing?._id}`),
+  );
   return {
     city,
     slug,
     guide,
-    skip: existingCities.some(
-      (page) => page.city === city || page.slug === slug,
-    ),
+    existing,
+    skip: hasDraft || Boolean(existing && !updateExisting),
   };
 });
 for (const guide of [
@@ -112,8 +131,12 @@ for (const guide of [
 console.log(
   JSON.stringify({
     mode: apply ? "publish" : "dry-run",
+    updateExisting,
     categoryPages: plans.length,
     cityPages: cityPlans.length,
+    updates:
+      plans.filter((plan) => !plan.skip && plan.category.landing).length +
+      cityPlans.filter((plan) => !plan.skip && plan.existing).length,
     preserved:
       plans.filter((plan) => plan.skip).length +
       cityPlans.filter((plan) => plan.skip).length,
@@ -121,15 +144,24 @@ console.log(
 );
 if (apply) {
   for (const { category, guide, skip } of plans) {
-    if (!skip)
-      await client
-        .patch(category._id)
-        .ifRevisionId(category._rev)
-        .setIfMissing({ landing: content(guide) })
-        .commit();
+    if (!skip) {
+      const patch = client.patch(category._id).ifRevisionId(category._rev);
+      const landing = content(guide);
+      await (updateExisting
+        ? patch.set({ landing })
+        : patch.setIfMissing({ landing })
+      ).commit();
+    }
   }
-  for (const { city, slug, guide, skip } of cityPlans) {
-    if (!skip)
+  for (const { city, slug, guide, existing, skip } of cityPlans) {
+    if (skip) continue;
+    if (existing)
+      await client
+        .patch(existing._id)
+        .ifRevisionId(existing._rev)
+        .set({ content: content(guide) })
+        .commit();
+    else
       await client.create({
         _type: "serviceAreaLandingPage",
         vertical: "automotive",
