@@ -16,6 +16,7 @@ export function SiteHeader() {
               <li key={link.href}>
                 <Link
                   href={link.href}
+                  prefetch={true}
                   className="whitespace-nowrap text-sm font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:text-highlight"
                 >
                   {link.label}

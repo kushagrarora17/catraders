@@ -46,7 +46,7 @@ export async function Hero() {
             mechanic pricing, fast fulfillment, and a complete product lineup.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href="/products" className={buttonVariants()}>
+            <Link href="/products" prefetch={true} className={buttonVariants()}>
               Browse Catalog
             </Link>
             <Link href={CONTACT_HREF} className={buttonVariants({ variant: "outline" })}>
