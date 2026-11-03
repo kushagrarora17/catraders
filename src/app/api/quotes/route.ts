@@ -1,7 +1,7 @@
 import { captureFormSubmission } from "@/server/form-analytics";
 import { after, type NextRequest, NextResponse } from "next/server";
-import { type QuoteResponse, quoteRequestSchema, toFieldIssues } from "@/features/quote-cart/schema";
-import { verifyTurnstile } from "@/server/turnstile";
+import { type QuoteResponse, quoteRequestSchema } from "@/features/quote-cart/schema";
+import { readFormBody, validateFormSubmission } from "@/server/form-request";
 import { IDEMPOTENCY_HEADER, parseIdempotencyKey } from "@/lib/validation";
 import { sendQuoteEmails } from "@/server/quotes/email";
 import { submitQuoteRequest } from "@/server/quotes/service";
@@ -11,35 +11,12 @@ const MAX_BODY_BYTES = 100_000;
 const respond = (body: QuoteResponse, status: number) => NextResponse.json(body, { status });
 
 export async function POST(req: NextRequest) {
-  const raw = await req.text();
-  if (raw.length > MAX_BODY_BYTES) {
-    return respond({ success: false, error: "PAYLOAD_TOO_LARGE", message: "Request body is too large." }, 413);
-  }
+  const body = await readFormBody(req, MAX_BODY_BYTES);
+  if (!body.ok) return body.response;
+  const json = body.data;
 
-  let json: unknown;
-  try {
-    json = JSON.parse(raw);
-  } catch {
-    return respond({ success: false, error: "INVALID_JSON", message: "Request body must be valid JSON." }, 400);
-  }
-
-  const parsed = quoteRequestSchema.safeParse(json);
-  if (!parsed.success) {
-    return respond(
-      {
-        success: false,
-        error: "VALIDATION_FAILED",
-        message: "Please correct the highlighted fields.",
-        issues: toFieldIssues(parsed.error),
-      },
-      400,
-    );
-  }
-
-  const token = (json as Record<string, unknown>)["cf-turnstile-response"];
-  if (!(await verifyTurnstile(token, "quote"))) {
-    return respond({ success: false, error: "VERIFICATION_FAILED", message: "Verification failed. Please try again." }, 403);
-  }
+  const parsed = await validateFormSubmission(json, quoteRequestSchema, "quote");
+  if (!parsed.ok) return parsed.response;
 
   try {
     const idempotencyKey = parseIdempotencyKey(req.headers.get(IDEMPOTENCY_HEADER));

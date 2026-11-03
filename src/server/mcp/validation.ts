@@ -2,7 +2,7 @@
 // tools re-check them here. Keep in sync with studio/schemaTypes/documents/*.ts.
 
 /** Attribute slugs become catalog query-string keys; these are taken by the catalog itself. */
-export const RESERVED_ATTRIBUTE_SLUGS = ["q", "category", "available", "page", "sort"];
+const RESERVED_ATTRIBUTE_SLUGS = ["q", "category", "available", "page", "sort"];
 
 /** Same normalisation as Sanity's default slugifier (lowercase, hyphens), plus accent stripping. */
 export function slugify(text: string, maxLength = 96) {

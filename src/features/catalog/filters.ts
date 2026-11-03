@@ -12,9 +12,9 @@ export interface CatalogFilters {
 }
 
 // Must match RESERVED_SLUGS in studio/schemaTypes/documents/attribute.ts.
-export const RESERVED_PARAMS = new Set(["q", "category", "available", "page", "sort"]);
+const RESERVED_PARAMS = new Set(["q", "category", "available", "page", "sort"]);
 export const MAX_ATTRIBUTE_GROUPS = 10;
-export const MAX_VALUES_PER_GROUP = 20;
+const MAX_VALUES_PER_GROUP = 20;
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,95}$/;
 
 const all = (value: string | string[] | undefined) =>
@@ -61,8 +61,4 @@ export function toAttributeFilter(filters: CatalogFilters) {
     return `&& references(*[_type == "attributeValue" && attribute->vertical == "automotive" && attribute->slug.current == $attrKey${i} && slug.current in $attrValues${i}]._id)`;
   });
   return { clause: clauses.join(" "), params };
-}
-
-export function hasActiveFilters(filters: CatalogFilters) {
-  return Boolean(filters.q || filters.available || Object.keys(filters.attributes).length);
 }
