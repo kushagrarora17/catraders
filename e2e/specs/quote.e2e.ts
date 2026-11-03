@@ -129,3 +129,35 @@ test("a failing availability check doesn't block the cart", async ({ page }) => 
   await openWithCart(page, [castrol]);
   await expect(page.getByRole("button", { name: "Submit quote request" })).toBeEnabled();
 });
+
+test("requires verification and preserves the submission key when retrying", async ({ page }) => {
+  const keys: (string | undefined)[] = [];
+  await page.route("/api/quotes", async (route) => {
+    keys.push(route.request().headers()["idempotency-key"]);
+    if (keys.length === 1) {
+      await route.fulfill({ status: 503, json: { success: false, error: "UNAVAILABLE", message: "Please retry." } });
+    } else {
+      await route.continue();
+    }
+  });
+  await openWithCart(page, [castrol]);
+  await fillDetails(page);
+  const token = page.locator('[name="cf-turnstile-response"]');
+  await expect(token).toHaveValue("e2e-quote");
+  await token.evaluate((input: HTMLInputElement) => { input.value = ""; });
+  const submit = page.getByRole("button", { name: "Submit quote request" });
+  await submit.click();
+  await expect(page.locator("form").getByRole("alert")).toHaveText("Please complete the verification before submitting.");
+  expect(keys).toHaveLength(0);
+
+  await token.evaluate((input: HTMLInputElement) => { input.value = "e2e-quote"; });
+  await submit.click();
+  await expect(page.locator("form").getByRole("alert")).toHaveText("Please retry.");
+  await expect(submit).toBeEnabled();
+  await expect(token).toHaveValue("e2e-quote");
+  await submit.click();
+  await expect(page.getByText(/Your quote request RFQ-\d{4}-\d{5} has been submitted/)).toBeVisible();
+  expect(keys).toHaveLength(2);
+  expect(keys[0]).toBeTruthy();
+  expect(keys[1]).toBe(keys[0]);
+});

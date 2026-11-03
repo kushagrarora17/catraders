@@ -1,7 +1,25 @@
 import { randomUUID } from "node:crypto";
-import { MOCK_URL, SITE_URL } from "../env";
+import { MOCK_URL, SITE_URL, WEBHOOK_SECRET } from "../env";
 import { postRaw, resetContent, sendWebhook } from "../helpers";
 import { expect, test } from "../test";
+
+test("internal revalidation requires authentication and a known cache tag", async ({ request }) => {
+  const path = "/api/internal/revalidate";
+  const unauthorized = await request.post(path, { data: { tag: "automotive-products" } });
+  expect(unauthorized.status()).toBe(401);
+  const headers = { "x-revalidate-token": WEBHOOK_SECRET, "content-type": "application/json" };
+  const invalid = await postRaw(request, path, "{", headers);
+  expect(invalid.status()).toBe(400);
+  expect(await invalid.json()).toEqual({ message: "Invalid JSON" });
+  for (const tag of [null, 42, "unknown-tag"]) {
+    const response = await request.post(path, { headers, data: { tag } });
+    expect(response.status()).toBe(400);
+    expect(await response.json()).toEqual({ message: "Unknown tag" });
+  }
+  const valid = await request.post(path, { headers, data: { tag: "automotive-products" } });
+  expect(valid.status()).toBe(200);
+  expect(await valid.json()).toEqual({ revalidated: true, tag: "automotive-products" });
+});
 
 const customer = {
   name: "Jordan Lee",

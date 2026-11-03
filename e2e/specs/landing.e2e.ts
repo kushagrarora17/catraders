@@ -80,6 +80,11 @@ test.describe("landing page", () => {
     await expect(page).toHaveURL(/#testimonials$/);
     await expect(page.getByRole("button", { name: "Open menu" })).toBeVisible();
 
+    await toggle.click();
+    await page.locator("header").getByRole("link", { name: "Contact Us", exact: true }).click();
+    await expect(page).toHaveURL(/#contact$/);
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
     // Growing to desktop width closes an open menu.
     await page.getByRole("button", { name: "Open menu" }).click();
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -169,5 +174,38 @@ test.describe("inquiry form", () => {
     await fill(page);
     await page.getByRole("button", { name: /Send Inquiry/ }).click();
     await expect(page.locator("form").getByRole("alert")).toContainText("Network error");
+  });
+
+  test("requires verification and preserves entered details and the key when retrying", async ({ page }) => {
+    const keys: (string | undefined)[] = [];
+    await page.route("/api/inquiries", async (route) => {
+      keys.push(route.request().headers()["idempotency-key"]);
+      if (keys.length === 1) {
+        await route.fulfill({ status: 503, json: { success: false, error: "UNAVAILABLE", message: "Please retry." } });
+      } else {
+        await route.continue();
+      }
+    });
+    await page.goto("/#contact");
+    await fill(page);
+    const token = page.locator('[name="cf-turnstile-response"]');
+    await expect(token).toHaveValue("e2e-inquiry");
+    await token.evaluate((input: HTMLInputElement) => { input.value = ""; });
+    const submit = page.getByRole("button", { name: /Send Inquiry/ });
+    await submit.click();
+    await expect(page.locator("form").getByRole("alert")).toHaveText("Please complete the verification before submitting.");
+    expect(keys).toHaveLength(0);
+
+    await token.evaluate((input: HTMLInputElement) => { input.value = "e2e-inquiry"; });
+    await submit.click();
+    await expect(page.locator("form").getByRole("alert")).toHaveText("Please retry.");
+    await expect(page.getByLabel("Your Name")).toHaveValue("Jordan Lee");
+    await expect(submit).toBeEnabled();
+    await expect(token).toHaveValue("e2e-inquiry");
+    await submit.click();
+    await expect(page.getByRole("status")).toContainText("Thanks — inquiry received");
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).toBe(keys[0]);
   });
 });
