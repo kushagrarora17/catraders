@@ -7,7 +7,8 @@ const coverage = process.env.E2E_COVERAGE === "1";
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
-  reactCompiler: true,
+  // React Compiler rewrites sources before mapping them, duplicating client files in V8 reports.
+  reactCompiler: !coverage,
   typedRoutes: true,
   ...(coverage && {
     productionBrowserSourceMaps: true,

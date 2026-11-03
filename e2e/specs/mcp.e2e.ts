@@ -108,6 +108,29 @@ test.describe("catalog reads", () => {
 });
 
 test.describe("catalog writes", () => {
+  test("rejects image URLs with credentials or private addresses without creating a product", async ({ request }) => {
+    for (const imageUrl of [
+      "https://user:password@example.com/image.png",
+      "https://127.0.0.1/image.png",
+      "https://10.0.0.1/image.png",
+      "https://172.16.0.1/image.png",
+      "https://192.168.1.1/image.png",
+      "https://169.254.169.254/image.png",
+      "https://100.64.0.1/image.png",
+      "https://[::1]/image.png",
+      "https://[fc00::1]/image.png",
+      "https://[fe80::1]/image.png",
+    ]) {
+      const result = await tool(request, "create_product", {
+        title: "Blocked image product", category: "synthetic", imageUrls: [imageUrl],
+      });
+      expect(result.isError).toBe(true);
+      expect(result.text).toMatch(/credentials|publicly reachable/);
+    }
+    const products = await tool(request, "search_products", { query: "Blocked image product" });
+    expect(products.json.total).toBe(0);
+  });
+
   test("create_product validates input and publishes", async ({ request, page }) => {
     const base = { title: "Shell Helix 5W-30 4L", category: "synthetic" };
     expect((await tool(request, "create_product", { ...base, category: "nope" })).text).toContain('Unknown category "nope"');
