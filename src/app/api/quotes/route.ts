@@ -1,3 +1,4 @@
+import { captureFormSubmission } from "@/server/form-analytics";
 import { after, type NextRequest, NextResponse } from "next/server";
 import { type QuoteResponse, quoteRequestSchema, toFieldIssues } from "@/features/quote-cart/schema";
 import { verifyTurnstile } from "@/server/turnstile";
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!result.duplicate) after(() => sendQuoteEmails(result.referenceNumber, result.quote));
+    if (!result.duplicate) after(() => captureFormSubmission(req, "quote"));
 
     return respond(
       {

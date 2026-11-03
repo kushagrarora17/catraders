@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useRef, useState } from "react";
+import { useFormAnalytics } from "@/lib/useFormAnalytics";
 import { Turnstile } from "@/components/Turnstile";
 import { IDEMPOTENCY_HEADER } from "@/lib/validation";
 import {
@@ -28,6 +29,8 @@ const FIELDS = [
 ] as const;
 
 export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnstileSiteKey }: QuoteFormProps) {
+  const analytics = useFormAnalytics("quote");
+  const { formRef } = analytics;
   const [verificationAttempt, setVerificationAttempt] = useState(0);
   const [issues, setIssues] = useState<FieldIssue[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +42,9 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnsti
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending) return;
+    analytics.start();
+    analytics.capture("form_submit_attempted");
     const form = new FormData(event.currentTarget);
     const text = (key: string) => String(form.get(key) ?? "");
 
@@ -54,6 +60,7 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnsti
       notes: text("notes"),
     });
     if (!parsed.success) {
+      analytics.capture("form_submit_failed", { error_type: "validation", fields: parsed.error.issues.map((issue) => issue.path.join(".")) });
       setIssues(toFieldIssues(parsed.error));
       setError(null);
       return;
@@ -61,6 +68,7 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnsti
 
     const token = text("cf-turnstile-response");
     if (turnstileSiteKey && !token) {
+      analytics.capture("form_submit_failed", { error_type: "verification" });
       setError("Please complete the verification before submitting.");
       return;
     }
@@ -72,7 +80,7 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnsti
     try {
       const res = await fetch("/api/quotes", {
         method: "POST",
-        headers: { "content-type": "application/json", [IDEMPOTENCY_HEADER]: idempotencyKey.current },
+        headers: { ...analytics.headers(), "content-type": "application/json", [IDEMPOTENCY_HEADER]: idempotencyKey.current },
         body: JSON.stringify({ ...parsed.data, "cf-turnstile-response": token }),
       });
       const body = (await res.json()) as QuoteResponse;
@@ -80,10 +88,12 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnsti
         onSubmitted(body.referenceNumber);
         return;
       }
+      analytics.capture("form_submit_failed", { error_type: body.error, status: res.status });
       if (body.productIds?.length) onUnavailable(body.productIds);
       setIssues(body.issues ?? []);
       setError(body.message);
     } catch {
+      analytics.capture("form_submit_failed", { error_type: "network" });
       setError("Network error. Please try again.");
     } finally {
       setVerificationAttempt((attempt) => attempt + 1);
@@ -94,7 +104,7 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnsti
   const formIssues = issues.filter((i) => !i.path.startsWith("customer.") && i.path !== "notes");
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="max-w-lg space-y-3 text-sm">
+    <form ref={formRef} onChange={analytics.start} onSubmit={handleSubmit} noValidate className="max-w-lg space-y-3 text-sm">
       {FIELDS.map((field) => {
         const message = issueFor(`customer.${field.name}`);
         return (
