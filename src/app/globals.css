@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+* {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
 /* Root canvas colour (= --brand-navy-dark, #111d29). Browsers sample html/body
    background for the Android bottom "chin", iOS Safari toolbars and overscroll;
    the theme variables are scoped below <body>, so use the literal here. */

@@ -4,7 +4,7 @@ import { Container } from "@/components/ui/container";
 import { notFound } from "next/navigation";
 import { getCategory, getFacets, getProducts } from "@/features/catalog/api";
 import { Breadcrumbs, type Crumb } from "@/features/catalog/components/Breadcrumbs";
-import { FacetFilters } from "@/features/catalog/components/FacetFilters";
+import { AppliedFilters, FacetFilters, ProductSearch } from "@/features/catalog/components/FacetFilters";
 import { ProductCard } from "@/features/catalog/components/ProductCard";
 import { parseCatalogFilters } from "@/features/catalog/filters";
 
@@ -66,7 +66,9 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
         <aside>
           <FacetFilters facets={facets} filters={filters} />
         </aside>
-        <section>
+        <section className="min-w-0">
+          <ProductSearch filters={filters} />
+          <AppliedFilters facets={facets} filters={filters} />
           <p className="mb-3 text-sm text-muted-foreground">
             {products.length} product{products.length === 1 ? "" : "s"}
           </p>
