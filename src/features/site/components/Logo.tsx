@@ -4,7 +4,7 @@ import { TAGLINE } from "../contact";
 import { LOGO_DROP, LOGO_TRIANGLE, LOGO_VIEWBOX } from "../logo-paths";
 
 /** Gold triangle with an oil drop, plus the wordmark. */
-export function LogoMark({ className }: { className?: string }) {
+function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox={LOGO_VIEWBOX} aria-hidden="true" className={cn("size-11 shrink-0", className)}>
       <path d={LOGO_TRIANGLE} className="fill-primary" />

@@ -34,16 +34,6 @@ export async function loadTaxonomy(): Promise<Taxonomy> {
   };
 }
 
-/** Titles from the top-level category down to `category`. */
-export function categoryPath(taxonomy: Taxonomy, category: Category) {
-  const path: string[] = [];
-  for (let current: Category | undefined = category; current; ) {
-    path.unshift(current.title);
-    current = current.parentId ? taxonomy.categoryById.get(current.parentId) : undefined;
-  }
-  return path;
-}
-
 /** Resolves a category by slug, falling back to a case-insensitive title match. */
 export function resolveCategory(taxonomy: Taxonomy, input: string): Category | string {
   const bySlug = taxonomy.categoryBySlug.get(input) ?? taxonomy.categoryBySlug.get(slugify(input));

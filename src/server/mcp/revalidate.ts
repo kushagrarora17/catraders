@@ -58,7 +58,7 @@ function postRevalidate(tag: string): Promise<void> {
   });
 }
 
-export interface CacheResult { cacheWarning?: string }
+interface CacheResult { cacheWarning?: string }
 
 async function invalidate(tag: string): Promise<CacheResult> {
   for (let attempt = 0; attempt < 2; attempt++) {

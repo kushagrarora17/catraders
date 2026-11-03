@@ -53,6 +53,7 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "fallow": "3.38.1",
     "groq-js": "2.0.1",
     "monocart-coverage-reports": "2.13.2",
     "tailwindcss": "^4",

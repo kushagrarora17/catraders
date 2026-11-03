@@ -10,7 +10,7 @@ type Props = {
   readonly style?: React.CSSProperties;
 };
 
-export const BAR_HEIGHT = 44;
+const BAR_HEIGHT = 44;
 
 export const BrowserFrame: React.FC<Props> = ({ url, width, height, dark = true, children, style }) => {
   return (
