@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useRef, useState } from "react";
+import { useFormAnalytics } from "@/lib/useFormAnalytics";
 import { Turnstile } from "@/components/Turnstile";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -15,7 +16,8 @@ const OTHER_CITY = "__other__";
 
 /** `cities` are the service-area cities from Sanity; without any, City is a plain text field. */
 export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; turnstileSiteKey?: string }) {
-  const formRef = useRef<HTMLFormElement>(null);
+  const analytics = useFormAnalytics("inquiry");
+  const { formRef } = analytics;
   // One key per inquiry: retries of the same submission reuse it, so the API stores it once.
   const idempotencyKey = useRef<string | null>(null);
   const [verificationAttempt, setVerificationAttempt] = useState(0);
@@ -37,6 +39,9 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending) return;
+    analytics.start();
+    analytics.capture("form_submit_attempted");
     const form = event.currentTarget;
     const data = Object.fromEntries(
       [...FIELD_ORDER, HONEYPOT_FIELD].map((key) => [
@@ -48,12 +53,14 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
     setError(null);
     const parsed = inquirySchema.safeParse(data);
     if (!parsed.success) {
+      analytics.capture("form_submit_failed", { error_type: "validation", fields: parsed.error.issues.map((issue) => issue.path.join(".")) });
       showIssues(toFieldIssues(parsed.error));
       return;
     }
 
     const token = String(new FormData(form).get("cf-turnstile-response") ?? "");
     if (turnstileSiteKey && !token) {
+      analytics.capture("form_submit_failed", { error_type: "verification" });
       setError("Please complete the verification before submitting.");
       return;
     }
@@ -64,7 +71,7 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
     try {
       const res = await fetch("/api/inquiries", {
         method: "POST",
-        headers: { "content-type": "application/json", [IDEMPOTENCY_HEADER]: idempotencyKey.current },
+        headers: { ...analytics.headers(), "content-type": "application/json", [IDEMPOTENCY_HEADER]: idempotencyKey.current },
         body: JSON.stringify({ ...data, "cf-turnstile-response": token }),
       });
       const body = (await res.json()) as InquiryResponse;
@@ -75,9 +82,11 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
         setOtherCity(false);
         return;
       }
+      analytics.capture("form_submit_failed", { error_type: body.error, status: res.status });
       showIssues(body.issues ?? []);
       setError(body.message);
     } catch {
+      analytics.capture("form_submit_failed", { error_type: "network" });
       setError("Network error. Please try again, or call us directly.");
     } finally {
       setVerificationAttempt((attempt) => attempt + 1);
@@ -93,7 +102,7 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
           Your reference is <strong className="text-foreground">{reference}</strong>. We&apos;ll respond with wholesale
           pricing within 24 hours.
         </p>
-        <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => setReference(null)}>
+        <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => { analytics.reset(); setReference(null); }}>
           Send another inquiry
         </Button>
       </div>
@@ -101,7 +110,7 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} noValidate aria-describedby="inquiry-note" className="flex flex-col gap-5">
+    <form ref={formRef} onChange={analytics.start} onSubmit={handleSubmit} noValidate aria-describedby="inquiry-note" className="flex flex-col gap-5">
       <p id="inquiry-note" className="text-sm text-muted-foreground">
         Fields marked <span className="text-highlight">*</span> are required.
       </p>

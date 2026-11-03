@@ -1,3 +1,4 @@
+import { captureFormSubmission } from "@/server/form-analytics";
 import { after, type NextRequest, NextResponse } from "next/server";
 import { HONEYPOT_FIELD, type InquiryResponse, inquirySchema } from "@/features/inquiry/schema";
 import { verifyTurnstile } from "@/server/turnstile";
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
     const idempotencyKey = parseIdempotencyKey(req.headers.get(IDEMPOTENCY_HEADER));
     const { referenceNumber, duplicate } = await insertInquiry(getDb(), inquiry, idempotencyKey);
     if (!duplicate) after(() => sendInquiryEmails(referenceNumber, inquiry));
+    if (!duplicate) after(() => captureFormSubmission(req, "inquiry"));
     return respond({ success: true, referenceNumber, message: SUCCESS_MESSAGE }, duplicate ? 200 : 201);
   } catch (error) {
     console.error("[inquiries] Failed to store inquiry", error);
