@@ -69,3 +69,8 @@ override.tf.json
 # CLI config (may contain registry tokens)
 .terraformrc
 terraform.rc
+
+workers/content-review/dist/
+workers/content-review/deploy.zip
+
+.netlify/

@@ -1,0 +1,161 @@
+name: Deploy Sanity Studio to Netlify
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: deploy-studio-production
+  cancel-in-progress: false
+
+jobs:
+  resolve-sha:
+    # The `branches` filter matches branch names, so a fork PR from a branch called "main" starts
+    # this workflow; pull_request CI is not in the event list, so it never takes the Azure identity.
+    # Manual runs have to target main. Dispatched CI is accepted only for this repository.
+    if: >-
+      vars.NETLIFY_STUDIO_SITE_ID != '' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        (github.event.workflow_run.event == 'push' ||
+         github.event.workflow_run.event == 'workflow_dispatch')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.pick.outputs.sha }}
+      changed: ${{ steps.changes.outputs.changed }}
+    steps:
+      # workflow_run loads this file from the default branch. Check that commit out
+      # so the guard script matches the workflow, not an older CI SHA.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Resolve the commit CI validated
+        id: pick
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! sha=$(bash .github/scripts/resolve-deploy-sha.sh); then
+            echo "::error::Could not resolve the deploy SHA"
+            exit 1
+          fi
+          if [ -n "$sha" ]; then
+            echo "sha=$sha" >> "$GITHUB_OUTPUT"
+            echo "Deploying $sha"
+          fi
+
+      - name: Check changes since the last successful deployment
+        if: steps.pick.outputs.sha != ''
+        id: changes
+        env:
+          DEPLOY_TARGET: studio
+          REQUESTED_SHA: ${{ steps.pick.outputs.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          changed=$(bash .github/scripts/deploy-changes.sh)
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "studio deployment needed: $changed"
+
+  deploy:
+    needs: resolve-sha
+    if: needs.resolve-sha.outputs.sha != '' && needs.resolve-sha.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    defaults:
+      run:
+        working-directory: studio
+    env:
+      NETLIFY_SITE_ID: ${{ vars.NETLIFY_STUDIO_SITE_ID }}
+      SANITY_STUDIO_PROJECT_ID: 51ngrb7a
+      SANITY_STUDIO_DATASET: production
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve-sha.outputs.sha }}
+          persist-credentials: false
+
+      - name: Verify successful CI for manual releases
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_SHA: ${{ needs.resolve-sha.outputs.sha }}
+        run: |
+          set -euo pipefail
+          gh run list --workflow ci.yml --commit "$RELEASE_SHA" --branch main --limit 50 --json conclusion,event |
+            jq -e 'any(.[]; .conclusion == "success" and (.event == "push" or .event == "workflow_dispatch"))' > /dev/null
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - run: bun run validate
+      - run: bunx tsc --noEmit
+      - run: bun run build
+      - run: bun run netlify --version
+
+      - name: Check release is still current
+        id: current
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_SHA: ${{ needs.resolve-sha.outputs.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tip=$(gh api "repos/$REPOSITORY/commits/main" --jq .sha)
+          if [ "$tip" = "$RELEASE_SHA" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check deployment credentials
+        if: steps.current.outputs.publish == 'true'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_AUTH_TOKEN }}
+        run: |
+          test -n "$NETLIFY_AUTH_TOKEN" || { echo "::error::Set NETLIFY_AUTH_TOKEN in the production environment"; exit 1; }
+          test -n "$SANITY_AUTH_TOKEN" || { echo "::error::Set SANITY_AUTH_TOKEN in the production environment"; exit 1; }
+
+      - name: Register Studio and deploy schema
+        if: steps.current.outputs.publish == 'true'
+        env:
+          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_AUTH_TOKEN }}
+        run: bunx --no-install sanity deploy --external --url https://sanity.caelitelube.com --schema-required --yes
+
+      - name: Publish static Studio
+        if: steps.current.outputs.publish == 'true'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          RELEASE_SHA: ${{ needs.resolve-sha.outputs.sha }}
+        run: bun run netlify deploy --prod --no-build --dir=dist --message="GitHub CI $RELEASE_SHA" --json > "$RUNNER_TEMP/studio-deploy.json"
+
+      - name: Verify deployed Studio
+        if: steps.current.outputs.publish == 'true'
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 6 --retry-all-errors --retry-delay 10 https://sanity.caelitelube.com/ -o "$RUNNER_TEMP/studio.html"
+          grep -q '<html' "$RUNNER_TEMP/studio.html"
+          curl --fail --silent --show-error https://sanity.caelitelube.com/structure -o "$RUNNER_TEMP/studio-route.html"
+          cmp "$RUNNER_TEMP/studio.html" "$RUNNER_TEMP/studio-route.html"

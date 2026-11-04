@@ -1,6 +1,8 @@
 .git
 .github
 .claude
+.codex
+iac
 .next
 node_modules
 studio
@@ -14,3 +16,6 @@ test-results
 playwright-report
 *.md
 .env*
+
+workers/content-review/dist
+workers/content-review/deploy.zip
