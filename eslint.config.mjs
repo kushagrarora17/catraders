@@ -11,6 +11,7 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    "workers/content-review/dist/**",
     "next-env.d.ts",
     // Standalone Sanity Studio has its own toolchain.
     "studio/**",

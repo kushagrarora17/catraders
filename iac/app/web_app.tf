@@ -68,6 +68,9 @@ resource "azurerm_linux_web_app" "main" {
     WEBSITE_WARMUP_PATH                 = "/api/health"
     WEBSITES_CONTAINER_START_TIME_LIMIT = "300"
 
+    CONTENT_REVIEW_ENABLED   = tostring(var.content_review_enabled)
+    CONTENT_REVIEW_QUEUE_URL = var.content_review_enabled ? "${azurerm_storage_account.content_review[0].primary_queue_endpoint}content-review" : ""
+
     SANITY_PROJECT_ID     = var.sanity_project_id
     SANITY_DATASET        = var.sanity_dataset
     SANITY_WEBHOOK_SECRET = local.key_vault_ref.sanity_webhook_secret

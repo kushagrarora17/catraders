@@ -39,10 +39,11 @@ output "github_actions_secrets" {
 output "github_actions_variables" {
   description = "Repository variables for .github/workflows/azure-deploy.yml."
   value = {
-    AZURE_RESOURCE_GROUP = azurerm_resource_group.main.name
-    AZURE_WEBAPP_NAME    = azurerm_linux_web_app.main.name
-    ACR_NAME             = azurerm_container_registry.main.name
-    ACR_LOGIN_SERVER     = azurerm_container_registry.main.login_server
+    AZURE_REVIEW_FUNCTION_APP = var.content_review_enabled ? azurerm_linux_function_app.content_review[0].name : ""
+    AZURE_RESOURCE_GROUP      = azurerm_resource_group.main.name
+    AZURE_WEBAPP_NAME         = azurerm_linux_web_app.main.name
+    ACR_NAME                  = azurerm_container_registry.main.name
+    ACR_LOGIN_SERVER          = azurerm_container_registry.main.login_server
     # Used by the deploy workflow to run database migrations as the admin role.
     # This must stay database-url, not database-url-app (the app role cannot DDL).
     AZURE_POSTGRES_SERVER     = azurerm_postgresql_flexible_server.main.name

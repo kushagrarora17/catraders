@@ -22,6 +22,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: deploy-production
@@ -46,6 +47,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       sha: ${{ steps.pick.outputs.sha }}
+      changed: ${{ steps.changes.outputs.changed }}
     steps:
       # workflow_run loads this file from the default branch. Check that commit out
       # so the guard script matches the workflow, not an older CI SHA.
@@ -53,7 +55,7 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Resolve the commit CI validated
         id: pick
@@ -73,9 +75,24 @@ jobs:
             echo "Deploying $sha"
           fi
 
+      - name: Check changes since the last successful deployment
+        if: steps.pick.outputs.sha != ''
+        id: changes
+        env:
+          DEPLOY_TARGET: automotive
+          REQUESTED_SHA: ${{ steps.pick.outputs.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          changed=$(bash .github/scripts/deploy-changes.sh)
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "automotive deployment needed: $changed"
+
   build-and-deploy:
     needs: resolve-sha
-    if: needs.resolve-sha.result == 'success' && needs.resolve-sha.outputs.sha != ''
+    if: needs.resolve-sha.result == 'success' && needs.resolve-sha.outputs.sha != '' && needs.resolve-sha.outputs.changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -100,6 +117,14 @@ jobs:
           bun-version: 1.4.2
 
       - run: bun install --frozen-lockfile
+
+      - name: Build content review worker
+        if: vars.AZURE_REVIEW_FUNCTION_APP != ''
+        run: |
+          bun run review:build
+          cd workers/content-review/dist
+          bun install --production
+          zip -qr ../deploy.zip .
 
       # IDs are `production` environment secrets so they're masked in public logs.
       - name: Log in to Azure (OIDC)
@@ -183,6 +208,13 @@ jobs:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           resource-group-name: ${{ vars.AZURE_RESOURCE_GROUP }}
           images: ${{ env.IMAGE }}
+
+      - name: Deploy content review worker
+        if: vars.AZURE_REVIEW_FUNCTION_APP != ''
+        env:
+          REVIEW_FUNCTION_APP: ${{ vars.AZURE_REVIEW_FUNCTION_APP }}
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: az functionapp deployment source config-zip --resource-group "$RESOURCE_GROUP" --name "$REVIEW_FUNCTION_APP" --src workers/content-review/deploy.zip --only-show-errors
 
       # The new container's first real page can take about a minute. Hit the
       # public site (cache revalidated) so the next visitor does not pay that.

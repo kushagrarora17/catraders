@@ -17,10 +17,16 @@
     "studio:dev": "cd studio && bun run dev",
     "typegen": "cd studio && bun run typegen",
     "seed": "cd studio && bun run seed",
-    "upload-products": "cd studio && bun run upload-products"
+    "upload-products": "cd studio && bun run upload-products",
+    "review:build": "bun build workers/content-review/index.ts --target node --packages bundle --external @azure/functions --outdir workers/content-review/dist && bun workers/content-review/build.ts",
+    "review:test:model": "bun scripts/test-foundry-model.ts",
+    "review:test:research": "bun scripts/test-foundry-research.ts"
   },
   "dependencies": {
     "@azure/communication-email": "^1.1.0",
+    "@azure/functions": "^4.17.0",
+    "@azure/identity": "^4.14.1",
+    "@azure/storage-queue": "^12.32.0",
     "@modelcontextprotocol/server": "2.4.0",
     "@portabletext/react": "^8.0.1",
     "@sanity/client": "^8.12.0",
