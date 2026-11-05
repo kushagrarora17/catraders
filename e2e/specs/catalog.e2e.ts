@@ -19,12 +19,14 @@ test.describe("product listing", () => {
   test("filters by search, stock and attributes, and clears", async ({ page }) => {
     await page.goto("/products");
 
-    await page.getByLabel("Search").fill("castrol");
-    await page.getByRole("button", { name: "Apply" }).click();
+    await page.getByLabel("Search products", { exact: true }).fill("castrol");
+    await page.getByRole("button", { name: "Search", exact: true }).click();
     await expect(page).toHaveURL(/q=castrol/);
     await expect(page.getByText("1 product", { exact: true })).toBeVisible();
 
-    await page.getByLabel("Search").fill("");
+    await page.getByLabel("Search products", { exact: true }).fill("");
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+    await expect(page).not.toHaveURL(/q=castrol/);
     await page.getByLabel("In stock only").check();
     await page.getByLabel(/^4 L/).check();
     await page.getByRole("button", { name: "Apply" }).click();
@@ -32,13 +34,39 @@ test.describe("product listing", () => {
     await expect(page.getByText("2 products")).toBeVisible();
     await expect(page.getByText("Valvoline 10W-40 4L")).toHaveCount(0);
     await expect(page.getByLabel(/^4 L/)).toBeChecked();
+    await page.getByLabel("Search products", { exact: true }).fill("castrol");
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+    await expect(page).toHaveURL(/q=castrol/);
+    await expect(page).toHaveURL(/available=1/);
+    await expect(page).toHaveURL(/pack-size=4-l/);
 
     await page.goto("/products?viscosity=10w-40&available=1");
     await expect(page.getByText("No products match these filters.")).toBeVisible();
 
-    await page.getByRole("link", { name: "Clear" }).click();
+    await page.getByRole("link", { name: "Clear filters", exact: true }).click();
     await expect(page).toHaveURL(/\/products$/);
     await expect(page.getByText("4 products")).toBeVisible();
+  });
+
+  test("mobile filters keep Apply visible and expose removable applied filters", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 640 });
+    await page.goto("/products?category=engine-oil&available=1");
+    await page.getByRole("button", { name: "Filters (1)", exact: true }).click();
+    const drawer = page.getByRole("dialog");
+    await expect(drawer).toBeVisible();
+    await expect(drawer.getByRole("button", { name: "Apply filters" })).toBeInViewport();
+    await drawer.getByLabel("In stock only").uncheck();
+    await expect(drawer.getByRole("status")).toHaveText("Unapplied changes");
+    await drawer.getByRole("button", { name: "Apply filters" }).click();
+    await expect(page).not.toHaveURL(/available=1/);
+    await expect(page).toHaveURL(/category=engine-oil/);
+
+    await page.getByRole("button", { name: "Filters", exact: true }).click();
+    await drawer.getByLabel("In stock only").check();
+    await drawer.getByRole("button", { name: "Apply filters" }).click();
+    await page.getByRole("link", { name: "Remove In stock", exact: true }).click();
+    await expect(page).not.toHaveURL(/available=1/);
+    await expect(page).toHaveURL(/category=engine-oil/);
   });
 
   test("browses categories with breadcrumbs and sub-categories", async ({ page }) => {
@@ -59,7 +87,7 @@ test.describe("product listing", () => {
     // Filters keep the category.
     await page.goto("/products?category=synthetic&pack-size=1-l");
     await expect(page.getByText("1 product", { exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Clear" })).toHaveAttribute("href", "/products?category=synthetic");
+    await expect(page.getByRole("link", { name: "Clear filters", exact: true })).toHaveAttribute("href", "/products?category=synthetic");
   });
 
   test("unknown categories are 404s", async ({ page }) => {

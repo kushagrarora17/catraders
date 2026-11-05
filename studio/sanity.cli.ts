@@ -4,6 +4,7 @@ import {dataset, projectId} from './env'
 export default defineCliConfig({
   api: {projectId, dataset},
   deployment: {
+    appId: 'q4o4dxzkn9w4piulvcw69rj0',
     autoUpdates: true,
   },
   typegen: {

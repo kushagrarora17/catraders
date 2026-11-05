@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
 import Script from "next/script";
+import { Suspense } from "react";
+import { NavigationProgress } from "@/features/site/components/NavigationProgress";
 import { BUSINESS_NAME } from "@/features/site/contact";
 import { getSiteUrl } from "@/features/site/url";
 import "./globals.css";
@@ -51,6 +53,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en-CA" className={`${barlow.variable} ${barlowCondensed.variable} h-full`}>
       <body className="min-h-full">
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         {children}
         <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
         <Script id="google-tag" strategy="afterInteractive">
