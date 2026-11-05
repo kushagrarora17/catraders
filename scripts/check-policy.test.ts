@@ -44,8 +44,8 @@ test("resolves relative imports before checking catalog boundaries", () => {
 
 test("checks every GROQ selector and every OR branch", () => {
   const f = fixture();
-  const query = (value: string) => f.write("src/queries.ts",
-    `const defineQuery = (q: string) => q; export const QUERY = defineQuery(${JSON.stringify(value)});`);
+  f.write("src/queries.ts", 'import query from "./query.json"; const defineQuery = (q: string) => q; export const QUERY = defineQuery(query);');
+  const query = (value: string) => f.write("src/query.json", JSON.stringify(value));
   query('*[vertical == "automotive" && _type == "product"]');
   expect(f.run().status).toBe(0);
   query('*[vertical == "automotive" || _type == "product"]');
