@@ -23,6 +23,13 @@ export const product = defineType({
       validation: (rule) => rule.required(),
     }),
     verticalField,
+    defineField({name: 'suppressDefaultFaqs', title: 'Suppress default FAQs', type: 'boolean', initialValue: false}),
+    defineField({name: 'faqs', title: 'Custom FAQs', type: 'array', of: [defineArrayMember({
+      name: 'faq', type: 'object', fields: [
+        defineField({name: 'question', type: 'string', validation: (rule) => rule.required().custom((value) => value?.trim() ? true : 'Enter a question')}),
+        defineField({name: 'answer', type: 'text', rows: 4, validation: (rule) => rule.required().custom((value) => value?.trim() ? true : 'Enter an answer')}),
+      ], preview: {select: {title: 'question'}},
+    })]}),
     defineField({name: 'seo', type: 'seo'}),
     defineField({
       name: 'sku',

@@ -1,3 +1,5 @@
+import { productFaqs } from "@/features/catalog/faqs";
+import { getServiceArea } from "@/features/landing/api";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -8,6 +10,7 @@ import { groupAttributeValues } from "@/features/catalog/attributes";
 import { Breadcrumbs } from "@/features/catalog/components/Breadcrumbs";
 import { StockBadge } from "@/features/catalog/components/StockBadge";
 import { AddToQuote } from "@/features/quote-cart/components/AddToQuote";
+import { JsonLd } from "@/features/seo/content";
 import { urlFor } from "@/sanity/image";
 
 // Render product pages on first request, then serve them from the ISR cache
@@ -40,10 +43,21 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
   const attributes = groupAttributeValues(product.attributeValues);
   const categoryPath = product.categoryPath.flatMap((c) => (c ? [c] : []));
   const images = product.images?.filter((image) => image.asset) ?? [];
+  const area = await getServiceArea();
+  const faqs = productFaqs(product, area?.cities ?? []);
 
   return (
     <Container className="py-8">
       <article>
+      {faqs.length > 0 && <JsonLd value={{
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqs.map(({ question, answer }) => ({
+          "@type": "Question",
+          name: question,
+          acceptedAnswer: { "@type": "Answer", text: answer },
+        })),
+      }} />}
       <Breadcrumbs
         items={[
           { title: "Home", href: "/" },
@@ -110,6 +124,15 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           )}
         </div>
       </div>
+      {faqs.length > 0 && <section aria-labelledby="product-faq-heading" className="mt-12 max-w-3xl">
+        <h2 id="product-faq-heading" className="mb-4 text-xl font-semibold">Frequently asked questions</h2>
+        {faqs.map(({ question, answer }) => (
+          <details key={question} className="border-t border-border py-5">
+            <summary className="cursor-pointer font-medium">{question}</summary>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{answer}</p>
+          </details>
+        ))}
+      </section>}
       </article>
     </Container>
   );

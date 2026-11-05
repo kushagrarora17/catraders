@@ -174,7 +174,7 @@ test.describe("POST /api/webhooks/sanity", () => {
     expect(await res.json()).toEqual({ revalidated: true, tag: "automotive-products" });
 
     await page.reload();
-    await expect(page.getByText("Out of stock")).toBeVisible();
+    await expect(page.getByText("Out of stock", { exact: true })).toBeVisible();
   });
 });
 
