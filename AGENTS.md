@@ -11,12 +11,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # Project notes
 
 - Spec: `TRD.md`. Setup, env vars and deployment: `README.md`.
-- Package manager and test runner is **Bun** (`bun install`, `bun run <script>`, `bun run test`). Node ≥ 24 is the runtime; never add npm/yarn/pnpm lockfiles.
-- `studio/` is a standalone Sanity Studio with its own `package.json`; it is excluded from the root tsconfig/eslint/Docker context.
-- After changing Sanity schemas or any `defineQuery` in `src/`, run `bun run typegen` and commit `src/sanity/types.ts`. Query variable names must be unique.
-- Every GROQ query must filter `vertical == "automotive"`; catalog fetches go through `src/features/catalog/api.ts` so they carry the `automotive-products` cache tag.
-- DB schema lives in `src/server/db/schema.ts`; create migrations with `bun run db:generate` (never hand-edit applied migrations).
-- Local Postgres runs in Podman: `bun run db:up`.
-- MCP server for catalog/RFQ management: `/api/mcp`, tools in `src/server/mcp/` (register new ones in `server.ts`), OAuth sign-in in `src/server/oauth/`; usage in `README.md`. Sanity writes go through `getWriteClient()` (`src/sanity/write-client.ts`) and must call the helpers in `src/server/mcp/revalidate.ts`.
-- Azure infra is Terraform in `iac/` (`bootstrap/` = state storage, `app/` = everything else; azurerm v5). Run `terraform fmt -recursive iac` after edits. Keep secrets out of state via ephemeral values + write-only (`*_wo`) arguments. Deploys use GitHub OIDC (repo variables, no secrets).
-- PRs to `main` merge only when the `ci-ok` check passes (ruleset: `.github/rulesets/main.json`; add new CI jobs to its `needs`). Open a PR and run `gh pr merge --auto --squash`; direct pushes to `main` are blocked.
+- Use **Bun** (`bun install`, `bun run <script>`, `bun run test`). `studio/` is a standalone Sanity Studio with its own toolchain.
+- DB schema: `src/server/db/schema.ts`; generate migrations with `bun run db:generate`.
+- MCP: `/api/mcp`, tools in `src/server/mcp/` (register in `server.ts`), OAuth in `src/server/oauth/`. Sanity writes must call helpers in `src/server/mcp/revalidate.ts`.
+- Terraform: `iac/bootstrap/` = state storage, `iac/app/` = everything else; azurerm v5. Keep secrets out of state with ephemeral values and write-only (`*_wo`) arguments. Deploys use GitHub OIDC.
+- When asked to publish changes, open a PR and use `gh pr merge --auto --squash`.
