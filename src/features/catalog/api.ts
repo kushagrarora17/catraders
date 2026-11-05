@@ -12,16 +12,18 @@ import type {
   QUOTE_PRODUCTS_QUERY_RESULT,
   SITEMAP_QUERY_RESULT,
 } from "@/sanity/types";
-import { type CatalogFilters, toAttributeFilter, toBaseParams } from "./filters";
+import { type CatalogFilters, PRODUCTS_PER_PAGE, toAttributeFilter, toBaseParams } from "./filters";
 import {
   CATEGORY_BY_SLUG_QUERY,
   FACETS_QUERY,
   PRODUCT_AVAILABILITY_QUERY,
   PRODUCT_BY_SLUG_QUERY,
   PRODUCT_LIST_QUERY,
+  PRODUCT_COUNT_QUERY,
   QUOTE_PRODUCTS_QUERY,
   SITEMAP_QUERY,
   productListQueryWithFilters,
+  productCountQueryWithFilters,
 } from "./queries";
 
 /** Cache tag for all catalog content; revalidated by the Sanity webhook. */
@@ -38,11 +40,18 @@ export function getCategory(slug: string) {
   return cachedFetch<CATEGORY_BY_SLUG_QUERY_RESULT>(CATEGORY_BY_SLUG_QUERY, { slug });
 }
 
-export function getProducts(filters: CatalogFilters) {
+export function getProducts(filters: CatalogFilters, page?: number) {
   const base = toBaseParams(filters);
   const attr = toAttributeFilter(filters);
-  const query = attr.clause ? productListQueryWithFilters(attr.clause) : PRODUCT_LIST_QUERY;
+  const range = page === undefined ? undefined : { start: (page - 1) * PRODUCTS_PER_PAGE, end: page * PRODUCTS_PER_PAGE };
+  const query = attr.clause || range ? productListQueryWithFilters(attr.clause, range) : PRODUCT_LIST_QUERY;
   return cachedFetch<PRODUCT_LIST_QUERY_RESULT>(query, { ...base, ...attr.params });
+}
+
+export function getProductCount(filters: CatalogFilters) {
+  const attr = toAttributeFilter(filters);
+  const query = attr.clause ? productCountQueryWithFilters(attr.clause) : PRODUCT_COUNT_QUERY;
+  return cachedFetch<number>(query, { ...toBaseParams(filters), ...attr.params });
 }
 
 /** Attribute facets with counts for the current search/category (ignoring attribute selections). */

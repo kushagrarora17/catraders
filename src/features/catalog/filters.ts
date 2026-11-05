@@ -14,12 +14,31 @@ export interface CatalogFilters {
 // Must match RESERVED_SLUGS in studio/schemaTypes/documents/attribute.ts.
 const RESERVED_PARAMS = new Set(["q", "category", "available", "page", "sort"]);
 export const MAX_ATTRIBUTE_GROUPS = 10;
+export const PRODUCTS_PER_PAGE = 24;
 const MAX_VALUES_PER_GROUP = 20;
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,95}$/;
 
 const all = (value: string | string[] | undefined) =>
   value === undefined ? [] : Array.isArray(value) ? value : [value];
 const first = (value: string | string[] | undefined) => all(value)[0];
+
+export function parseCatalogPage(searchParams: SearchParams) {
+  const value = first(searchParams.page);
+  const page = value && /^\d+$/.test(value) ? Number(value) : 1;
+  return Number.isSafeInteger(page) && page > 0 && Number.isSafeInteger(page * PRODUCTS_PER_PAGE) ? page : 1;
+}
+
+export function catalogPageHref(filters: CatalogFilters, page: number) {
+  const params = new URLSearchParams();
+  if (filters.category) params.set("category", filters.category);
+  if (filters.q) params.set("q", filters.q);
+  if (filters.available) params.set("available", "1");
+  for (const [key, values] of Object.entries(filters.attributes)) {
+    for (const value of values) params.append(key, value);
+  }
+  if (page > 1) params.set("page", String(page));
+  return `/products${params.size ? `?${params}` : ""}`;
+}
 
 export function parseCatalogFilters(searchParams: SearchParams): CatalogFilters {
   const q = first(searchParams.q)?.trim().slice(0, 100) || null;

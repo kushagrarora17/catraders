@@ -450,7 +450,7 @@ export type CATEGORY_BY_SLUG_QUERY_RESULT = {
 
 // Source: ../src/features/catalog/queries.ts
 // Variable: PRODUCT_LIST_QUERY
-// Query: *[  _type == "product" && vertical == "automotive"  && (!defined($q) || title match $q || sku match $q)  && (!defined($category) || $category in [    category->slug.current,    category->parent->slug.current,    category->parent->parent->slug.current  ])  && (!$available || inStock == true)] | order(select(inStock == true => 0, 1) asc, title asc) {  _id,  title,  "slug": slug.current,  sku,  inStock,  "image": images[0],  "category": category->{ title, "slug": slug.current },  "attributeLabels": attributeValues[]->label,  "brandLabels": attributeValues[@->attribute->slug.current == "brand"][]->label}
+// Query: *[  _type == "product" && vertical == "automotive"  && (!defined($q) || title match $q || sku match $q)  && (!defined($category) || $category in [    category->slug.current,    category->parent->slug.current,    category->parent->parent->slug.current  ])  && (!$available || inStock == true)] | order(select(inStock == true => 0, 1) asc, title asc, _id asc) {  _id,  title,  "slug": slug.current,  sku,  inStock,  "image": images[0],  "category": category->{ title, "slug": slug.current },  "attributeLabels": attributeValues[]->label,  "brandLabels": attributeValues[@->attribute->slug.current == "brand"][]->label}
 export type PRODUCT_LIST_QUERY_RESULT = Array<{
   _id: string;
   title: string;
@@ -473,6 +473,11 @@ export type PRODUCT_LIST_QUERY_RESULT = Array<{
   attributeLabels: Array<string> | null;
   brandLabels: Array<string> | null;
 }>;
+
+// Source: ../src/features/catalog/queries.ts
+// Variable: PRODUCT_COUNT_QUERY
+// Query: count(*[  _type == "product" && vertical == "automotive"  && (!defined($q) || title match $q || sku match $q)  && (!defined($category) || $category in [    category->slug.current,    category->parent->slug.current,    category->parent->parent->slug.current  ])  && (!$available || inStock == true)])
+export type PRODUCT_COUNT_QUERY_RESULT = number;
 
 // Source: ../src/features/catalog/queries.ts
 // Variable: FACETS_QUERY
@@ -810,7 +815,8 @@ export type HIDDEN_REVIEWS_QUERY_RESULT = Array<{
 declare global {
   interface SanityQueries {
     '\n  *[_type == "category" && vertical == "automotive" && slug.current == $slug][0] {\n    _id,\n    title,\n    "slug": slug.current,\n    level,\n    "ancestors": [\n      parent->parent->{ title, "slug": slug.current },\n      parent->{ title, "slug": slug.current }\n    ][defined(slug)],\n    "children": *[_type == "category" && vertical == "automotive" && parent._ref == ^._id] | order(sortOrder asc, title asc) {\n      _id,\n      title,\n      "slug": slug.current\n    }\n  }\n': CATEGORY_BY_SLUG_QUERY_RESULT;
-    '*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!$available || inStock == true)\n] | order(select(inStock == true => 0, 1) asc, title asc) {\n  _id,\n  title,\n  "slug": slug.current,\n  sku,\n  inStock,\n  "image": images[0],\n  "category": category->{ title, "slug": slug.current },\n  "attributeLabels": attributeValues[]->label,\n  "brandLabels": attributeValues[@->attribute->slug.current == "brand"][]->label\n}': PRODUCT_LIST_QUERY_RESULT;
+    '*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!$available || inStock == true)\n] | order(select(inStock == true => 0, 1) asc, title asc, _id asc) {\n  _id,\n  title,\n  "slug": slug.current,\n  sku,\n  inStock,\n  "image": images[0],\n  "category": category->{ title, "slug": slug.current },\n  "attributeLabels": attributeValues[]->label,\n  "brandLabels": attributeValues[@->attribute->slug.current == "brand"][]->label\n}': PRODUCT_LIST_QUERY_RESULT;
+    'count(*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!$available || inStock == true)\n])': PRODUCT_COUNT_QUERY_RESULT;
     '\n  *[_type == "attribute" && vertical == "automotive" && filterable == true] | order(sortOrder asc, title asc) {\n    _id,\n    title,\n    "key": slug.current,\n    "values": *[_type == "attributeValue" && attribute._ref == ^._id] | order(sortOrder asc, label asc) {\n      _id,\n      label,\n      "key": slug.current,\n      "count": count(*[\n  _type == "product" && vertical == "automotive"\n  && (!defined($q) || title match $q || sku match $q)\n  && (!defined($category) || $category in [\n    category->slug.current,\n    category->parent->slug.current,\n    category->parent->parent->slug.current\n  ])\n  && (!$available || inStock == true)\n && references(^._id)])\n    }[count > 0]\n  }[count(values) > 0]\n': FACETS_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && slug.current == $slug][0] {\n    _id,\n    title,\n    "slug": slug.current,\n    sku,\n    inStock,\n    images,\n    description,\n    seo,\n    suppressDefaultFaqs,\n    faqs,\n    "descriptionText": pt::text(description),\n    "categoryPath": [\n  category->parent->parent->{ title, "slug": slug.current },\n  category->parent->{ title, "slug": slug.current },\n  category->{ title, "slug": slug.current }\n][defined(slug)],\n    "attributeValues": attributeValues[]->{\n  label,\n  sortOrder,\n  "attribute": attribute->{ _id, title, sortOrder, "slug": slug.current }\n}\n  }\n': PRODUCT_BY_SLUG_QUERY_RESULT;
     '\n  *[_type == "product" && vertical == "automotive" && _id in $ids] { _id, inStock }\n': PRODUCT_AVAILABILITY_QUERY_RESULT;
