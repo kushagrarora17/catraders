@@ -132,8 +132,8 @@ test.describe("product listing", () => {
       await page.goBack();
       await expect(page.locator("article")).toHaveCount(1);
 
-      await page.getByLabel("Search", { exact: true }).fill("castrol");
-      await page.getByRole("button", { name: "Apply", exact: true }).click();
+      await page.getByLabel("Search products", { exact: true }).fill("castrol");
+      await page.getByRole("button", { name: "Search", exact: true }).click();
       await expect(page.getByText("1 product", { exact: true })).toBeVisible();
       expect(new URL(page.url()).searchParams.has("page")).toBe(false);
       await expect(page.getByRole("navigation", { name: "Pagination" })).toHaveCount(0);
