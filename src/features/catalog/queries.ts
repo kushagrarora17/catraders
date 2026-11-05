@@ -81,7 +81,7 @@ export const FACETS_QUERY = defineQuery(`
 const PRODUCT_ATTRIBUTE_VALUES_PROJECTION = `attributeValues[]->{
   label,
   sortOrder,
-  "attribute": attribute->{ _id, title, sortOrder }
+  "attribute": attribute->{ _id, title, sortOrder, "slug": slug.current }
 }`;
 
 const CATEGORY_PATH_PROJECTION = `[
@@ -100,6 +100,8 @@ export const PRODUCT_BY_SLUG_QUERY = defineQuery(`
     images,
     description,
     seo,
+    suppressDefaultFaqs,
+    faqs,
     "descriptionText": pt::text(description),
     "categoryPath": ${CATEGORY_PATH_PROJECTION},
     "attributeValues": ${PRODUCT_ATTRIBUTE_VALUES_PROJECTION}
