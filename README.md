@@ -100,7 +100,7 @@ Other Studio tasks, run from `studio/`:
 
 | Command | Purpose |
 | --- | --- |
-| `bun run deploy` | Deploy the Studio to `*.sanity.studio` |
+| `bun run deploy` | Sanity hosting CLI; production Studio releases use the Netlify workflow below |
 | `bun run deploy-schema` | Deploy the schema to the Content Lake (for MCP/agents) |
 | `bun run typegen` | Regenerate `src/sanity/types.ts` after changing schemas or queries |
 | `bun run validate` | Validate the schema |
@@ -281,3 +281,49 @@ DATABASE_URL="$(terraform -chdir=iac/app output -raw database_url_command | sh)"
 - The MCP server has one shared password and no per-person audit trail. Move the consent step to Microsoft Entra sign-in if more people need access.
 - MCP client registration uses dynamic client registration only (no Client ID Metadata Documents yet).
 - The MCP sign-in rate limiter is in memory; it needs a shared store before scaling out (same caveat as the cache).
+
+
+### Automatic AI product review
+
+Products have an **AI review** tab in Studio. After saved edits, the review service checks titles, SKU context, descriptions, SEO, image alt text and selected shared taxonomy fields. It suggests manual corrections and never blocks publishing. Factual flags require an exact-product manufacturer match and retrieved citations; ambiguous matches are marked **Unable to verify**. Manufacturer identity is inferred from existing content. AI findings still require editorial judgment.
+
+The worker uses the approved **GPT-6.1 Terra** deployment in Microsoft Foundry, with web search for manufacturer research. Search grounding has separate charges and data handling terms; see [Microsoft's web search documentation](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/web-search). It uses two model stages, with up to two rate-limit retries per request and four search tool calls per research attempt, with bounded input/output sizes. Token usage and findings counts are logged; these bounds are not a monthly spending cap.
+
+Terraform provisions Terra and the review worker by default (`foundry_enabled = true`, `content_review_enabled = true`). The signed Sanity webhook enables reviews after saved automotive catalog edits. Run `bun run scripts/test-foundry-model.ts` for basic checks and `bun run scripts/test-foundry-research.ts` for live manufacturer research checks without Sanity writes. `terraform -chdir=iac/app output -json foundry` reports the endpoint and deployment.
+
+Deployment:
+
+1. Confirm GPT-6.1 Terra (`2026-10-26`) Global Standard quota in your Foundry region. Set Terraform `content_review_enabled = true` and optionally `content_review_location` to that region. Supply the existing Sanity write-token configuration. The function uses the existing Linux App Service plan, managed identity for Azure services, and the existing Key Vault Sanity token. Apply Terraform through your normal infrastructure workflow.
+2. Add the `AZURE_REVIEW_FUNCTION_APP` value from `terraform output github_actions_variables` to the repository variables. The existing OIDC deployment workflow builds and deploys the worker alongside the website. `bun run review:build` builds it locally. Deploy Studio with the new schema and review tab.
+3. Create a **separate** Sanity webhook pointing to `/api/webhooks/content-review`, using the existing `SANITY_WEBHOOK_SECRET`. Enable create/update/delete and **include drafts**. Use filter `coalesce(after()._type, before()._type) in ["product", "category", "attribute", "attributeValue"] && coalesce(after().vertical, before().vertical, after().attribute->vertical, before().attribute->vertical) == "automotive"` and projection `{"_id": coalesce(after()._id, before()._id), "_type": coalesce(after()._type, before()._type)}`. Do not include `contentReview` documents. Keep the existing cache-revalidation webhook.
+4. Test with a representative product: introduce a typo, wait for the review after saving, correct it, and check that the new result replaces the old one. Check a known specification against its manufacturer reference before enabling the webhook for the team. Existing products are reviewed on their next edit; there is no initial catalog sweep.
+
+The signed webhook queues only IDs. The worker waits until the product and referenced content have been idle for 60 seconds, collapses unchanged content by hash, and discards results superseded by edits. Taxonomy events enqueue affected products, including drafts. Reviews are separate, read-only Sanity draft documents (so unpublished text is not exposed through the public dataset); they do not change storefront content and do not require storefront cache invalidation. The shared `getWriteClient()` implementation is used by both the website and worker.
+
+Transient failures get three retries after the first attempt. Check the `content-review-poison` queue and Function logs for persistent failures; review failures remain visible in Studio. Monitor queue age, poison messages, failed reviews and token usage in Azure, and configure operational alerts before production rollout. Turn off the webhook and set `CONTENT_REVIEW_ENABLED=false` on both services to pause reviews without deleting their results. Model calls already in progress may finish.
+
+
+### Hosted Studio: Netlify
+
+The catalog Studio is served at **https://sanity.caelitelube.com**, backed by [caelitelube-sanity](https://app.netlify.com/projects/caelitelube-sanity) in Netlify team `kushagr`. It includes the AI review tab; the Azure review service is enabled separately.
+
+Netlify project ID: `b72f3765-44cb-42fe-a44c-5e91d7635b37`. Sanity project/dataset: `51ngrb7a` / `production`. The registered external Studio ID lives in `studio/sanity.cli.ts`. `studio/netlify.toml` builds only the standalone Studio and provides a non-forced SPA rewrite, so editor links survive refreshes. Local Netlify state (`.netlify/`) is ignored.
+
+`.github/workflows/studio-deploy.yml` releases the exact tested `main` SHA after **CI** succeeds. It excludes fork/PR CI events, skips obsolete commits, serializes production deploys, validates/typechecks/builds the Studio, deploys the Sanity schema, publishes `dist/`, and checks HTTPS and a direct editor route. Manual runs are restricted to `main` and require successful CI for that SHA. Keep Netlify's native Git builds disconnected to avoid publishing outside this workflow. Failed builds keep the previous site live; correct a bad published release with a new commit.
+
+GitHub configuration:
+
+| Location | Name | Value |
+| --- | --- | --- |
+| Repository variable | `NETLIFY_STUDIO_SITE_ID` | `b72f3765-44cb-42fe-a44c-5e91d7635b37` |
+| `production` environment secret | `NETLIFY_AUTH_TOKEN` | Netlify automation token with deployment access to this project |
+| `production` environment secret | `SANITY_AUTH_TOKEN` | Sanity deploy token with permissions to deploy schemas and register this Studio |
+
+Set credentials through [GitHub environment settings](https://github.com/kushagrarora17/catraders/settings/environments); never put them in `SANITY_STUDIO_*` variables or files. Both credentials and the site ID are configured. Automatic releases start after the workflow is merged into `main`.
+
+Cloudflare zone `caelitelube.com` has a DNS-only CNAME `sanity` → `caelitelube-sanity.netlify.app` (automatic TTL). `sanity.caelitelube.com` is attached as Netlify's primary custom domain, with a Netlify-managed HTTPS certificate and forced HTTPS. Sanity allows credentialed CORS for exactly `https://sanity.caelitelube.com` and `https://caelitelube-sanity.netlify.app`. Editors sign in with their existing Sanity accounts and permissions.
+
+After activation, verify sign-in, catalog access, the product editor, the AI review tab, and a direct product link after refresh. To redeploy, rerun the **Deploy Sanity Studio to Netlify** workflow on `main` after its CI run succeeds. Hosting on Netlify does not activate the Azure AI reviewer.
+
+
+Deployment selection: the Azure app and Netlify Studio workflows independently compare changes against their own last successful deployment. Studio sources, its package/lockfile, and its deployment workflow select Studio; automotive sources, public assets, root dependencies/build settings, migrations, the review worker, Azure app infrastructure, and the Azure deployment workflow select automotive. Shared Node-version and deployment-selection scripts select both. Documentation and source tests alone select neither. Both deployments run in parallel after successful CI when both are affected. Failed/skipped deployments do not advance the baseline; first deployments or rewritten history release conservatively. Manual dispatch remains an explicit redeploy.

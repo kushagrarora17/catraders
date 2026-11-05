@@ -26,5 +26,5 @@ provider "azurerm" {
   features {}
   subscription_id                = var.subscription_id
   storage_use_azuread            = true
-  resource_providers_to_register = ["Microsoft.Communication"]
+  resource_providers_to_register = concat(["Microsoft.Communication"], local.foundry_enabled ? ["Microsoft.CognitiveServices", "Microsoft.Storage"] : [])
 }

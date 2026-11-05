@@ -153,6 +153,50 @@ export type Attribute = {
   sortOrder?: number;
 };
 
+export type ProductReference = {
+  _ref: string;
+  _type: "reference";
+  _weak?: boolean;
+  [internalGroqTypeReferenceTo]?: "product";
+};
+
+export type ContentReview = {
+  _id: string;
+  _type: "contentReview";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  vertical?: string;
+  product?: ProductReference;
+  status?: string;
+  inputHash?: string;
+  model?: string;
+  promptVersion?: string;
+  leaseUntil?: string;
+  error?: string;
+  reviewedAt?: string;
+  sourceUpdatedAt?: string;
+  coverage?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  findings?: Array<{
+    kind?: string;
+    path?: string;
+    documentId?: string;
+    original?: string;
+    suggestion?: string;
+    explanation?: string;
+    evidence?: Array<{
+      url?: string;
+      quote?: string;
+      _type: "reviewEvidence";
+      _key: string;
+    }>;
+    _type: "reviewFinding";
+    _key: string;
+  }>;
+};
+
 export type CategoryReference = {
   _ref: string;
   _type: "reference";
@@ -360,6 +404,8 @@ export type AllSanitySchemaTypes =
   | AttributeReference
   | AttributeValue
   | Attribute
+  | ProductReference
+  | ContentReview
   | CategoryReference
   | AttributeValueReference
   | SanityImageAssetReference

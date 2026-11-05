@@ -57,6 +57,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: bun run typecheck
+      - run: bun run review:build
       - run: bun run db:migrate
 
       # The deploy workflow only applies committed migrations, so a schema change without one
@@ -138,6 +139,7 @@ jobs:
 
       - run: bun install --frozen-lockfile
       - run: bun run validate
+      - run: bunx tsc --noEmit
       - run: bun run build
 
       - name: Check generated Sanity types are up to date
@@ -174,6 +176,7 @@ jobs:
         run: |
           bash .github/scripts/dispatch-ci-after-automerge.test.sh
           bash .github/scripts/resolve-deploy-sha.test.sh
+          bash .github/scripts/deploy-changes.test.sh
           bash .github/scripts/warmup-site.test.sh
           bash .github/scripts/postgres-firewall-drift.test.sh
 
