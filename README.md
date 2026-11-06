@@ -128,15 +128,16 @@ The web app reads Sanity on the server only, so no CORS origin is needed for it.
 | `SANITY_API_READ_TOKEN` | no | Only needed if the dataset becomes private |
 | `SANITY_WEBHOOK_SECRET` | yes | Must match the secret on the Sanity webhook |
 | `DATABASE_URL` | yes | For Azure, append `?sslmode=verify-full` |
-| `AZURE_COMMUNICATION_CONNECTION_STRING` | prod | If unset, emails are logged and skipped |
+| `AZURE_COMMUNICATION_CONNECTION_STRING` | prod | If unset, lead mail is not sent and `[email] Failed` is logged with the lead id |
 | `EMAIL_SENDER_ADDRESS` | prod | A verified ACS sender, e.g. `DoNotReply@<id>.azurecomm.net` |
-| `QUOTE_NOTIFICATION_EMAIL` | no | Internal inbox that gets new-RFQ and landing-page inquiry notices |
+| `QUOTE_NOTIFICATION_EMAIL` | prod | Internal inbox for new RFQs, inquiries, send-failure alerts, and the daily digest |
+| `CRON_SECRET` | prod | Authenticates `POST /api/cron/lead-digest` (`x-cron-secret`). Terraform stores it in Key Vault as `cron-secret` and sets this app setting to that reference. The GitHub Actions repository secret `CRON_SECRET` must be the same value |
 | `SITE_URL` | prod | Public URL for canonical links, Open Graph, `sitemap.xml` and `robots.txt`. Defaults to `http://localhost:3000` |
 | `MCP_ADMIN_PASSWORD` | for MCP | Password on the MCP sign-in screen. Without it (and `MCP_JWT_SECRET`) `/api/mcp` returns 503 |
 | `MCP_JWT_SECRET` | for MCP | At least 32 characters; signs MCP access tokens |
 | `SANITY_API_WRITE_TOKEN` | for MCP | Sanity **Editor** token; the MCP catalog and review tools fail without it |
 
-In Azure, Terraform (`iac/app`) sets these as App Settings. The secrets are Key Vault references. The web app's `DATABASE_URL` is `@Microsoft.KeyVault(SecretUri=https://<vault>.vault.azure.net/secrets/database-url-app)` (role `catraders_app`). Migrations use the admin secret `database-url`. The web app's managed identity resolves the references.
+In Azure, Terraform (`iac/app`) sets these as App Settings. The secrets are Key Vault references. `CRON_SECRET` is the reference to Key Vault secret `cron-secret`, which Terraform generates and does not store in state. After apply, copy that value to the GitHub Actions repository secret `CRON_SECRET` (`terraform output lead_digest` prints the read command). The repository secret and the Key Vault value must match. Do not commit the value. The web app's `DATABASE_URL` is `@Microsoft.KeyVault(SecretUri=https://<vault>.vault.azure.net/secrets/database-url-app)` (role `catraders_app`). Migrations use the admin secret `database-url`. The web app's managed identity resolves the references.
 
 ## Caching and revalidation
 
@@ -170,7 +171,7 @@ The request body is the TRD's shape without vehicle `specs`. Items are `{ produc
 - The body is validated with zod (`src/features/quote-cart/schema.ts`).
 - Products are re-checked in Sanity: they must exist and be in the automotive vertical. Each item's stock status at submission is kept in its specifications snapshot. Canonical titles and SKUs are stored, not the ones the client sent.
 - The request and its items are inserted in one transaction.
-- Emails are sent after the response.
+- Emails are sent after the response. The customer receipt and the internal notice are each retried once. If either still fails, `QUOTE_NOTIFICATION_EMAIL` gets a short alert with the lead type, public id (`RFQ-…` or `INQ-…`), timestamp, and customer contact. The same path covers landing-page inquiries. If that alert cannot be sent, the server logs `[email] Failed` and the reference number, without the message body or the connection string.
 
 | Status | Meaning |
 | --- | --- |
@@ -183,6 +184,7 @@ The request body is the TRD's shape without vehicle `specs`. Items are `{ produc
 - `GET /api/availability?ids=a,b` returns the current stock status of cart items. The cart uses it to flag items that were removed or went out of stock.
 - `POST /api/webhooks/sanity` triggers revalidation (see above).
 - `GET /api/health` is the liveness probe.
+- `POST /api/cron/lead-digest` emails the daily lead digest. The caller must send header `x-cron-secret` equal to `CRON_SECRET`. The summary covers RFQs and inquiries saved since the previous digest that was actually emailed, or the last 24 hours on the first run. It is sent even when the count is zero.
 
 ## Deployment
 
@@ -221,6 +223,7 @@ GitHub Actions:
   Deploy runs for CI on this repository's `main` (a push, or the Dependabot follow-up dispatch) and for a manual run of `refs/heads/main`. Fork pull-request CI never reaches the deploy job, including a fork branch named `main`.
 
 - **`.github/workflows/postgres-firewall-drift.yml`** runs daily and on demand. It compares the web app's possible outbound IPs with the Postgres `webapp-*` firewall rules and fails if they differ. It only reads. See [iac/README.md](iac/README.md).
+- **`.github/workflows/lead-digest.yml`** runs daily at 12:30 UTC (07:30 America/Toronto in EST, 08:30 in EDT) and on demand. It POSTs to `SITE_URL` (or `https://<AZURE_WEBAPP_NAME>.azurewebsites.net`) `/api/cron/lead-digest` with the `CRON_SECRET` repository secret. The job is skipped until `SITE_URL` or `AZURE_WEBAPP_NAME` is set, and it fails if `CRON_SECRET` is missing.
 
 **Database migrations** run automatically on every deploy, after the image is built and before it is released:
 

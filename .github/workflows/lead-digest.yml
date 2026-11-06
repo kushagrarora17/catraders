@@ -1,0 +1,55 @@
+name: Lead digest
+
+# Emails QUOTE_NOTIFICATION_EMAIL a summary of RFQs and inquiries saved since the
+# previous successful digest. GitHub's cron is UTC. 12:30 UTC is 07:30
+# America/Toronto during EST and 08:30 during EDT (Ontario business morning).
+#
+# Operator setup — names only, do not commit values:
+# Terraform generates Key Vault secret cron-secret and sets the CRON_SECRET app
+# setting to a reference to it, so a later apply keeps the setting. Copy that
+# value to the GitHub Actions repository secret CRON_SECRET. The two must match.
+# `terraform output lead_digest` prints the command that reads the Key Vault value.
+on:
+  schedule:
+    - cron: "30 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    if: vars.AZURE_WEBAPP_NAME != '' || vars.SITE_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: POST /api/cron/lead-digest
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::Repository secret CRON_SECRET is not set"
+            exit 1
+          fi
+          if [ -n "${SITE_URL:-}" ]; then
+            origin="${SITE_URL%/}"
+          else
+            origin="https://${AZURE_WEBAPP_NAME}.azurewebsites.net"
+          fi
+          body=$(mktemp)
+          set +e
+          status=$(curl --silent --show-error --max-time 120 --output "$body" --write-out '%{http_code}' \
+            -X POST "${origin}/api/cron/lead-digest" \
+            -H "x-cron-secret: ${CRON_SECRET}" \
+            -H "content-length: 0")
+          curl_exit=$?
+          set -e
+          cat "$body"
+          echo
+          if [ "$curl_exit" -ne 0 ] || [[ ! "$status" =~ ^2 ]]; then
+            echo "::error::Lead digest request failed (curl ${curl_exit}, HTTP ${status:-none})"
+            exit 1
+          fi

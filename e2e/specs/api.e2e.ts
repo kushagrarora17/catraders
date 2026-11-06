@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { MOCK_URL, SITE_URL, WEBHOOK_SECRET } from "../env";
+import { CRON_SECRET, MOCK_URL, SITE_URL, WEBHOOK_SECRET } from "../env";
 import { postRaw, resetContent, sendWebhook } from "../helpers";
 import { expect, test } from "../test";
 
@@ -88,6 +88,42 @@ test.describe("POST /api/quotes", () => {
     await expect
       .poll(async () => JSON.stringify(await (await request.get(`${MOCK_URL}/__emails`)).json()))
       .toContain(referenceNumber);
+  });
+
+  test("retries a failed quote email once and alerts if it still fails", async ({ request }) => {
+    const quote = () =>
+      request.post("/api/quotes", { data: { "cf-turnstile-response": "e2e-quote", customer, items: [castrolItem] } });
+    const stored = async () => JSON.stringify(await (await request.get(`${MOCK_URL}/__emails`)).json());
+
+    await request.post(`${MOCK_URL}/__email-failures`, { data: { perMessage: 1 } });
+    try {
+      const recovered = await quote();
+      expect(recovered.status()).toBe(201);
+      const recoveredRef = (await recovered.json()).referenceNumber as string;
+      await expect.poll(async () => {
+        const emails = (await (await request.get(`${MOCK_URL}/__emails`)).json()) as unknown[];
+        return emails.filter((email) => JSON.stringify(email).includes(recoveredRef)).length;
+      }).toBe(2);
+      expect(await stored()).not.toContain(`Email failed for ${recoveredRef}`);
+    } finally {
+      await request.post(`${MOCK_URL}/__email-failures`, { data: { perMessage: 0 } });
+    }
+
+    // Both messages fail their first attempt and the one retry. Only the follow-up alert is recorded.
+    await request.post(`${MOCK_URL}/__email-failures`, { data: { perMessage: 2 } });
+    try {
+      const response = await quote();
+      expect(response.status()).toBe(201);
+      const referenceNumber = (await response.json()).referenceNumber as string;
+      await expect.poll(stored).toContain(`Email failed for ${referenceNumber}`);
+      const alert = await stored();
+      expect(alert).toContain(`Id: ${referenceNumber}`);
+      expect(alert).toContain(`Type: quote`);
+      expect(alert).toContain(customer.email);
+      expect(alert).toContain(customer.name);
+    } finally {
+      await request.post(`${MOCK_URL}/__email-failures`, { data: { perMessage: 0 } });
+    }
   });
 
   test("rejects bad requests", async ({ request }) => {
@@ -194,6 +230,21 @@ test.describe("service area webhook", () => {
     await expect(page.locator("#service-area").getByText("Sarnia, ON")).toBeVisible();
     await resetContent(request);
   });
+});
+
+test("lead digest requires the cron secret and emails a summary", async ({ request }) => {
+  expect((await request.post("/api/cron/lead-digest")).status()).toBe(401);
+  expect((await request.post("/api/cron/lead-digest", { headers: { "x-cron-secret": "wrong" } })).status()).toBe(401);
+
+  const ok = await request.post("/api/cron/lead-digest", { headers: { "x-cron-secret": CRON_SECRET } });
+  expect(ok.status()).toBe(200);
+  const body = await ok.json();
+  expect(body.sent).toBe(true);
+  expect(typeof body.leadCount).toBe("number");
+  const title = body.leadCount === 1 ? "1 new lead" : `${body.leadCount} new leads`;
+  await expect
+    .poll(async () => JSON.stringify(await (await request.get(`${MOCK_URL}/__emails`)).json()))
+    .toContain(`Daily lead digest: ${title}`);
 });
 
 test.describe("SEO and metadata routes", () => {

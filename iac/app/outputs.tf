@@ -52,6 +52,15 @@ output "github_actions_variables" {
   }
 }
 
+output "lead_digest" {
+  description = "Daily lead digest. The app setting CRON_SECRET references Key Vault secret cron-secret. Copy that value to the GitHub Actions repository secret CRON_SECRET; the names match and the values must too."
+  value = {
+    url              = "${local.site_url}/api/cron/lead-digest"
+    read_secret_with = "az keyvault secret show --vault-name ${azurerm_key_vault.main.name} --name ${azurerm_key_vault_secret.cron_secret.name} --query value -o tsv"
+    github_secret    = "CRON_SECRET"
+  }
+}
+
 output "sanity_webhook" {
   description = "Values for the Sanity GROQ webhook (sanity.io/manage → API → Webhooks)."
   value = {

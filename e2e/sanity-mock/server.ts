@@ -8,7 +8,9 @@
 // self-signed certificate (generated with openssl into MOCK_CERT_DIR), which the app under test
 // trusts through NODE_EXTRA_CA_CERTS.
 // Test-only endpoints: POST /__reset restores the seed data, GET /__docs/:id returns a document
-// (raw), GET /__emails lists the emails the app tried to send.
+// (raw), GET /__emails lists the emails the app tried to send. POST /__email-failures { perMessage }
+// rejects each non-alert message that many times with HTTP 400 (not retried by the Azure SDK)
+// before recording it. Alerts (subject "Email failed for …") are always recorded.
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync } from "node:fs";
@@ -22,6 +24,8 @@ const certDir = process.env.MOCK_CERT_DIR ?? "coverage/e2e-certs";
 
 let docs = new Map<string, Doc>();
 let emails: unknown[] = [];
+let emailFailuresPerMessage = 0;
+const emailFailureCounts = new Map<string, number>();
 let rev = 0;
 
 function reset() {
@@ -29,6 +33,8 @@ function reset() {
   const now = new Date("2026-09-01T00:00:00Z").toISOString();
   for (const doc of seedDocuments()) docs.set(doc._id, { _createdAt: now, _updatedAt: now, _rev: "seed", ...doc });
   emails = [];
+  emailFailuresPerMessage = 0;
+  emailFailureCounts.clear();
 }
 reset();
 
@@ -194,7 +200,17 @@ async function handleUpload(req: Request, url: URL) {
 // --- Azure Communication Services email --------------------------------------------------------
 
 async function handleEmailSend(req: Request) {
-  emails.push(await req.json());
+  const body = (await req.json()) as { content?: { subject?: string } };
+  const subject = body.content?.subject ?? "";
+  // 400 is not in the Azure SDK's retry list, so each rejection is one attempt by the app.
+  if (emailFailuresPerMessage > 0 && !subject.startsWith("Email failed for ")) {
+    const used = emailFailureCounts.get(subject) ?? 0;
+    if (used < emailFailuresPerMessage) {
+      emailFailureCounts.set(subject, used + 1);
+      return json({ error: { code: "ForcedFailure", message: "forced failure" } }, 400);
+    }
+  }
+  emails.push(body);
   const id = randomUUID();
   return json({ id, status: "Running" }, 202, {
     "operation-location": `https://127.0.0.1:${tlsPort}/emails/operations/${id}?api-version=2025-09-01`,
@@ -211,6 +227,13 @@ async function route(req: Request) {
 
   if (path === "/__reset" && req.method === "POST") return reset(), json({ ok: true });
   if (path === "/__emails") return json(emails);
+  if (path === "/__email-failures" && req.method === "GET") return json({ perMessage: emailFailuresPerMessage });
+  if (path === "/__email-failures" && req.method === "POST") {
+    const body = (await req.json()) as { perMessage?: unknown };
+    emailFailuresPerMessage = typeof body.perMessage === "number" && body.perMessage > 0 ? body.perMessage : 0;
+    emailFailureCounts.clear();
+    return json({ perMessage: emailFailuresPerMessage });
+  }
   if ((m = path.match(/^\/__docs\/(.+)$/))) return json(docs.get(decodeURIComponent(m[1])) ?? null);
   if (path === "/__health") return json({ ok: true });
 

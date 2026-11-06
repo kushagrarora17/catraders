@@ -73,6 +73,12 @@ variable "sanity_webhook_secret_version" {
   default     = 1
 }
 
+variable "cron_secret_version" {
+  description = "Bump to generate a new lead-digest secret. Copy the new Key Vault value to the GitHub Actions repository secret CRON_SECRET, then restart the web app."
+  type        = number
+  default     = 1
+}
+
 # ── MCP server (catalog & RFQ management) ─────────────────────────────────
 
 variable "mcp_admin_password_version" {

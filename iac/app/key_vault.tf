@@ -95,6 +95,23 @@ resource "azurerm_key_vault_secret" "mcp_admin_password" {
   depends_on = [time_sleep.key_vault_rbac]
 }
 
+# Authenticates POST /api/cron/lead-digest. The app setting is a Key Vault
+# reference. Copy the value to the GitHub Actions repository secret CRON_SECRET
+# (see the lead_digest output); the two must match.
+ephemeral "random_password" "cron_secret" {
+  length  = 48
+  special = false
+}
+
+resource "azurerm_key_vault_secret" "cron_secret" {
+  name             = "cron-secret"
+  key_vault_id     = azurerm_key_vault.main.id
+  value_wo         = ephemeral.random_password.cron_secret.result
+  value_wo_version = var.cron_secret_version
+
+  depends_on = [time_sleep.key_vault_rbac]
+}
+
 # Signs the MCP server's access tokens.
 ephemeral "random_password" "mcp_jwt" {
   length  = 64
