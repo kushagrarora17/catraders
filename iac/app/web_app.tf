@@ -14,6 +14,7 @@ locals {
       acs_connection_string = azurerm_key_vault_secret.acs_connection_string
       mcp_admin_password    = azurerm_key_vault_secret.mcp_admin_password
       mcp_jwt_secret        = azurerm_key_vault_secret.mcp_jwt_secret
+      cron_secret           = azurerm_key_vault_secret.cron_secret
     } : key => "@Microsoft.KeyVault(SecretUri=${secret.versionless_id})"
   }
 
@@ -88,6 +89,9 @@ resource "azurerm_linux_web_app" "main" {
     # Sign-in for the MCP server (/api/mcp); see the `mcp` output.
     MCP_ADMIN_PASSWORD = local.key_vault_ref.mcp_admin_password
     MCP_JWT_SECRET     = local.key_vault_ref.mcp_jwt_secret
+
+    # Daily lead digest (/api/cron/lead-digest). See the `lead_digest` output.
+    CRON_SECRET = local.key_vault_ref.cron_secret
 
     # Canonical URL for metadata, sitemap and robots.txt.
     SITE_URL = local.site_url

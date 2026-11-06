@@ -131,13 +131,13 @@ The web app reads Sanity on the server only, so no CORS origin is needed for it.
 | `AZURE_COMMUNICATION_CONNECTION_STRING` | prod | If unset, lead mail is not sent and `[email] Failed` is logged with the lead id |
 | `EMAIL_SENDER_ADDRESS` | prod | A verified ACS sender, e.g. `DoNotReply@<id>.azurecomm.net` |
 | `QUOTE_NOTIFICATION_EMAIL` | prod | Internal inbox for new RFQs, inquiries, send-failure alerts, and the daily digest |
-| `CRON_SECRET` | prod | Authenticates `POST /api/cron/lead-digest` (`x-cron-secret`). Same value as the GitHub Actions repository secret. Not set by Terraform |
+| `CRON_SECRET` | prod | Authenticates `POST /api/cron/lead-digest` (`x-cron-secret`). Terraform stores it in Key Vault as `cron-secret` and sets this app setting to that reference. The GitHub Actions repository secret `CRON_SECRET` must be the same value |
 | `SITE_URL` | prod | Public URL for canonical links, Open Graph, `sitemap.xml` and `robots.txt`. Defaults to `http://localhost:3000` |
 | `MCP_ADMIN_PASSWORD` | for MCP | Password on the MCP sign-in screen. Without it (and `MCP_JWT_SECRET`) `/api/mcp` returns 503 |
 | `MCP_JWT_SECRET` | for MCP | At least 32 characters; signs MCP access tokens |
 | `SANITY_API_WRITE_TOKEN` | for MCP | Sanity **Editor** token; the MCP catalog and review tools fail without it |
 
-In Azure, Terraform (`iac/app`) sets these as App Settings, except `CRON_SECRET`. The secrets are Key Vault references. Set `CRON_SECRET` yourself as an App Service application setting and as a GitHub Actions repository secret (the name only; do not commit the value). Terraform replaces the whole app settings map on apply, so a portal-only `CRON_SECRET` has to be put back after an apply until it is added to Terraform. The web app's `DATABASE_URL` is `@Microsoft.KeyVault(SecretUri=https://<vault>.vault.azure.net/secrets/database-url-app)` (role `catraders_app`). Migrations use the admin secret `database-url`. The web app's managed identity resolves the references.
+In Azure, Terraform (`iac/app`) sets these as App Settings. The secrets are Key Vault references. `CRON_SECRET` is the reference to Key Vault secret `cron-secret`, which Terraform generates and does not store in state. After apply, copy that value to the GitHub Actions repository secret `CRON_SECRET` (`terraform output lead_digest` prints the read command). The repository secret and the Key Vault value must match. Do not commit the value. The web app's `DATABASE_URL` is `@Microsoft.KeyVault(SecretUri=https://<vault>.vault.azure.net/secrets/database-url-app)` (role `catraders_app`). Migrations use the admin secret `database-url`. The web app's managed identity resolves the references.
 
 ## Caching and revalidation
 

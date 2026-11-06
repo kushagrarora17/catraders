@@ -17,14 +17,14 @@ Everything is in **Central US** by default. The subscription can't create Postgr
 | Container Registry (Basic) | Admin user disabled. The web app pulls with its managed identity (`AcrPull`). |
 | App Service plan (Linux, B1) + Web App for Containers | System-assigned identity, HTTPS only, TLS 1.2, FTP/basic publishing off, Always On, health check and warmup `/api/health`, container start limit 300s, `WEBSITES_PORT=3000` |
 | PostgreSQL Flexible Server 17 (B1ms, 32 GB) + database `catraders` | Public access with a firewall: one rule per address in the web app's `possible_outbound_ip_address_list`, plus any `postgres_allowed_ip_ranges`. The 0.0.0.0 "allow Azure services" rule stays off unless `postgres_allow_azure_services` is set. TLS required. `prevent_destroy` is on. |
-| Key Vault (RBAC) | Holds `database-url` (admin, migrations), `database-url-app` (the `catraders_app` role the web app uses), `sanity-webhook-secret` and `acs-connection-string`. The web app reads them through `@Microsoft.KeyVault(...)` app-setting references. |
+| Key Vault (RBAC) | Holds `database-url` (admin, migrations), `database-url-app` (the `catraders_app` role the web app uses), `sanity-webhook-secret`, `cron-secret` and `acs-connection-string`. The web app reads them through `@Microsoft.KeyVault(...)` app-setting references. |
 | Communication Services + Email (Azure-managed domain) | The sender is `DoNotReply@<id>.azurecomm.net` |
 | Log Analytics | Collects App Service console, HTTP and platform logs, Postgres logs, and metrics |
 | User-assigned identity + GitHub federated credential | Lets `azure-deploy.yml` log in with OIDC; no passwords or keys are stored in GitHub. Roles: `AcrPush` on the registry, `Website Contributor` on the app, `Reader` on the resource group. |
 
 Secrets stay out of state where the provider allows it:
 
-- The Postgres admin password and the Sanity webhook secret are **ephemeral** random values, passed to Azure through **write-only** arguments. They never appear in plan or state.
+- The Postgres admin password, the Sanity webhook secret and the lead-digest secret (`cron-secret`) are **ephemeral** random values, passed to Azure through **write-only** arguments. They never appear in plan or state. The GitHub Actions repository secret `CRON_SECRET` must be a copy of `cron-secret` (`terraform output lead_digest`).
 - The ACS connection string is a computed attribute of the ACS resource, so it's in state. The state account is protected by RBAC.
 - `database-url-app` is managed outside Terraform. Set it directly in Key Vault before starting the app; never import its value into state.
 
@@ -107,7 +107,14 @@ terraform output -json github_actions_variables | jq -r 'to_entries[] | "\(.key)
 gh variable set -f /tmp/gh-vars.env --repo kushagrarora17/catraders
 ```
 
-Optionally, restrict the `production` environment to the `main` branch and add required reviewers under Settings → Environments.
+The daily lead digest also needs the GitHub Actions repository secret `CRON_SECRET`. Apply creates Key Vault secret `cron-secret` and sets the app setting `CRON_SECRET` to a reference to it. Copy that value into the repository secret (the values must match; do not commit it):
+
+```bash
+az keyvault secret show --vault-name "$(terraform output -raw key_vault_name)" --name cron-secret --query value -o tsv \
+  | gh secret set CRON_SECRET --repo kushagrarora17/catraders
+```
+
+`terraform output lead_digest` prints the same read command. Optionally, restrict the `production` environment to the `main` branch and add required reviewers under Settings → Environments.
 
 **4. Database migrations.** The deploy workflow applies them automatically, using the `AZURE_POSTGRES_SERVER`, `AZURE_KEY_VAULT_NAME` and `AZURE_DATABASE_URL_SECRET` variables set above. `AZURE_DATABASE_URL_SECRET` stays `database-url` (the admin). The app role in `database-url-app` cannot run DDL, so don't point the workflow at it. Terraform grants the deploy identity read access to the `database-url` secret only, and a custom role that can add and remove firewall rules on the Postgres server (the temporary `github-runner-*` rules). Nothing is needed here unless you want to migrate by hand: add your IP to `postgres_allowed_ip_ranges`, apply, then run this from the repo root:
 
@@ -147,6 +154,7 @@ To roll the lockdown back: point `DATABASE_URL` at the `database-url` reference 
 | Rotate the admin DB password | Bump `postgres_password_version`, then `terraform apply`. The server and the `database-url` secret (migrations) change together. The web app keeps using `database-url-app`. |
 | Rotate the app DB password | `ALTER ROLE catraders_app PASSWORD '...'`, then `az keyvault secret set` on `database-url-app` with the new URL, then restart the web app. Terraform does not manage that secret, so the next apply leaves it. |
 | Rotate the webhook secret | Bump `sanity_webhook_secret_version`, apply, update the secret in Sanity, then restart the web app. |
+| Rotate the lead-digest secret | Bump `cron_secret_version`, apply, copy the new Key Vault value to the GitHub Actions repository secret `CRON_SECRET` (it must match), then restart the web app. |
 | Scale up | Change `app_service_sku` (e.g. `P0v3`) or `postgres_sku` (e.g. `GP_Standard_D2ds_v5`). An App Service SKU or tier change can move the scale unit and replace the outbound IPs; update the firewall in the same apply (see below). |
 | Outbound IPs changed | The app cannot reach Postgres until the `webapp-*` rules match. See [Postgres firewall](#postgres-firewall). |
 | Use a custom email domain | Switch `domain_management` to `CustomerManaged` in `email.tf` and add the DNS records from `verification_records`. |

@@ -5,10 +5,10 @@ name: Lead digest
 # America/Toronto during EST and 08:30 during EDT (Ontario business morning).
 #
 # Operator setup — names only, do not commit values:
-# - Repository secret: CRON_SECRET
-# - App Service application setting: CRON_SECRET (the same value)
-# CRON_SECRET is not created by Terraform. An apply replaces the app settings
-# map and drops a portal-only value until someone sets it again.
+# Terraform generates Key Vault secret cron-secret and sets the CRON_SECRET app
+# setting to a reference to it, so a later apply keeps the setting. Copy that
+# value to the GitHub Actions repository secret CRON_SECRET. The two must match.
+# `terraform output lead_digest` prints the command that reads the Key Vault value.
 on:
   schedule:
     - cron: "30 12 * * *"
