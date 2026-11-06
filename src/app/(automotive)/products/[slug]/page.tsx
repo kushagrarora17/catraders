@@ -70,12 +70,13 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
       <div className="grid gap-8 md:grid-cols-2">
         <div className="min-w-0 space-y-4">
           {images.length ? (
-            images.map((image) =>
+            images.map((image, index) =>
               image.asset ? (
                 <div key={image._key} className="relative aspect-square w-full rounded-xs bg-white">
                   <Image
                     src={urlFor(image.asset).width(1200).height(1200).fit("max").url()}
                     alt={image.alt ?? product.title}
+                    loading={index === 0 ? "eager" : "lazy"}
                     fill
                     sizes="(min-width: 1280px) 584px, (min-width: 768px) 50vw, 100vw"
                     className="object-contain p-4 sm:p-6"
