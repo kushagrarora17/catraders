@@ -1,6 +1,6 @@
 import "server-only";
 import type { EmailMessage } from "@azure/communication-email";
-import { escapeHtml, getEmailConfig, sendEmails } from "@/server/email/send";
+import { escapeHtml, getEmailConfig, sendLeadEmails, type EmailDeps, type LeadNotice } from "@/server/email/send";
 import type { NewInquiry } from "./repository";
 
 export function buildInquiryEmails(
@@ -45,11 +45,21 @@ export function buildInquiryEmails(
 }
 
 /** Sends the customer receipt and internal notification. Never throws. */
-export async function sendInquiryEmails(referenceNumber: string, inquiry: NewInquiry) {
-  const config = getEmailConfig();
-  if (!config) {
-    console.info(`[inquiries] Email not configured; skipping notifications for ${referenceNumber}`);
-    return;
-  }
-  await sendEmails(config.connectionString, buildInquiryEmails(referenceNumber, inquiry, config), referenceNumber);
+export async function sendInquiryEmails(referenceNumber: string, inquiry: NewInquiry, deps?: EmailDeps) {
+  const config = deps?.config !== undefined ? deps.config : getEmailConfig();
+  const lead: LeadNotice = {
+    referenceNumber,
+    leadType: "inquiry",
+    occurredAt: deps?.now ?? new Date(),
+    contact: {
+      name: inquiry.name,
+      email: inquiry.email,
+      phone: inquiry.phone,
+      company: inquiry.business,
+    },
+  };
+  await sendLeadEmails(config ? buildInquiryEmails(referenceNumber, inquiry, config) : [], lead, {
+    config,
+    send: deps?.send,
+  });
 }

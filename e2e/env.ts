@@ -9,6 +9,7 @@ export const MOCK_CERT_DIR = "coverage/e2e-certs";
 export const SITE_URL = `http://localhost:${APP_PORT}`;
 
 export const WEBHOOK_SECRET = "e2e-webhook-secret";
+export const CRON_SECRET = "e2e-cron-secret";
 export const ADMIN_PASSWORD = "e2e-admin-password";
 
 export const appEnv: Record<string, string> = {
@@ -36,4 +37,5 @@ export const appEnv: Record<string, string> = {
   NODE_EXTRA_CA_CERTS: `${process.cwd()}/${MOCK_CERT_DIR}/mock.crt`,
   EMAIL_SENDER_ADDRESS: "DoNotReply@e2e.test",
   QUOTE_NOTIFICATION_EMAIL: "sales@e2e.test",
+  CRON_SECRET,
 };

@@ -38,7 +38,7 @@ export const quoteRequests = pgTable("quote_requests", {
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
-});
+}, (table) => [index("idx_quote_requests_created_at").on(table.createdAt)]);
 
 /** Catalog details captured at submission time, so later CMS edits don't rewrite history. */
 export interface SpecificationsSnapshot {
@@ -86,6 +86,19 @@ export const inquiries = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("idx_inquiries_created_at").on(table.createdAt)],
+);
+
+/**
+ * Watermark for the daily lead digest. One row: leads with `created_at` before
+ * `coveredThrough` were included in a digest whose email was accepted.
+ */
+export const leadDigestCursor = pgTable(
+  "lead_digest_cursor",
+  {
+    id: integer("id").primaryKey(),
+    coveredThrough: timestamp("covered_through", { withTimezone: true }).notNull(),
+  },
+  (table) => [check("lead_digest_cursor_singleton", sql`${table.id} = 1`)],
 );
 
 /** OAuth clients registered through dynamic client registration (CIMD clients are fetched, not stored). */

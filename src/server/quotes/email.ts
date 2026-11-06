@@ -1,6 +1,6 @@
 import "server-only";
 import type { EmailMessage } from "@azure/communication-email";
-import { escapeHtml, getEmailConfig, sendEmails } from "@/server/email/send";
+import { escapeHtml, getEmailConfig, sendLeadEmails, type EmailDeps, type LeadNotice } from "@/server/email/send";
 import type { NewQuote } from "./repository";
 
 function renderItems(quote: NewQuote) {
@@ -60,11 +60,21 @@ export function buildQuoteEmails(
 }
 
 /** Sends the customer receipt and internal notification. Never throws. */
-export async function sendQuoteEmails(referenceNumber: string, quote: NewQuote) {
-  const config = getEmailConfig();
-  if (!config) {
-    console.info(`[quotes] Email not configured; skipping notifications for ${referenceNumber}`);
-    return;
-  }
-  await sendEmails(config.connectionString, buildQuoteEmails(referenceNumber, quote, config), referenceNumber);
+export async function sendQuoteEmails(referenceNumber: string, quote: NewQuote, deps?: EmailDeps) {
+  const config = deps?.config !== undefined ? deps.config : getEmailConfig();
+  const lead: LeadNotice = {
+    referenceNumber,
+    leadType: "quote",
+    occurredAt: deps?.now ?? new Date(),
+    contact: {
+      name: quote.customer.name,
+      email: quote.customer.email,
+      phone: quote.customer.phone,
+      company: quote.customer.company,
+    },
+  };
+  await sendLeadEmails(config ? buildQuoteEmails(referenceNumber, quote, config) : [], lead, {
+    config,
+    send: deps?.send,
+  });
 }

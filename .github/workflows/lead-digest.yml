@@ -1,0 +1,55 @@
+name: Lead digest
+
+# Emails QUOTE_NOTIFICATION_EMAIL a summary of RFQs and inquiries saved since the
+# previous successful digest. GitHub's cron is UTC. 12:30 UTC is 07:30
+# America/Toronto during EST and 08:30 during EDT (Ontario business morning).
+#
+# Operator setup — names only, do not commit values:
+# - Repository secret: CRON_SECRET
+# - App Service application setting: CRON_SECRET (the same value)
+# CRON_SECRET is not created by Terraform. An apply replaces the app settings
+# map and drops a portal-only value until someone sets it again.
+on:
+  schedule:
+    - cron: "30 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    if: vars.AZURE_WEBAPP_NAME != '' || vars.SITE_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: POST /api/cron/lead-digest
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::Repository secret CRON_SECRET is not set"
+            exit 1
+          fi
+          if [ -n "${SITE_URL:-}" ]; then
+            origin="${SITE_URL%/}"
+          else
+            origin="https://${AZURE_WEBAPP_NAME}.azurewebsites.net"
+          fi
+          body=$(mktemp)
+          set +e
+          status=$(curl --silent --show-error --max-time 120 --output "$body" --write-out '%{http_code}' \
+            -X POST "${origin}/api/cron/lead-digest" \
+            -H "x-cron-secret: ${CRON_SECRET}" \
+            -H "content-length: 0")
+          curl_exit=$?
+          set -e
+          cat "$body"
+          echo
+          if [ "$curl_exit" -ne 0 ] || [[ ! "$status" =~ ^2 ]]; then
+            echo "::error::Lead digest request failed (curl ${curl_exit}, HTTP ${status:-none})"
+            exit 1
+          fi
