@@ -15,4 +15,3 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - DB schema: `src/server/db/schema.ts`; generate migrations with `bun run db:generate`.
 - MCP: `/api/mcp`, tools in `src/server/mcp/` (register in `server.ts`), OAuth in `src/server/oauth/`. Sanity writes must call helpers in `src/server/mcp/revalidate.ts`.
 - Terraform: `iac/bootstrap/` = state storage, `iac/app/` = everything else; azurerm v5. Keep secrets out of state with ephemeral values and write-only (`*_wo`) arguments. Deploys use GitHub OIDC.
-- When asked to publish changes, open a PR and use `gh pr merge --auto --squash`.
