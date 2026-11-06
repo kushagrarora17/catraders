@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { NavigationProgress } from "@/features/site/components/NavigationProgress";
 import { BUSINESS_NAME } from "@/features/site/contact";
 import { getSiteUrl } from "@/features/site/url";
+import { GA_MEASUREMENT_ID, GA_PRODUCTION_HOSTNAME } from "@/lib/analytics";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -18,8 +19,6 @@ const barlowCondensed = Barlow_Condensed({
   subsets: ["latin"],
   weight: ["500", "600", "700", "800", "900"],
 });
-
-const GA_MEASUREMENT_ID = "G-WDCX7J1BHG";
 
 const description =
   "Wholesale automotive lubricants, fluids, filters and shop supplies for mechanics, auto shops and dealerships across Southwestern Ontario — Windsor, London, Kitchener-Waterloo and everywhere between. Mobil, Castrol, Liqui Moly, Lucas and more at mechanic pricing.";
@@ -59,11 +58,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
         <Script id="google-tag" strategy="afterInteractive">
-          {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-if (!/^(localhost|127\\.0\\.0\\.1|\\[::1\\])$/.test(window.location.hostname)) {
-gtag('config', '${GA_MEASUREMENT_ID}');
+          {`if (window.location.hostname === '${GA_PRODUCTION_HOSTNAME}') {
+window.dataLayer = window.dataLayer || [];
+window.gtag = function(){window.dataLayer.push(arguments);};
+window.gtag('js', new Date());
+window.gtag('config', '${GA_MEASUREMENT_ID}');
 }`}
         </Script>
       </body>

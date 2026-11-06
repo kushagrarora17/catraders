@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import posthog from "posthog-js";
+import { trackLead } from "@/lib/analytics";
 
 export function useFormAnalytics(formType: "inquiry" | "quote") {
   const formRef = useRef<HTMLFormElement>(null);
@@ -63,5 +64,5 @@ export function useFormAnalytics(formType: "inquiry" | "quote") {
     started.current = false;
   }
 
-  return { formRef, capture, start, headers, reset };
+  return { formRef, capture, start, headers, reset, lead: () => trackLead(formType) };
 }
