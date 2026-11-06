@@ -19,11 +19,11 @@
   },
   "packageManager": "bun@1.4.2",
   "dependencies": {
-    "@sanity/ui": "4.4.9",
-    "@sanity/vision": "^6.20.0",
+    "@sanity/ui": "4.4.10",
+    "@sanity/vision": "^6.22.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "sanity": "^6.20.0",
+    "sanity": "^6.22.0",
     "styled-components": "^6.6.0"
   },
   "devDependencies": {
