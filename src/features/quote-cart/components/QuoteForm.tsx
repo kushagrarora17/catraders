@@ -85,6 +85,7 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnsti
       });
       const body = (await res.json()) as QuoteResponse;
       if (body.success) {
+        if (res.status === 201) analytics.lead();
         onSubmitted(body.referenceNumber);
         return;
       }

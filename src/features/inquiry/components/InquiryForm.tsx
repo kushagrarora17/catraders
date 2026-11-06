@@ -76,6 +76,7 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
       });
       const body = (await res.json()) as InquiryResponse;
       if (body.success) {
+        if (res.status === 201 && !data[HONEYPOT_FIELD]) analytics.lead();
         setReference(body.referenceNumber);
         idempotencyKey.current = null;
         form.reset();
