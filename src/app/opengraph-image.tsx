@@ -34,7 +34,7 @@ export default function Image() {
             <path d={LOGO_DROP} fill={NAVY_DARK} />
           </svg>
           <div style={{ display: "flex", fontSize: 64, fontWeight: 800, letterSpacing: 2 }}>
-            <span style={{ color: GOLD }}>CA</span>&nbsp;TRADERS
+            <span style={{ color: GOLD }}>CA</span>&nbsp;ELITE LUBES
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", marginTop: 48, fontSize: 84, fontWeight: 900, lineHeight: 1 }}>

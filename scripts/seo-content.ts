@@ -17,7 +17,7 @@ export const categoryGuides: Record<string, Guide> = {
     description:
       "Compare synthetic, semi-synthetic and diesel engine oils. Browse wholesale brands, viscosity grades and pack sizes for shops across Southwestern Ontario.",
     introduction:
-      "CA Traders supplies wholesale engine oils to mechanics, repair shops and dealerships across Southwestern Ontario. Find passenger-car and heavy-duty diesel oils for the vehicles you service. Compare specifications, choose your pack sizes and send us the products and quantities you need for a quote.",
+      "CA Elite Lubes supplies wholesale engine oils to mechanics, repair shops and dealerships across Southwestern Ontario. Find passenger-car and heavy-duty diesel oils for the vehicles you service. Compare specifications, choose your pack sizes and send us the products and quantities you need for a quote.",
     keywords: [
       "wholesale engine oil",
       "synthetic motor oil supplier",
@@ -71,7 +71,7 @@ export const categoryGuides: Record<string, Guide> = {
         "Request wholesale engine-oil pricing",
         [
           "Send the product name or SKU, viscosity, required approvals, pack size and quantity. Include your business name, delivery city and any timing requirement. If you are building a first order, separate essential service items from optional alternatives so we can respond clearly.",
-          "CA Traders serves the cities listed in our service area. We confirm pricing, stock, delivery timing and minimum order requirements with your quote. Listed products may not be available for immediate supply.",
+          "CA Elite Lubes serves the cities listed in our service area. We confirm pricing, stock, delivery timing and minimum order requirements with your quote. Listed products may not be available for immediate supply.",
         ],
       ],
     ],
@@ -115,7 +115,7 @@ export const categoryGuides: Record<string, Guide> = {
       ],
       [
         "Where do you deliver wholesale engine oil?",
-        "CA Traders lists confirmed coverage across Southwestern Ontario, including Windsor, London, Kitchener and surrounding service cities. Share your delivery location so timing, minimums and availability can be confirmed.",
+        "CA Elite Lubes lists confirmed coverage across Southwestern Ontario, including Windsor, London, Kitchener and surrounding service cities. Share your delivery location so timing, minimums and availability can be confirmed.",
       ],
     ],
     sources: [
@@ -129,9 +129,9 @@ export const categoryGuides: Record<string, Guide> = {
     heading: "Wholesale transmission fluids: ATF, CVT and manual",
     title: "Wholesale ATF, CVT & Transmission Fluids in Ontario",
     description:
-      "Compare automatic, CVT and manual transmission fluids. Check application requirements and request wholesale pricing from CA Traders in Southwestern Ontario.",
+      "Compare automatic, CVT and manual transmission fluids. Check application requirements and request wholesale pricing from CA Elite Lubes in Southwestern Ontario.",
     introduction:
-      "CA Traders supplies wholesale automatic transmission fluid, CVT fluid and manual transmission fluid to automotive shops. Start with the specification for the transmission you are servicing, then compare catalog products. Include that specification with your quote request so we can discuss suitable options.",
+      "CA Elite Lubes supplies wholesale automatic transmission fluid, CVT fluid and manual transmission fluid to automotive shops. Start with the specification for the transmission you are servicing, then compare catalog products. Include that specification with your quote request so we can discuss suitable options.",
     keywords: [
       "wholesale transmission fluid",
       "ATF supplier Ontario",
@@ -245,7 +245,7 @@ export const categoryGuides: Record<string, Guide> = {
     description:
       "Compare ready-to-use coolant and concentrate, OAT and HOAT. Explore wholesale automotive coolant options and request pricing across Southwestern Ontario.",
     introduction:
-      "CA Traders supplies wholesale automotive coolant and antifreeze to workshops across Southwestern Ontario. Browse ready-to-use products and concentrates, and check each against the vehicle’s required specification. Coolant chemistry, concentration and product instructions all matter when choosing what to order.",
+      "CA Elite Lubes supplies wholesale automotive coolant and antifreeze to workshops across Southwestern Ontario. Browse ready-to-use products and concentrates, and check each against the vehicle’s required specification. Coolant chemistry, concentration and product instructions all matter when choosing what to order.",
     keywords: [
       "wholesale coolant",
       "antifreeze supplier Ontario",
@@ -300,7 +300,7 @@ export const categoryGuides: Record<string, Guide> = {
         "Ordering and workshop handling",
         [
           "Store and handle coolant according to its label and safety data sheet, keep containers clearly identified and prevent contamination. Use suitable labelled equipment for mixing and dispensing where applicable. Check the service procedure before filling, bleeding or pressure-testing a cooling system.",
-          "Send your business details, delivery city and required quantities to CA Traders. We confirm current stock, pricing, delivery timing and minimum order requirements with your quote. Coolant enquiries can be combined with engine oils, filters and shop supplies as separate lines in the same purchasing list.",
+          "Send your business details, delivery city and required quantities to CA Elite Lubes. We confirm current stock, pricing, delivery timing and minimum order requirements with your quote. Coolant enquiries can be combined with engine oils, filters and shop supplies as separate lines in the same purchasing list.",
         ],
       ],
     ],
@@ -340,7 +340,7 @@ export const categoryGuides: Record<string, Guide> = {
       ],
       [
         "Do you sell coolant in larger quantities?",
-        "Request the product, supplied concentration and desired quantity. The catalog shows listed formats, and CA Traders will confirm current pack-size availability and wholesale pricing with your quote.",
+        "Request the product, supplied concentration and desired quantity. The catalog shows listed formats, and CA Elite Lubes will confirm current pack-size availability and wholesale pricing with your quote.",
       ],
       [
         "What information should a coolant enquiry include?",
@@ -362,9 +362,9 @@ export const categoryGuides: Record<string, Guide> = {
     heading: "Wholesale oil, engine air and cabin filters",
     title: "Wholesale Automotive Filters in Southwestern Ontario",
     description:
-      "Source oil filters, engine air filters and cabin air filters for your workshop. Compare applications and request wholesale pricing from CA Traders.",
+      "Source oil filters, engine air filters and cabin air filters for your workshop. Compare applications and request wholesale pricing from CA Elite Lubes.",
     introduction:
-      "CA Traders supplies oil, engine air and cabin air filters to mechanics, repair shops and dealerships across Southwestern Ontario. Browse by filter type, then send your verified part numbers or vehicle details and quantities for a wholesale quote.",
+      "CA Elite Lubes supplies oil, engine air and cabin air filters to mechanics, repair shops and dealerships across Southwestern Ontario. Browse by filter type, then send your verified part numbers or vehicle details and quantities for a wholesale quote.",
     keywords: [
       "wholesale automotive filters",
       "oil filter supplier Ontario",
@@ -418,7 +418,7 @@ export const categoryGuides: Record<string, Guide> = {
         "Installation planning and wholesale enquiries",
         [
           "Follow the vehicle and filter manufacturer’s fitting instructions, including any seals, preparation and service checks required for the exact product. Store filters clean and protected in their packaging until use. Record the installed part number on the job so future service and purchasing records agree.",
-          "To request pricing, send a list of part numbers or vehicle applications, quantities, business details and delivery city. Add engine oils and shop supplies as separate quote lines if needed. CA Traders confirms stock, pricing, delivery timing and minimum order requirements before the order is finalised.",
+          "To request pricing, send a list of part numbers or vehicle applications, quantities, business details and delivery city. Add engine oils and shop supplies as separate quote lines if needed. CA Elite Lubes confirms stock, pricing, delivery timing and minimum order requirements before the order is finalised.",
         ],
       ],
     ],
@@ -454,7 +454,7 @@ export const categoryGuides: Record<string, Guide> = {
       ],
       [
         "Can I buy mixed filter part numbers?",
-        "Include each part number and quantity as a separate line in your wholesale enquiry. CA Traders will confirm availability, packaging and pricing for the requested mix.",
+        "Include each part number and quantity as a separate line in your wholesale enquiry. CA Elite Lubes will confirm availability, packaging and pricing for the requested mix.",
       ],
       [
         "Which filter brands do you carry?",
@@ -476,9 +476,9 @@ export const categoryGuides: Record<string, Guide> = {
     heading: "Wholesale automotive additives and workshop chemicals",
     title: "Wholesale Automotive Additives & Chemicals in Ontario",
     description:
-      "Explore fuel-system cleaners, engine flushes, oil additives and workshop chemicals. Compare intended uses and request wholesale pricing from CA Traders.",
+      "Explore fuel-system cleaners, engine flushes, oil additives and workshop chemicals. Compare intended uses and request wholesale pricing from CA Elite Lubes.",
     introduction:
-      "CA Traders supplies wholesale fuel-system cleaners, engine flushes, oil additives and other chemicals to automotive workshops across Southwestern Ontario. Choose a product for the job you need to do, and check its application and instructions before use. Each treatment has its own requirements.",
+      "CA Elite Lubes supplies wholesale fuel-system cleaners, engine flushes, oil additives and other chemicals to automotive workshops across Southwestern Ontario. Choose a product for the job you need to do, and check its application and instructions before use. Each treatment has its own requirements.",
     keywords: [
       "wholesale automotive additives",
       "fuel injector cleaner wholesale",
@@ -581,7 +581,7 @@ export const categoryGuides: Record<string, Guide> = {
       ],
       [
         "Do you supply workshop chemicals in mixed orders?",
-        "Send each chemical, quantity and pack format as a separate quote line. CA Traders confirms current availability, pricing, delivery timing and minimum order requirements for your business location.",
+        "Send each chemical, quantity and pack format as a separate quote line. CA Elite Lubes confirms current availability, pricing, delivery timing and minimum order requirements for your business location.",
       ],
     ],
     sources: [
@@ -595,9 +595,9 @@ export const categoryGuides: Record<string, Guide> = {
     heading: "Wholesale shop supplies for automotive workshops",
     title: "Wholesale Automotive Shop Supplies in Ontario",
     description:
-      "Source gloves, hand soap, bags, rags, wipes and oil-change stickers. Build a practical wholesale shop-supply order with CA Traders in Southwestern Ontario.",
+      "Source gloves, hand soap, bags, rags, wipes and oil-change stickers. Build a practical wholesale shop-supply order with CA Elite Lubes in Southwestern Ontario.",
     introduction:
-      "Order gloves, hand soap, garbage bags, rags, wipes and oil-change stickers from CA Traders. We supply wholesale consumables to automotive businesses across Southwestern Ontario. Include the sizes, quantities and pack units your team uses when requesting a quote.",
+      "Order gloves, hand soap, garbage bags, rags, wipes and oil-change stickers from CA Elite Lubes. We supply wholesale consumables to automotive businesses across Southwestern Ontario. Include the sizes, quantities and pack units your team uses when requesting a quote.",
     keywords: [
       "wholesale shop supplies",
       "automotive workshop consumables",
@@ -725,7 +725,7 @@ const cityNotes: Record<
   Windsor: {
     focus: "Order lubricants by specification",
     introduction:
-      "CA Traders supplies automotive workshops in Windsor as part of our Southwestern Ontario service area. Ordering several lubricant grades? List the full specification for each one so we can quote the products your shop needs, including any specialist oils for upcoming jobs.",
+      "CA Elite Lubes supplies automotive workshops in Windsor as part of our Southwestern Ontario service area. Ordering several lubricant grades? List the full specification for each one so we can quote the products your shop needs, including any specialist oils for upcoming jobs.",
     sections: [
       [
         "Start with the vehicles booked into your bays",
@@ -749,7 +749,7 @@ const cityNotes: Record<
   LaSalle: {
     focus: "Set up a manageable first wholesale order",
     introduction:
-      "CA Traders serves automotive businesses in LaSalle. For your first wholesale order, start with the products you expect to use on regular and upcoming jobs. Send a list of those items and quantities so we can confirm pack sizes, pricing and delivery arrangements.",
+      "CA Elite Lubes serves automotive businesses in LaSalle. For your first wholesale order, start with the products you expect to use on regular and upcoming jobs. Send a list of those items and quantities so we can confirm pack sizes, pricing and delivery arrangements.",
     sections: [
       [
         "Choose an opening range from actual demand",
@@ -768,12 +768,12 @@ const cityNotes: Record<
     ],
     question: "Can a LaSalle shop request a small opening order?",
     answer:
-      "Send the products and quantities you need rather than assuming a fixed minimum. CA Traders will confirm minimum order requirements, available formats, pricing and delivery arrangements for the requested order.",
+      "Send the products and quantities you need rather than assuming a fixed minimum. CA Elite Lubes will confirm minimum order requirements, available formats, pricing and delivery arrangements for the requested order.",
   },
   Tecumseh: {
     focus: "Organise routine filter replenishment",
     introduction:
-      "CA Traders serves automotive shops in Tecumseh. For repeat filter orders, keep a list of verified part numbers and quantities, with oil, engine air and cabin filters identified separately. You can request related workshop products in the same quote.",
+      "CA Elite Lubes serves automotive shops in Tecumseh. For repeat filter orders, keep a list of verified part numbers and quantities, with oil, engine air and cabin filters identified separately. You can request related workshop products in the same quote.",
     sections: [
       [
         "Separate the three filter families",
@@ -797,7 +797,7 @@ const cityNotes: Record<
   Amherstburg: {
     focus: "Choose stock formats for occasional applications",
     introduction:
-      "CA Traders serves workshops in Amherstburg. Keep specialist lubricants separate from the oils you use every day when planning an order. For occasional jobs, compare available pack sizes with the quantity you expect to use before committing shelf space to a larger container.",
+      "CA Elite Lubes serves workshops in Amherstburg. Keep specialist lubricants separate from the oils you use every day when planning an order. For occasional jobs, compare available pack sizes with the quantity you expect to use before committing shelf space to a larger container.",
     sections: [
       [
         "Identify what needs to be on the shelf",
@@ -816,12 +816,12 @@ const cityNotes: Record<
     ],
     question: "Can I request a smaller format for a specialist oil?",
     answer:
-      "Include the exact specification, preferred product and usable quantity needed. Available pack formats vary by product, and CA Traders will confirm options and pricing rather than assume every lubricant comes in every size.",
+      "Include the exact specification, preferred product and usable quantity needed. Available pack formats vary by product, and CA Elite Lubes will confirm options and pricing rather than assume every lubricant comes in every size.",
   },
   Leamington: {
     focus: "Keep passenger-car and diesel requirements distinct",
     introduction:
-      "CA Traders serves automotive businesses in Leamington. If your workshop services both passenger cars and diesel vehicles, list the full lubricant requirement for each application. Oils with the same grade or brand name can have different specifications.",
+      "CA Elite Lubes serves automotive businesses in Leamington. If your workshop services both passenger cars and diesel vehicles, list the full lubricant requirement for each application. Oils with the same grade or brand name can have different specifications.",
     sections: [
       [
         "Write the complete requirement for each application",
@@ -845,7 +845,7 @@ const cityNotes: Record<
   Kingsville: {
     focus: "Replenish everyday workshop consumables",
     introduction:
-      "CA Traders supplies workshops in Kingsville. Add gloves, wiping products, hand soap, bags and service stickers to your wholesale enquiry alongside oils and parts. Include sizes and pack quantities so we can quote what your team uses.",
+      "CA Elite Lubes supplies workshops in Kingsville. Add gloves, wiping products, hand soap, bags and service stickers to your wholesale enquiry alongside oils and parts. Include sizes and pack quantities so we can quote what your team uses.",
     sections: [
       [
         "Count by product, size and pack",
@@ -870,7 +870,7 @@ const cityNotes: Record<
   "Chatham-Kent": {
     focus: "Specify the actual receiving location",
     introduction:
-      "CA Traders serves businesses in Chatham-Kent. Send your full receiving address with your product list so we can confirm delivery arrangements for your location. Include a receiving contact and any access or opening-hour requirements.",
+      "CA Elite Lubes serves businesses in Chatham-Kent. Send your full receiving address with your product list so we can confirm delivery arrangements for your location. Include a receiving contact and any access or opening-hour requirements.",
     sections: [
       [
         "Separate billing details from delivery instructions",
@@ -895,7 +895,7 @@ const cityNotes: Record<
   Sarnia: {
     focus: "Prepare a careful coolant enquiry",
     introduction:
-      "CA Traders serves automotive businesses in Sarnia. When requesting coolant, include the vehicle specification and say whether you need concentrate or ready-to-use product. Compare prices using the volume you can use at the required concentration.",
+      "CA Elite Lubes serves automotive businesses in Sarnia. When requesting coolant, include the vehicle specification and say whether you need concentrate or ready-to-use product. Compare prices using the volume you can use at the required concentration.",
     sections: [
       [
         "Keep chemistry and concentration separate",
@@ -919,7 +919,7 @@ const cityNotes: Record<
   Strathroy: {
     focus: "Plan replenishment without over-ordering",
     introduction:
-      "CA Traders serves workshops in Strathroy. Base your next wholesale order on current stock counts and booked work. Keep exact product descriptions and pack units on your reorder list, and check any changes since your last purchase.",
+      "CA Elite Lubes serves workshops in Strathroy. Base your next wholesale order on current stock counts and booked work. Keep exact product descriptions and pack units on your reorder list, and check any changes since your last purchase.",
     sections: [
       [
         "Use a stock count with a defined unit",
@@ -943,7 +943,7 @@ const cityNotes: Record<
   London: {
     focus: "Order oils, filters and supplies together",
     introduction:
-      "CA Traders supplies automotive shops in London. Request lubricants, filters and everyday supplies in one wholesale quote, with a separate line for each product. Include specifications, part numbers and pack quantities so you can check the quote against the work planned in your shop.",
+      "CA Elite Lubes supplies automotive shops in London. Request lubricants, filters and everyday supplies in one wholesale quote, with a separate line for each product. Include specifications, part numbers and pack quantities so you can check the quote against the work planned in your shop.",
     sections: [
       [
         "Group by job, then separate the product lines",
@@ -968,7 +968,7 @@ const cityNotes: Record<
   "St. Thomas": {
     focus: "Identify transmission-fluid applications precisely",
     introduction:
-      "CA Traders serves automotive businesses in St. Thomas. For a transmission-fluid quote, send the exact fluid specification and transmission details. Keep automatic, CVT and manual requirements separate, and order the quantity needed for the service procedure.",
+      "CA Elite Lubes serves automotive businesses in St. Thomas. For a transmission-fluid quote, send the exact fluid specification and transmission details. Keep automatic, CVT and manual requirements separate, and order the quantity needed for the service procedure.",
     sections: [
       [
         "Identify the transmission before selecting fluid",
@@ -993,7 +993,7 @@ const cityNotes: Record<
   Tillsonburg: {
     focus: "Track pack sizes and units accurately",
     introduction:
-      "CA Traders serves workshops in Tillsonburg. When ordering fluids, filters and consumables together, give each quantity a clear unit. Container sizes, part counts and quantities per pack help you compare the quote and check the delivery.",
+      "CA Elite Lubes serves workshops in Tillsonburg. When ordering fluids, filters and consumables together, give each quantity a clear unit. Container sizes, part counts and quantities per pack help you compare the quote and check the delivery.",
     sections: [
       [
         "Turn a quantity into an unambiguous request",
@@ -1017,7 +1017,7 @@ const cityNotes: Record<
   Woodstock: {
     focus: "Separate routine stock from booked-job requirements",
     introduction:
-      "CA Traders serves automotive workshops in Woodstock. Separate routine stock orders from products needed for booked jobs, and flag any requested dates. Ask us to confirm availability and delivery timing before relying on a product for a service deadline.",
+      "CA Elite Lubes serves automotive workshops in Woodstock. Separate routine stock orders from products needed for booked jobs, and flag any requested dates. Ask us to confirm availability and delivery timing before relying on a product for a service deadline.",
     sections: [
       [
         "Mark the reason for each purchase",
@@ -1041,7 +1041,7 @@ const cityNotes: Record<
   Ingersoll: {
     focus: "Keep approved substitutions clear",
     introduction:
-      "CA Traders serves workshops in Ingersoll. If you are open to an alternative product, include the specification or verified part reference it must meet. Check technical suitability as well as price, and record the agreed product on your order.",
+      "CA Elite Lubes serves workshops in Ingersoll. If you are open to an alternative product, include the specification or verified part reference it must meet. Check technical suitability as well as price, and record the agreed product on your order.",
     sections: [
       [
         "State what must remain the same",
@@ -1065,7 +1065,7 @@ const cityNotes: Record<
   Stratford: {
     focus: "Check the product information behind a listing",
     introduction:
-      "CA Traders serves automotive shops in Stratford. If a catalog listing leaves a specification or application unclear, ask for the exact product’s technical or safety information before ordering. Include the requirement you need checked with your quote request.",
+      "CA Elite Lubes serves automotive shops in Stratford. If a catalog listing leaves a specification or application unclear, ask for the exact product’s technical or safety information before ordering. Include the requirement you need checked with your quote request.",
     sections: [
       [
         "Identify missing information before ordering",
@@ -1090,7 +1090,7 @@ const cityNotes: Record<
   Kitchener: {
     focus: "Standardise a multi-person workshop order",
     introduction:
-      "CA Traders serves automotive businesses in Kitchener. Combine your technicians’ requests into one purchasing list, keeping specifications, part numbers and pack quantities with each item. Resolve duplicates and unclear applications before sending the list for a quote.",
+      "CA Elite Lubes serves automotive businesses in Kitchener. Combine your technicians’ requests into one purchasing list, keeping specifications, part numbers and pack quantities with each item. Resolve duplicates and unclear applications before sending the list for a quote.",
     sections: [
       [
         "Collect requirements in a consistent format",
@@ -1115,7 +1115,7 @@ const cityNotes: Record<
   Waterloo: {
     focus: "Keep maintenance records useful for reordering",
     introduction:
-      "CA Traders serves workshops in Waterloo. Use service records to identify the exact oils and filters you have used before, then check the current application before reordering. Keep any approved substitutions and changes to pack sizes on the new list.",
+      "CA Elite Lubes serves workshops in Waterloo. Use service records to identify the exact oils and filters you have used before, then check the current application before reordering. Keep any approved substitutions and changes to pack sizes on the new list.",
     sections: [
       [
         "Record the product that was actually used",
@@ -1140,7 +1140,7 @@ const cityNotes: Record<
   Cambridge: {
     focus: "Match the quote to the receiving check",
     introduction:
-      "CA Traders serves automotive businesses in Cambridge. Include exact product names, specifications or part numbers, pack sizes and quantities in your enquiry. Those details give your receiving team a reference to check when the order arrives.",
+      "CA Elite Lubes serves automotive businesses in Cambridge. Include exact product names, specifications or part numbers, pack sizes and quantities in your enquiry. Those details give your receiving team a reference to check when the order arrives.",
     sections: [
       [
         "Identify each product on the order",
@@ -1164,7 +1164,7 @@ const cityNotes: Record<
   Guelph: {
     focus: "Keep specialist products separate from general stock",
     introduction:
-      "CA Traders serves workshops in Guelph. You can request specialist fluids and chemicals alongside everyday oils, filters and supplies. List specialist products separately with their application requirements, and flag any questions that need to be resolved before a job is scheduled.",
+      "CA Elite Lubes serves workshops in Guelph. You can request specialist fluids and chemicals alongside everyday oils, filters and supplies. List specialist products separately with their application requirements, and flag any questions that need to be resolved before a job is scheduled.",
     sections: [
       [
         "Define the specialist requirement first",
@@ -1195,7 +1195,7 @@ export function cityGuide(city: string): Guide {
   return {
     heading: `Wholesale automotive supplies in ${city}, Ontario`,
     title: `Wholesale Automotive Supplies in ${city}, ON`,
-    description: `Source wholesale engine oils, fluids, filters and shop supplies in ${city}, Ontario. Request pricing, availability and delivery details from CA Traders.`,
+    description: `Source wholesale engine oils, fluids, filters and shop supplies in ${city}, Ontario. Request pricing, availability and delivery details from CA Elite Lubes.`,
     introduction: notes.introduction,
     keywords: [
       `wholesale automotive supplies ${city}`,
@@ -1234,7 +1234,7 @@ export function cityGuide(city: string): Guide {
     faqs: [
       [notes.question, notes.answer],
       [
-        `Does CA Traders serve ${city}?`,
+        `Does CA Elite Lubes serve ${city}?`,
         `Yes. We serve ${city} as part of our Southwestern Ontario service area. Send your full business receiving address and product list so we can confirm arrangements for your order.`,
       ],
       [

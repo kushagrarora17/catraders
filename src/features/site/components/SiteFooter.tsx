@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getLandingLinks } from "@/features/catalog/api";
 import { Container } from "@/components/ui/container";
-import { BUSINESS_NAME, DESCRIPTION, EMAIL, PHONE_DISPLAY, PHONE_E164 } from "../contact";
+import { BUSINESS_NAME, PARENT_COMPANY_NAME, DESCRIPTION, EMAIL, PHONE_DISPLAY, PHONE_E164 } from "../contact";
 import { NAV_LINKS, PRODUCT_LINKS, CONTACT_HREF } from "../nav";
 import { Logo } from "./Logo";
 
@@ -14,6 +14,7 @@ export async function SiteFooter() {
       <Container className="grid gap-10 py-14 md:grid-cols-4">
         <div className="flex max-w-md flex-col gap-4 md:col-span-2">
           <Logo withMark={false} />
+          <p className="text-sm text-muted-foreground">A {PARENT_COMPANY_NAME} company.</p>
           <p className="text-sm leading-relaxed text-muted-foreground">{DESCRIPTION}</p>
         </div>
         <nav aria-labelledby="footer-quick-links">
