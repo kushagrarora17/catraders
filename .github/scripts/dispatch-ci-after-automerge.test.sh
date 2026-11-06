@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exercises the Dependabot follow-up dispatch against a fake gh.
+# Exercises the auto-merge follow-up dispatch against a fake gh.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
@@ -114,6 +114,7 @@ write_list() {
 }
 
 common_env() {
+  unset PR_AUTHOR
   export GH_DIR GH_CALL_LOG
   export REPO="$REPO_NAME"
   export HEAD_BRANCH="$BRANCH"
@@ -300,6 +301,31 @@ export HEAD_BRANCH=feature/not-dependabot
 output=$(run_script 0)
 grep -F "not a Dependabot branch" <<<"$output" >/dev/null || fail "$name message"
 [ ! -s "$GH_CALL_LOG" ] || fail "$name should not call gh"
+PASS=$((PASS + 1))
+
+name="dispatches CI for an owner PR merged by github-actions"
+prepare_merged acme
+export PR_AUTHOR=acme HEAD_BRANCH=feature/owner-change
+run_script 0 >/dev/null
+assert_dispatched "$GH_CALL_LOG"
+PASS=$((PASS + 1))
+
+name="owner dispatch rejects another author"
+prepare_merged contributor
+export PR_AUTHOR=acme HEAD_BRANCH=feature/other-change
+run_script 0 >/dev/null
+assert_not_dispatched "$GH_CALL_LOG"
+PASS=$((PASS + 1))
+
+name="finds an owner PR from the commit after branch deletion"
+prepare_merged acme
+echo '[]' >"$GH_DIR/pr-list.json"
+cp "$GH_DIR/pr-one.json" "$GH_DIR/pr-view.json"
+export PR_AUTHOR=acme HEAD_BRANCH=feature/deleted-change
+jq -n --arg sha "$HEAD" --arg branch "$HEAD_BRANCH" \
+  '[{number: 29, user: {login: "acme"}, head: {ref: $branch, sha: $sha}}]' >"$GH_DIR/pulls.json"
+run_script 0 >/dev/null
+assert_dispatched "$GH_CALL_LOG"
 PASS=$((PASS + 1))
 
 # The workflow files have to keep this chain. A refactor that drops it should fail CI.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Dependabot auto-merge squash-merges with the workflow GITHUB_TOKEN. GitHub does
+# Auto-merge squash-merges with the workflow GITHUB_TOKEN. GitHub does
 # not start push workflows for that token, so the merge commit otherwise gets no
 # CI run and no deploy. workflow_dispatch is exempt: once the squash commit is on
 # main and nothing has started CI for it, dispatch CI for that exact SHA.
@@ -9,6 +9,7 @@ set -euo pipefail
 : "${HEAD_BRANCH:?}"
 : "${HEAD_SHA:?}"
 : "${GH_TOKEN:?}"
+PR_AUTHOR="${PR_AUTHOR:-dependabot[bot]}"
 
 POLL_ATTEMPTS="${POLL_ATTEMPTS:-60}"
 POLL_INTERVAL="${POLL_INTERVAL:-10}"
@@ -29,8 +30,10 @@ fi
 case "$HEAD_BRANCH" in
   dependabot/*) ;;
   *)
-    echo "Branch $HEAD_BRANCH is not a Dependabot branch."
-    exit 0
+    if [ "$PR_AUTHOR" = 'dependabot[bot]' ]; then
+      echo "Branch $HEAD_BRANCH is not a Dependabot branch."
+      exit 0
+    fi
     ;;
 esac
 case "$HEAD_BRANCH" in
@@ -40,8 +43,11 @@ case "$HEAD_BRANCH" in
     ;;
 esac
 
-is_dependabot_author() {
-  [ "$1" = "app/dependabot" ] || [ "$1" = "dependabot" ] || [ "$1" = "dependabot[bot]" ]
+is_allowed_author() {
+  [ "$1" = "$PR_AUTHOR" ] || {
+    [ "$PR_AUTHOR" = 'dependabot[bot]' ] &&
+      { [ "$1" = "app/dependabot" ] || [ "$1" = "dependabot" ]; }
+  }
 }
 
 is_actions_merger() {
@@ -76,19 +82,19 @@ load_pr() {
 
   local pulls number
   pulls=$(gh api "repos/${REPO}/commits/${HEAD_SHA}/pulls")
-  number=$(jq -r --arg sha "$HEAD_SHA" --arg branch "$HEAD_BRANCH" '
+  number=$(jq -r --arg sha "$HEAD_SHA" --arg branch "$HEAD_BRANCH" --arg author "$PR_AUTHOR" '
     [
       .[]
       | select(
           (.head.sha | ascii_downcase) == $sha
           and .head.ref == $branch
-          and (.user.login == "dependabot[bot]" or .user.login == "app/dependabot" or .user.login == "dependabot")
+          and (.user.login == $author or ($author == "dependabot[bot]" and (.user.login == "app/dependabot" or .user.login == "dependabot")))
         )
     ]
     | if length == 1 then .[0].number | tostring else "" end
   ' <<<"$pulls")
   if [ -z "$number" ]; then
-    echo "No Dependabot pull request for $HEAD_BRANCH at $HEAD_SHA." >&2
+    echo "No pull request by $PR_AUTHOR for $HEAD_BRANCH at $HEAD_SHA." >&2
     exit 0
   fi
   read_pr "$number"
@@ -108,8 +114,8 @@ for attempt in $(seq 1 "$POLL_ATTEMPTS"); do
   state=$(jq -r '.state // ""' <<<"$current")
   auto=$(jq -r 'if .autoMergeRequest == null then "false" else "true" end' <<<"$current")
 
-  if ! is_dependabot_author "$author"; then
-    echo "PR #${number} author is ${author:-unknown}; not Dependabot."
+  if ! is_allowed_author "$author"; then
+    echo "PR #${number} author is ${author:-unknown}; expected $PR_AUTHOR."
     exit 0
   fi
   if [ "$head_oid" != "$HEAD_SHA" ]; then
