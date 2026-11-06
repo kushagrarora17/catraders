@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { NavigationProgress } from "@/features/site/components/NavigationProgress";
 import { BUSINESS_NAME } from "@/features/site/contact";
 import { getSiteUrl } from "@/features/site/url";
-import { GA_MEASUREMENT_ID, GA_PRODUCTION_HOSTNAME } from "@/lib/analytics";
+import { GA_INITIALIZATION_SCRIPT } from "@/lib/analytics";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -56,14 +56,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <NavigationProgress />
         </Suspense>
         {children}
-        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
         <Script id="google-tag" strategy="afterInteractive">
-          {`if (window.location.hostname === '${GA_PRODUCTION_HOSTNAME}') {
-window.dataLayer = window.dataLayer || [];
-window.gtag = function(){window.dataLayer.push(arguments);};
-window.gtag('js', new Date());
-window.gtag('config', '${GA_MEASUREMENT_ID}');
-}`}
+          {GA_INITIALIZATION_SCRIPT}
         </Script>
       </body>
     </html>

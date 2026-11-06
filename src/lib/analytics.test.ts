@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
-import { GA_PRODUCTION_HOSTNAME, trackLead } from "./analytics";
+import { runInNewContext } from "node:vm";
+import { GA_INITIALIZATION_SCRIPT, GA_MEASUREMENT_ID, GA_PRODUCTION_HOSTNAME, trackLead } from "./analytics";
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
 
@@ -42,4 +43,34 @@ describe("GA4 leads", () => {
     gtag.mockImplementation(() => { throw new Error("blocked"); });
     expect(() => trackLead("quote")).not.toThrow();
   });
+});
+
+describe("GA4 initialization", () => {
+  test.each(["localhost", "127.0.0.1", "[::1]", "app-catraders-staging.azurewebsites.net", GA_PRODUCTION_HOSTNAME])(
+    "only downloads and initializes GA on production: %s",
+    (hostname) => {
+      const browser = { location: { hostname } } as { location: { hostname: string }; dataLayer?: IArguments[]; gtag?: unknown };
+      const script: { async?: boolean; src?: string } = {};
+      const appendChild = mock(() => {});
+      const createElement = mock(() => script);
+      runInNewContext(GA_INITIALIZATION_SCRIPT, {
+        window: browser,
+        document: { createElement, head: { appendChild } },
+      });
+      if (hostname === GA_PRODUCTION_HOSTNAME) {
+        expect(createElement).toHaveBeenCalledWith("script");
+        expect(appendChild).toHaveBeenCalledWith(script);
+        expect(script).toEqual({ async: true, src: `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}` });
+        expect(browser.dataLayer?.map((args) => Array.from(args))).toEqual([
+          ["js", expect.anything()], ["config", GA_MEASUREMENT_ID],
+        ]);
+        expect(typeof browser.gtag).toBe("function");
+      } else {
+        expect(createElement).not.toHaveBeenCalled();
+        expect(appendChild).not.toHaveBeenCalled();
+        expect(browser.dataLayer).toBeUndefined();
+        expect(browser.gtag).toBeUndefined();
+      }
+    },
+  );
 });
