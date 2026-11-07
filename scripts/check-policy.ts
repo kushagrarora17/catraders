@@ -3,11 +3,14 @@ import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parse, type ExprNode } from "groq-js";
 import ts from "typescript";
+import { checkWorkflowChains } from "./check-workflow-chains";
 
 const errors: string[] = [];
 const git = (...args: string[]) => execFileSync("git", args, { encoding: "utf8" }).trim();
 const files = git("ls-files", "--cached", "--others", "--exclude-standard", "-z").split("\0").filter(Boolean);
 const fail = (message: string) => errors.push(message);
+
+for (const error of await checkWorkflowChains(files)) fail(error);
 
 for (const file of files) {
   if (/(^|\/)(package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml)$/.test(file)) {
