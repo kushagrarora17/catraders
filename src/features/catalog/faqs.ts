@@ -12,9 +12,9 @@ export function productFaqs(product: NonNullable<PRODUCT_BY_SLUG_QUERY_RESULT>, 
     ? 'Choose your quantity and select “Add to quote”, then submit your quote with your business and contact details.'
     : `This product is currently out of stock. Contact ${EMAIL} to ask about availability.`;
   const defaults: Faq[] = [
-    { question: `Where can I buy ${title}?`, answer: `CA Traders supplies ${title} to mechanics, auto shops, and dealerships in Southwestern Ontario. ${request}` },
-    { question: `What is the price of ${title}?`, answer: `Request a quote from CA Traders for current ${title} pricing. Include the quantity you need${pack ? `; the listed pack size is ${pack}` : ""}. ${request}` },
-    ...(cities.length ? [{ question: `Where can I buy ${title} near me?`, answer: `CA Traders serves businesses in ${cities.join(", ")}, in Southwestern Ontario. Contact ${EMAIL} with your city and the quantity of ${title} you need to confirm availability and supply arrangements.` }] : []),
+    { question: `Where can I buy ${title}?`, answer: `CA EliteLube supplies ${title} to mechanics, auto shops, and dealerships in Southwestern Ontario. ${request}` },
+    { question: `What is the price of ${title}?`, answer: `Request a quote from CA EliteLube for current ${title} pricing. Include the quantity you need${pack ? `; the listed pack size is ${pack}` : ""}. ${request}` },
+    ...(cities.length ? [{ question: `Where can I buy ${title} near me?`, answer: `CA EliteLube serves businesses in ${cities.join(", ")}, in Southwestern Ontario. Contact ${EMAIL} with your city and the quantity of ${title} you need to confirm availability and supply arrangements.` }] : []),
     ...(pack ? [{ question: `What pack size does ${title} come in?`, answer: `The listed pack size for ${title} is ${pack}. Include your required quantity when enquiring.` }] : []),
     ...(specs ? [{ question: `What specifications are listed for ${title}?`, answer: `The catalog lists ${specs} for ${title}. Check these against your equipment manufacturer's requirements before ordering.` }] : []),
   ];

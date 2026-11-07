@@ -15,8 +15,8 @@ export async function generateMetadata({ searchParams }: PageProps<"/products">)
   const category = filters.category ? await getCategory(filters.category) : null;
   const title = category ? `Wholesale ${category.title}` : "Wholesale Automotive Products";
   const description = category
-    ? `Browse wholesale ${category.title.toLowerCase()} for automotive shops in Southwestern Ontario. Compare specifications and pack sizes, then request pricing from CA Traders.`
-    : "Browse wholesale engine oils, transmission fluids, coolants, filters and shop supplies. Request pricing and availability from CA Traders in Southwestern Ontario.";
+    ? `Browse wholesale ${category.title.toLowerCase()} for automotive shops in Southwestern Ontario. Compare specifications and pack sizes, then request pricing from CA EliteLube.`
+    : "Browse wholesale engine oils, transmission fluids, coolants, filters and shop supplies. Request pricing and availability from CA EliteLube in Southwestern Ontario.";
   return {
     title, description,
     alternates: { canonical: catalogPageHref({ ...filters, q: null, available: false, attributes: {} }, page) },

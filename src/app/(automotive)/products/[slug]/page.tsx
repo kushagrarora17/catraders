@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps<"/products/[slug]">
   const product = await getProduct((await params).slug);
   if (!product) return { title: "Product not found", robots: { index: false } };
   const details = product.attributeValues?.flatMap((value) => value?.label ? [value.label] : []).join(", ");
-  const fallback = `${product.title}${details ? ` — ${details}` : ""}. Request wholesale pricing from CA Traders in Southwestern Ontario.`;
+  const fallback = `${product.title}${details ? ` — ${details}` : ""}. Request wholesale pricing from CA EliteLube in Southwestern Ontario.`;
   const description = product.seo?.description?.trim() || (product.descriptionText?.trim() || fallback).replace(/\s+/g, " ").slice(0, 180);
   const title = product.seo?.title?.trim() || product.title;
   return {

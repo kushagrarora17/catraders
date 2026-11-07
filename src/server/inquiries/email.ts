@@ -14,8 +14,8 @@ export function buildInquiryEmails(
       recipients: { to: [{ address: inquiry.email, displayName: inquiry.name }] },
       content: {
         subject: `We received your inquiry ${referenceNumber}`,
-        plainText: `Hi ${inquiry.name},\n\nThanks for reaching out to CA Traders. We'll get back to you with wholesale pricing within 24 hours.\n\nReference: ${referenceNumber}\n`,
-        html: `<p>Hi ${escapeHtml(inquiry.name)},</p><p>Thanks for reaching out to CA Traders. We'll get back to you with wholesale pricing within 24 hours.</p><p>Reference: <strong>${referenceNumber}</strong></p>`,
+        plainText: `Hi ${inquiry.name},\n\nThanks for reaching out to CA EliteLube. We'll get back to you with wholesale pricing within 24 hours.\n\nReference: ${referenceNumber}\n`,
+        html: `<p>Hi ${escapeHtml(inquiry.name)},</p><p>Thanks for reaching out to CA EliteLube. We'll get back to you with wholesale pricing within 24 hours.</p><p>Reference: <strong>${referenceNumber}</strong></p>`,
       },
     },
   ];

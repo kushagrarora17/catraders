@@ -1,5 +1,7 @@
 /** Business details shown on the site and in structured data. Single source of truth. */
-export const BUSINESS_NAME = "CA Traders";
+export const PRODUCT_NAME = "CA EliteLube";
+export const BUSINESS_NAME = "CA EliteLube Inc";
+export const PARENT_COMPANY_NAME = "CA Traders";
 export const TAGLINE = "Automotive Lubricants & Fluids";
 export const DESCRIPTION =
   "Your trusted B2B wholesale partner for premium automotive lubricants, fluids, filters, and shop supplies. Serving mechanics, auto shops, and dealerships across Southwestern Ontario — from Windsor and Chatham-Kent through London to Kitchener-Waterloo.";

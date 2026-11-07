@@ -3,7 +3,7 @@ import { Barlow, Barlow_Condensed } from "next/font/google";
 import Script from "next/script";
 import { Suspense } from "react";
 import { NavigationProgress } from "@/features/site/components/NavigationProgress";
-import { BUSINESS_NAME } from "@/features/site/contact";
+import { PRODUCT_NAME } from "@/features/site/contact";
 import { getSiteUrl } from "@/features/site/url";
 import { GA_INITIALIZATION_SCRIPT } from "@/lib/analytics";
 import "./globals.css";
@@ -26,20 +26,20 @@ const description =
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: `${BUSINESS_NAME} — Wholesale Automotive Lubricants & Fluids | Windsor to Kitchener, ON`,
-    template: `%s | ${BUSINESS_NAME}`,
+    default: `${PRODUCT_NAME} — Wholesale Automotive Lubricants & Fluids | Windsor to Kitchener, ON`,
+    template: `%s | ${PRODUCT_NAME}`,
   },
   description,
-  applicationName: BUSINESS_NAME,
+  applicationName: PRODUCT_NAME,
   openGraph: {
     type: "website",
     locale: "en_CA",
-    siteName: BUSINESS_NAME,
+    siteName: PRODUCT_NAME,
     description,
   },
   twitter: { card: "summary_large_image" },
   formatDetection: { telephone: false },
-  appleWebApp: { capable: true, title: BUSINESS_NAME, statusBarStyle: "black" },
+  appleWebApp: { capable: true, title: PRODUCT_NAME, statusBarStyle: "black" },
 };
 
 // Matches --brand-navy-dark. Drives Chrome/Android toolbar + Safari iOS toolbar tint.

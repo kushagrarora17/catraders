@@ -8,7 +8,7 @@ import {structure} from './structure'
 
 export default defineConfig({
   name: 'default',
-  title: 'CA Traders',
+  title: 'CA EliteLube',
   projectId,
   dataset,
   plugins: [structureTool({structure, defaultDocumentNode: (S, {schemaType}) =>

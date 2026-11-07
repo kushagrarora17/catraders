@@ -25,7 +25,7 @@ export function WhyUs() {
     <section id="why" aria-labelledby="why-title" className="bg-secondary py-20 sm:py-28">
       <Container className="grid gap-12 lg:grid-cols-5 lg:gap-16">
         <div className="flex flex-col gap-6 lg:col-span-2">
-          <SectionHeading id="why-title" eyebrow="Why CA Traders">
+          <SectionHeading id="why-title" eyebrow="Why CA EliteLube">
             Built for <span className="block">Mechanics</span>
           </SectionHeading>
           <p className="max-w-md text-lg leading-relaxed text-muted-foreground">
