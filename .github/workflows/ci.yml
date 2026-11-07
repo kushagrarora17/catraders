@@ -261,3 +261,30 @@ jobs:
         run: |
           echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
           echo "$NEEDS" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' > /dev/null
+
+  deploy-azure:
+    needs: ci-ok
+    if: >-
+      needs.ci-ok.result == 'success' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    uses: ./.github/workflows/azure-deploy.yml
+    with:
+      automatic: true
+      release_sha: ${{ github.sha }}
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+
+  deploy-studio:
+    needs: ci-ok
+    if: >-
+      needs.ci-ok.result == 'success' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    uses: ./.github/workflows/studio-deploy.yml
+    with:
+      automatic: true
+      release_sha: ${{ github.sha }}
+    permissions:
+      contents: read
+      actions: read

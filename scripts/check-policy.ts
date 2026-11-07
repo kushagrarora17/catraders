@@ -16,11 +16,23 @@ for (const file of files) {
 }
 
 const workflow = Bun.YAML.parse(await Bun.file(".github/workflows/ci.yml").text()) as {
-  jobs: Record<string, { needs?: string | string[] }>;
+  jobs: Record<string, { needs?: string | string[]; uses?: string }>;
 };
 const needs = workflow.jobs["ci-ok"]?.needs;
 const dependencies = new Set(typeof needs === "string" ? [needs] : needs ?? []);
+const deployments: Record<string, string> = {
+  "deploy-azure": "./.github/workflows/azure-deploy.yml",
+  "deploy-studio": "./.github/workflows/studio-deploy.yml",
+};
 for (const job of Object.keys(workflow.jobs)) {
+  if (job in deployments) {
+    const config = workflow.jobs[job];
+    const required = typeof config.needs === "string" ? [config.needs] : config.needs ?? [];
+    if (!required.includes("ci-ok") || config.uses !== deployments[job] || dependencies.has(job)) {
+      fail(`${job} must call its deployment workflow after ci-ok`);
+    }
+    continue;
+  }
   if (job !== "ci-ok" && !dependencies.has(job)) fail(`ci-ok.needs is missing ${job}`);
 }
 for (const job of dependencies) {

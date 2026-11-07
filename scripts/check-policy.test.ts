@@ -36,6 +36,15 @@ test("rejects CI jobs omitted from the required gate", () => {
   expect(f.run().stderr).toContain("ci-ok.needs is missing added");
 });
 
+test("deployment jobs must call the deployment workflow after ci-ok", () => {
+  const f = fixture();
+  const ci = "jobs:\n  web: {}\n  ci-ok:\n    needs: [web]\n";
+  f.write(".github/workflows/ci.yml", ci + "  deploy-azure:\n    needs: ci-ok\n    uses: ./.github/workflows/azure-deploy.yml\n");
+  expect(f.run().status).toBe(0);
+  f.write(".github/workflows/ci.yml", ci + "  deploy-azure:\n    needs: web\n    uses: ./.github/workflows/azure-deploy.yml\n");
+  expect(f.run().stderr).toContain("must call its deployment workflow after ci-ok");
+});
+
 test("resolves relative imports before checking catalog boundaries", () => {
   const f = fixture();
   f.write("src/features/catalog/bypass.ts", 'import { client } from "../../sanity/client";');

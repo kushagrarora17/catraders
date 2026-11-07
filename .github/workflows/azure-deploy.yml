@@ -3,21 +3,20 @@ name: Deploy Next.js Automotive App to Azure
 # Deploys main only after CI has passed for that commit. Authenticates with
 # GitHub OIDC (no stored secrets); infrastructure comes from iac/app.
 #
-# A push to main starts CI, and this workflow runs from that CI run's workflow_run.
-# Dependabot auto-merge pushes with GITHUB_TOKEN, which does not start CI; the
-# auto-merge workflow dispatches CI for the squash SHA instead. That run's event
-# is workflow_dispatch, and it is deployed the same way. There is no push trigger
-# here, so a human merge does not deploy once from the push and again from CI.
+# CI calls this workflow after validating the main commit. Manual dispatch remains available.
 #
 # Order: build and push the image (no side effects) -> run database migrations -> deploy -> warm the public site.
 # A failed migration stops the run before the site is touched. Migrations are forward-only, so
 # write them to stay compatible with the previous release, which keeps serving until the deploy.
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
-  # Run workflow on this file to redeploy the current tip of main.
+  workflow_call:
+    inputs:
+      automatic:
+        required: true
+        type: boolean
+      release_sha:
+        required: true
+        type: string
   workflow_dispatch:
 
 permissions:
@@ -30,27 +29,16 @@ concurrency:
 
 jobs:
   resolve-sha:
-    # Skipped until the repository variables from `terraform output github_actions_variables` are set
-    # (secrets can't be read in job-level `if`, so the gate uses a variable).
-    # The `branches` filter matches branch names, so a fork PR from a branch called "main" starts
-    # this workflow; pull_request CI is not in the event list, so it never takes the Azure identity.
-    # Manual runs have to target main. Dispatched CI is accepted only for this repository.
     if: >-
-      vars.AZURE_WEBAPP_NAME != '' &&
-      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-       (github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.head_branch == 'main' &&
-        github.event.workflow_run.head_repository.full_name == github.repository &&
-        (github.event.workflow_run.event == 'push' ||
-         github.event.workflow_run.event == 'workflow_dispatch')))
+      vars.AZURE_WEBAPP_NAME != '' && github.ref == 'refs/heads/main' &&
+      ((inputs.automatic == true && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) ||
+       (inputs.automatic != true && github.event_name == 'workflow_dispatch'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       sha: ${{ steps.pick.outputs.sha }}
       changed: ${{ steps.changes.outputs.changed }}
     steps:
-      # workflow_run loads this file from the default branch. Check that commit out
-      # so the guard script matches the workflow, not an older CI SHA.
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.repository.default_branch }}
@@ -60,8 +48,8 @@ jobs:
       - name: Resolve the commit CI validated
         id: pick
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          REQUESTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          EVENT_NAME: ${{ inputs.automatic && 'ci' || 'workflow_dispatch' }}
+          REQUESTED_SHA: ${{ inputs.automatic && inputs.release_sha || github.sha }}
           REPO: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -81,7 +69,7 @@ jobs:
         env:
           DEPLOY_TARGET: automotive
           REQUESTED_SHA: ${{ steps.pick.outputs.sha }}
-          EVENT_NAME: ${{ github.event_name }}
+          EVENT_NAME: ${{ inputs.automatic && 'ci' || 'workflow_dispatch' }}
           REPO: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
