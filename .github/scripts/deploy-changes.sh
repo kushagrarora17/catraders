@@ -25,8 +25,8 @@ baseline=""
 # deploy jobs establish a baseline; otherwise older unshipped changes are lost.
 runs=$(gh api "repos/$REPO/actions/workflows/$workflow/runs?branch=main&status=success&per_page=100")
 ci_runs=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?branch=main&status=success&per_page=100")
-combined=$(jq -sn --argjson manual "$runs" --argjson ci "$ci_runs" \
-  '[$manual.workflow_runs[], $ci.workflow_runs[]] | sort_by(.created_at) | reverse')
+combined=$(printf '%s\n%s\n' "$runs" "$ci_runs" | jq -s \
+  '[.[0].workflow_runs[], .[1].workflow_runs[]] | sort_by(.created_at) | reverse')
 while IFS=$'\t' read -r run_id sha; do
   [ "$run_id" != "${GITHUB_RUN_ID:-}" ] || continue
   deployed=$(gh api --paginate "repos/$REPO/actions/runs/$run_id/jobs?per_page=100" \
