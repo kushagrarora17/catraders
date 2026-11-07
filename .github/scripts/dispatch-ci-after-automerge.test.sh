@@ -335,6 +335,11 @@ auto="$ROOT/.github/workflows/dependabot-auto-merge.yml"
 grep -q 'workflow_dispatch:' "$deploy" || fail "deploy is missing workflow_dispatch"
 grep -q "workflow_call:" "$deploy" || fail "deploy must accept calls from CI"
 grep -q "needs: ci-ok" "$ci" || fail "deploy must wait for CI"
+for job in deploy-azure deploy-studio; do
+  condition=$(awk "/^  ${job}:/ { in_job=1; next } /^  [a-zA-Z0-9_-]+:/ { in_job=0 } in_job { print }" "$ci")
+  grep -Fq '!cancelled()' <<<"$condition" || fail "$job must evaluate after skipped upstream jobs"
+  grep -Fq "needs.ci-ok.result == 'success'" <<<"$condition" || fail "$job must require successful CI"
+done
 grep -q "github.event_name == 'push'" "$ci" || fail "deploy must accept push CI"
 grep -q "github.event_name == 'workflow_dispatch'" "$ci" || fail "deploy must accept dispatched CI"
 grep -q "github.ref == 'refs/heads/main'" "$deploy" || fail "manual deploy must target main"
