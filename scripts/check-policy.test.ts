@@ -45,6 +45,18 @@ test("deployment jobs must call the deployment workflow after ci-ok", () => {
   expect(f.run().stderr).toContain("must call its deployment workflow after ci-ok");
 });
 
+test("rejects four-level workflow chains, including script dispatches", () => {
+  const f = fixture();
+  f.write(".github/workflows/ci.yml", "name: CI\non:\n  pull_request:\n  workflow_dispatch:\njobs:\n  web: {}\n  ci-ok:\n    needs: [web]\n");
+  f.write(".github/workflows/auto.yml", "name: Auto\non:\n  workflow_run:\n    workflows: [CI]\njobs:\n  dispatch:\n    if: github.event.workflow_run.event == 'pull_request'\n    steps:\n      - run: bash .github/scripts/dispatch.sh\n");
+  f.write(".github/scripts/dispatch.sh", "gh workflow run ci.yml\n");
+  expect(f.run().status).toBe(0);
+  f.write(".github/workflows/deploy.yml", "name: Deploy\non:\n  workflow_run:\n    workflows: [CI]\njobs:\n  deploy: {}\n");
+  expect(f.run().stderr).toContain("Workflow chain exceeds three levels");
+  f.write(".github/workflows/deploy.yml", "name: Deploy\non:\n  workflow_call:\njobs:\n  deploy: {}\n");
+  expect(f.run().status).toBe(0);
+});
+
 test("resolves relative imports before checking catalog boundaries", () => {
   const f = fixture();
   f.write("src/features/catalog/bypass.ts", 'import { client } from "../../sanity/client";');
