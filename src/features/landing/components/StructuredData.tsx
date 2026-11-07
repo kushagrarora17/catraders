@@ -1,4 +1,4 @@
-import { BUSINESS_NAME, PARENT_COMPANY_NAME, DESCRIPTION, EMAIL, OPENING_HOURS, PHONE_E164 } from "@/features/site/contact";
+import { BUSINESS_NAME, PRODUCT_NAME, PARENT_COMPANY_NAME, DESCRIPTION, EMAIL, OPENING_HOURS, PHONE_E164 } from "@/features/site/contact";
 import { getSiteUrl } from "@/features/site/url";
 import { getServiceArea } from "../api";
 
@@ -14,6 +14,7 @@ export async function StructuredData() {
     "@type": ["AutoPartsStore", "WholesaleStore"],
     "@id": `${url}/#business`,
     name: BUSINESS_NAME,
+    alternateName: PRODUCT_NAME,
     parentOrganization: { "@type": "Organization", name: PARENT_COMPANY_NAME },
     description: DESCRIPTION,
     url,

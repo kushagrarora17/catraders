@@ -202,7 +202,7 @@ test.describe("SEO landing pages", () => {
     ]);
     await sendWebhook(request, JSON.stringify({ _type: "product" }));
     await page.goto("/products/castrol-edge-5w30-4l");
-    await expect(page).toHaveTitle("Workshop oil selection | CA Elite Lubes");
+    await expect(page).toHaveTitle("Workshop oil selection | CA EliteLube");
     await expect(page.locator('meta[name="description"]')).toHaveAttribute(
       "content",
       "Product-specific workshop oil description.",

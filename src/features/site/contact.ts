@@ -1,5 +1,6 @@
 /** Business details shown on the site and in structured data. Single source of truth. */
-export const BUSINESS_NAME = "CA Elite Lubes";
+export const PRODUCT_NAME = "CA EliteLube";
+export const BUSINESS_NAME = "CA EliteLube Inc";
 export const PARENT_COMPANY_NAME = "CA Traders";
 export const TAGLINE = "Automotive Lubricants & Fluids";
 export const DESCRIPTION =

@@ -1,8 +1,8 @@
 import { ImageResponse } from "next/og";
-import { BUSINESS_NAME, TAGLINE } from "@/features/site/contact";
+import { PRODUCT_NAME, TAGLINE } from "@/features/site/contact";
 import { LOGO_DROP, LOGO_GOLD, LOGO_NAVY, LOGO_TRIANGLE, LOGO_VIEWBOX } from "@/features/site/logo-paths";
 
-export const alt = `${BUSINESS_NAME} — ${TAGLINE}`;
+export const alt = `${PRODUCT_NAME} — ${TAGLINE}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -34,7 +34,7 @@ export default function Image() {
             <path d={LOGO_DROP} fill={NAVY_DARK} />
           </svg>
           <div style={{ display: "flex", fontSize: 64, fontWeight: 800, letterSpacing: 2 }}>
-            <span style={{ color: GOLD }}>CA</span>&nbsp;ELITE LUBES
+            <span style={{ color: GOLD }}>CA</span>&nbsp;ELITELUBE
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", marginTop: 48, fontSize: 84, fontWeight: 900, lineHeight: 1 }}>

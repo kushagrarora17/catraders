@@ -19,7 +19,7 @@ export function Logo({ withMark = true, className }: { withMark?: boolean; class
       {withMark && <LogoMark className="size-9 sm:size-11" />}
       <span className="flex flex-col">
         <span className="whitespace-nowrap font-heading text-xl font-extrabold uppercase leading-none tracking-wide text-foreground sm:text-2xl">
-          <span className="text-highlight">CA</span> Elite Lubes
+          <span className="text-highlight">CA</span> EliteLube
           <span className="sr-only"> — home</span>
         </span>
         <span className="hidden text-2xs uppercase tracking-tagline text-subtle-foreground sm:block">{TAGLINE}</span>
