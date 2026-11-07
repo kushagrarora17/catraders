@@ -10,7 +10,11 @@ set -euo pipefail
 [ "${API_FAIL:-false}" != true ] || exit 1
 case "$*" in
   *'/workflows/ci.yml/runs?'*)
-    if [ "${CI_BASELINE:-false}" = true ]; then
+    if [ "${LARGE_RESPONSE:-false}" = true ]; then
+      printf '{"workflow_runs":[],"padding":"'
+      head -c 140000 /dev/zero | tr '\0' x
+      echo '"}'
+    elif [ "${CI_BASELINE:-false}" = true ]; then
       echo '{"workflow_runs":[{"id":11,"head_sha":"cccccccccccccccccccccccccccccccccccccccc","created_at":"2026-01-02T00:00:00Z"}]}'
     else
       echo '{"workflow_runs":[]}'
@@ -91,6 +95,7 @@ export FILES=''
 check automotive false; check studio false
 CI_BASELINE=true EXPECTED_BASELINE=cccccccccccccccccccccccccccccccccccccccc check automotive false
 CI_BASELINE=true EXPECTED_BASELINE=cccccccccccccccccccccccccccccccccccccccc check studio false
+LARGE_RESPONSE=true check automotive false
 NO_BASELINE=true check studio true
 REWRITTEN=true check automotive true
 EVENT_NAME=workflow_dispatch check studio true
