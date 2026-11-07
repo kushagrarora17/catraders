@@ -8,7 +8,7 @@ test.describe("landing page", () => {
     await page.goto("/");
 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    for (const section of ["Why CA Elite Lubes", "Product Catalog", "Testimonials", "Service Area", "Contact Us"]) {
+    for (const section of ["Why CA EliteLube", "Product Catalog", "Testimonials", "Service Area", "Contact Us"]) {
       await expect(page.getByText(section, { exact: true }).first()).toBeVisible();
     }
     await expect(page.getByRole("list", { name: "Brands we carry" })).toBeVisible();

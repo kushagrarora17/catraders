@@ -1,5 +1,5 @@
 export const NAV_LINKS = [
-  { href: "/#why", label: "Why Us", footerLabel: "Why CA Elite Lubes" },
+  { href: "/#why", label: "Why Us", footerLabel: "Why CA EliteLube" },
   { href: "/#catalog", label: "Catalog", footerLabel: "Product Catalog" },
   { href: "/#testimonials", label: "Testimonials", footerLabel: "Testimonials" },
 ] as const;

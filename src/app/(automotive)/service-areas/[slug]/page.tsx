@@ -41,7 +41,7 @@ export default async function CityLandingPage({
       />
       <header className="max-w-4xl">
         <p className="mb-3 text-sm font-bold uppercase tracking-wide text-highlight">
-          CA Elite Lubes · Southwestern Ontario
+          CA EliteLube · Southwestern Ontario
         </p>
         <h1 className="font-heading text-4xl font-bold sm:text-5xl">
           {page.content.heading}
