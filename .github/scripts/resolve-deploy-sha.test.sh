@@ -60,17 +60,17 @@ run_script 1 >/dev/null
 grep -F "refs/heads/main" "$CASE/err" >/dev/null || fail "$name message"
 PASS=$((PASS + 1))
 
-name="workflow_run prints the SHA when it is still the tip of main"
+name="ci prints the SHA when it is still the tip of main"
 new_case
-export EVENT_NAME=workflow_run REQUESTED_SHA="$SHA" GITHUB_REF=refs/heads/main TIP_SHA="$SHA"
+export EVENT_NAME=ci REQUESTED_SHA="$SHA" GITHUB_REF=refs/heads/main TIP_SHA="$SHA"
 got=$(run_script 0)
 [ "$got" = "$SHA" ] || fail "$name got $got"
 grep -q 'commits/main' "$GH_CALL_LOG" || fail "$name should read main"
 PASS=$((PASS + 1))
 
-name="workflow_run prints nothing when main has moved on"
+name="ci prints nothing when main has moved on"
 new_case
-export EVENT_NAME=workflow_run REQUESTED_SHA="$SHA" GITHUB_REF=refs/heads/main TIP_SHA="$TIP"
+export EVENT_NAME=ci REQUESTED_SHA="$SHA" GITHUB_REF=refs/heads/main TIP_SHA="$TIP"
 got=$(run_script 0)
 [ -z "$got" ] || fail "$name should skip, got $got"
 grep -F "Skipping deploy" "$CASE/err" >/dev/null || fail "$name should explain the skip"

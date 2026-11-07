@@ -9,6 +9,12 @@ cat > "$FIXTURE/gh" <<'MOCK'
 set -euo pipefail
 [ "${API_FAIL:-false}" != true ] || exit 1
 case "$*" in
+  *'/workflows/ci.yml/runs?'*)
+    if [ "${CI_BASELINE:-false}" = true ]; then
+      echo '{"workflow_runs":[{"id":11,"head_sha":"cccccccccccccccccccccccccccccccccccccccc","created_at":"2026-01-02T00:00:00Z"}]}'
+    else
+      echo '{"workflow_runs":[]}'
+    fi ;;
   *'/workflows/'*)
     if [ "${NO_BASELINE:-false}" = true ]; then
       echo '{"workflow_runs":[]}'
@@ -17,6 +23,11 @@ case "$*" in
     fi ;;
   *'/runs/10/jobs?'*) : ;;
   *'/runs/9/jobs?'*) echo 123 ;;
+  *'/runs/11/jobs?'*)
+    case "$*" in
+      *'deploy-azure / build-and-deploy'*|*'deploy-studio / deploy'*) echo 456 ;;
+      *) exit 1 ;;
+    esac ;;
   *) exit 1 ;;
 esac
 MOCK
@@ -27,7 +38,7 @@ case "$1" in
   cat-file|merge-base) [ "${REWRITTEN:-false}" != true ] ;;
   diff)
     [ "${DIFF_FAIL:-false}" != true ] || exit 1
-    [ "$5" = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ] || exit 1
+    [ "$5" = "${EXPECTED_BASELINE:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}" ] || exit 1
     if [ -n "${FILES:-}" ]; then
       while IFS= read -r file; do printf '%s\0' "$file"; done <<< "$FILES"
     fi ;;
@@ -35,7 +46,7 @@ case "$1" in
 esac
 MOCK
 chmod +x "$FIXTURE/gh" "$FIXTURE/git"
-export PATH="$FIXTURE:$PATH" GH_TOKEN=test REPO=acme/catraders EVENT_NAME=workflow_run
+export PATH="$FIXTURE:$PATH" GH_TOKEN=test REPO=acme/catraders EVENT_NAME=ci
 export REQUESTED_SHA=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 PASS=0
 check() {
@@ -78,6 +89,8 @@ export FILES=$'studio/old.tsx\nsrc/new.tsx'
 check automotive true; check studio true
 export FILES=''
 check automotive false; check studio false
+CI_BASELINE=true EXPECTED_BASELINE=cccccccccccccccccccccccccccccccccccccccc check automotive false
+CI_BASELINE=true EXPECTED_BASELINE=cccccccccccccccccccccccccccccccccccccccc check studio false
 NO_BASELINE=true check studio true
 REWRITTEN=true check automotive true
 EVENT_NAME=workflow_dispatch check studio true

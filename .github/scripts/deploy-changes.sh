@@ -7,8 +7,8 @@ set -euo pipefail
 : "${GH_TOKEN:?}"
 
 case "$DEPLOY_TARGET" in
-  automotive) workflow=azure-deploy.yml; job=build-and-deploy ;;
-  studio) workflow=studio-deploy.yml; job=deploy ;;
+  automotive) workflow=azure-deploy.yml; job=build-and-deploy; ci_job='deploy-azure / build-and-deploy' ;;
+  studio) workflow=studio-deploy.yml; job=deploy; ci_job='deploy-studio / deploy' ;;
   *) echo "Unknown deployment target" >&2; exit 1 ;;
 esac
 [[ "$REQUESTED_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
@@ -24,12 +24,15 @@ baseline=""
 # A successful workflow can contain a skipped deploy job. Only actual successful
 # deploy jobs establish a baseline; otherwise older unshipped changes are lost.
 runs=$(gh api "repos/$REPO/actions/workflows/$workflow/runs?branch=main&status=success&per_page=100")
+ci_runs=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?branch=main&status=success&per_page=100")
+combined=$(jq -sn --argjson manual "$runs" --argjson ci "$ci_runs" \
+  '[$manual.workflow_runs[], $ci.workflow_runs[]] | sort_by(.created_at) | reverse')
 while IFS=$'\t' read -r run_id sha; do
   [ "$run_id" != "${GITHUB_RUN_ID:-}" ] || continue
   deployed=$(gh api --paginate "repos/$REPO/actions/runs/$run_id/jobs?per_page=100" \
-    --jq ".jobs[] | select(.name == \"$job\" and .conclusion == \"success\") | .id")
+    --jq ".jobs[] | select((.name == \"$job\" or .name == \"$ci_job\") and .conclusion == \"success\") | .id")
   if [ -n "$deployed" ]; then baseline="$sha"; break; fi
-done < <(jq -r '.workflow_runs[] | [.id, .head_sha] | @tsv' <<< "$runs")
+done < <(jq -r '.[] | [.id, .head_sha] | @tsv' <<< "$combined")
 
 # No recent deployment, or rewritten history: release conservatively.
 if [ -z "$baseline" ] || ! git cat-file -e "$baseline^{commit}" 2>/dev/null ||

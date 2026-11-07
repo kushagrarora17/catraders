@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Print the commit an automatic or manual production deploy should release.
-# Automatic deploys (CI's workflow_run) release the SHA CI validated only while
+# Automatic deploys (CI calls) release the SHA CI validated only while
 # it is still the tip of main, so a slower run cannot roll production back.
 # Manual workflow_dispatch redeploys the selected tip of main.
 set -euo pipefail
@@ -26,7 +26,7 @@ if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
   exit 1
 fi
 
-if [ "$EVENT_NAME" = "workflow_run" ]; then
+if [ "$EVENT_NAME" = "ci" ]; then
   tip=$(gh api "repos/${REPO}/commits/main" --jq .sha | tr '[:upper:]' '[:lower:]')
   if [ "$tip" != "$sha" ]; then
     echo "main is $tip; CI validated $sha. Skipping deploy so production is not rolled back." >&2

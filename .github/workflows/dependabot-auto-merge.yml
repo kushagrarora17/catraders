@@ -5,7 +5,7 @@ name: Dependabot auto-merge
 # Pushes from that token do not start other workflows, so CI on main (and therefore
 # the deploy workflow, which waits for CI) never runs for the merge commit.
 #
-# workflow_run is not subject to that limit. After the pull request's CI succeeds,
+# After the pull request's CI succeeds,
 # dispatch-ci waits for the squash commit and starts CI on that SHA via
 # workflow_dispatch, which GITHUB_TOKEN is allowed to start. Deploy then releases
 # the commit that run validated.
