@@ -268,6 +268,7 @@ jobs:
       !cancelled() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/azure-deploy.yml
+    secrets: inherit
     with:
       automatic: true
       release_sha: ${{ github.sha }}
@@ -282,6 +283,7 @@ jobs:
       !cancelled() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/studio-deploy.yml
+    secrets: inherit
     with:
       automatic: true
       release_sha: ${{ github.sha }}
