@@ -8,6 +8,7 @@ export function GET() {
 Content-Signal: ai-train=no, search=yes, ai-input=yes
 Allow: /
 Disallow: /api/
+Disallow: /cdn-cgi/
 Disallow: /oauth/
 Disallow: /quote
 
