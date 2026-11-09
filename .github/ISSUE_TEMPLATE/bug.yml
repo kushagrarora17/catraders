@@ -1,0 +1,43 @@
+name: Bug
+description: Report a reproducible problem and its impact.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "For security vulnerabilities, use the repository's private vulnerability reporting page. Do not include customer details or secrets."
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Who is affected, how often, and is there a workaround?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Environment and version
+      description: Browser, operating system, URL, and deployed commit SHA if known.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What must work to close this issue?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Sanitized screenshots, logs, or workflow links.

@@ -1,0 +1,34 @@
+name: Maintenance or incident
+description: Track operational work, recovery, or maintenance.
+labels: [maintenance]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options: [Maintenance, Incident]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and impact
+      description: For an incident, include the start time and affected capabilities. Add the incident label after creation.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected outcome and acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: recovery
+    attributes:
+      label: Recovery or implementation plan
+      description: Include verification, recovery options, and dependencies.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and follow-up
+      description: Link runs and related issues. Record root cause and prevention tasks before closing an incident. Include only public information.

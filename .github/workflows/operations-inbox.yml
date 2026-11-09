@@ -1,0 +1,71 @@
+name: Operations inbox
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+concurrency:
+  group: operations-inbox
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Create or update incidents for failed main workflows
+        run: |
+          set -euo pipefail
+          since=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          gh api --paginate "repos/$REPO/actions/runs?branch=$DEFAULT_BRANCH&status=completed&created=%3E%3D$since&per_page=100" \
+            --jq '.workflow_runs[]' | jq -s --arg repo "$REPO" '
+              [.[] | select(.head_repository.full_name == $repo)
+              | select(.event == "push" or .event == "workflow_dispatch" or .event == "schedule")
+              | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required")
+              | select(.path == ".github/workflows/ci.yml"
+                or .path == ".github/workflows/azure-deploy.yml"
+                or .path == ".github/workflows/studio-deploy.yml"
+                or .path == ".github/workflows/postgres-firewall-drift.yml"
+                or .path == ".github/workflows/lead-digest.yml")]
+              | group_by(.workflow_id) | map(max_by(.run_started_at))[]' > "$RUNNER_TEMP/failures.json"
+          jq -c '.' "$RUNNER_TEMP/failures.json" | while IFS= read -r run; do
+            workflow_id=$(jq -r '.workflow_id' <<< "$run")
+            title="[Operations] Workflow $workflow_id needs triage"
+            marker="<!-- operations-workflow:$workflow_id -->"
+            {
+              echo "$marker"
+              echo 'An automated workflow failed. Triage impact before assigning priority; this does not establish a customer outage.'
+              jq -r '"\nWorkflow: \(.name)\nRun: \(.html_url)\nCommit: `\(.head_sha)`\nStarted: \(.run_started_at)\nConclusion: \(.conclusion)"' <<< "$run"
+              echo
+              echo '- [ ] Assess impact and assign priority / owner'
+              echo '- [ ] Identify the failing step and recover or rerun safely'
+              echo '- [ ] Verify recovery and record root cause'
+              echo '- [ ] Link prevention work before closing'
+            } > "$RUNNER_TEMP/incident.md"
+            number=$(gh api --paginate "repos/$REPO/issues?state=open&labels=incident&per_page=100" \
+              --jq ".[] | select(.body // \"\" | contains(\"$marker\")) | .number" | head -n 1)
+            if [ -z "$number" ]; then
+              gh issue create --repo "$REPO" --title "$title" --label incident --label infra \
+                --body-file "$RUNNER_TEMP/incident.md"
+            else
+              # Preserve human triage notes and append new run links.
+              gh api "repos/$REPO/issues/$number" --jq '.body' > "$RUNNER_TEMP/existing.md"
+              if ! grep -Fq "$(jq -r '.html_url' <<< "$run")" "$RUNNER_TEMP/existing.md"; then
+                {
+                  printf '\n\n### Additional failed run\n'
+                  jq -r '.html_url' <<< "$run"
+                } >> "$RUNNER_TEMP/existing.md"
+                gh issue edit "$number" --repo "$REPO" --body-file "$RUNNER_TEMP/existing.md"
+              fi
+            fi
+          done
