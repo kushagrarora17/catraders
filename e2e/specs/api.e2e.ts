@@ -40,6 +40,39 @@ const inquiry = {
   message: "Monthly order",
 };
 
+test("shares recipient quota across forms, including idempotent retries", async ({ request }) => {
+  const headers = { "Idempotency-Key": randomUUID() };
+  const first = await request.post("/api/inquiries", { headers, data: inquiry });
+  expect(first.status()).toBe(201);
+  const reference = (await first.json()).referenceNumber;
+  const retry = await request.post("/api/inquiries", { headers, data: inquiry });
+  expect(retry.status()).toBe(200);
+  expect((await retry.json()).referenceNumber).toBe(reference);
+  const quote = await request.post("/api/quotes", {
+    data: { customer, items: [castrolItem], "cf-turnstile-response": "e2e-quote" },
+  });
+  expect(quote.status()).toBe(201);
+
+  // A new key or repeated key cannot evade the same recipient's production quota.
+  for (const key of [randomUUID(), headers["Idempotency-Key"]]) {
+    const rejected = await request.post("/api/inquiries", { headers: { "Idempotency-Key": key }, data: inquiry });
+    expect(rejected.status()).toBe(429);
+    expect(Number(rejected.headers()["retry-after"])).toBeGreaterThan(0);
+    expect(rejected.headers()["cache-control"]).toBe("no-store");
+    expect(await rejected.json()).toMatchObject({ success: false, error: "RATE_LIMITED" });
+    expect(await rejected.text()).not.toContain(customer.email);
+  }
+});
+
+test("shares attempt quota across forms before validation and verification", async ({ request }) => {
+  for (let i = 0; i < 60; i++) {
+    expect((await postRaw(request, i % 2 ? "/api/quotes" : "/api/inquiries", "{")).status()).toBe(400);
+  }
+  const rejected = await postRaw(request, "/api/quotes", "{");
+  expect(rejected.status()).toBe(429);
+  expect(await rejected.json()).toMatchObject({ error: "RATE_LIMITED" });
+});
+
 test("health check", async ({ request }) => {
   expect(await (await request.get("/api/health")).json()).toEqual({ status: "ok" });
 });

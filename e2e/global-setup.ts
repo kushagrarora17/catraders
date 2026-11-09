@@ -1,10 +1,12 @@
+import { execFileSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import { Pool } from "pg";
-import { COVERAGE_DIR } from "./coverage";
+import { COVERAGE_DIR, RAW_BUILD_DIR } from "./coverage";
 import { appEnv } from "./env";
+import { nextArgs, nextEnv } from "./app-server";
 
-// Runs after the web servers have started, so only the browser coverage cache and the previous
-// report are cleared here; the raw V8 directories are cleared by `bun run test:e2e` beforehand.
+// Runs after the mock server starts; build once, then fixtures own the app processes.
+// Raw V8 directories are cleared by `bun run test:e2e` beforehand.
 export default async function globalSetup() {
   rmSync(COVERAGE_DIR, { recursive: true, force: true });
 
@@ -19,5 +21,13 @@ export default async function globalSetup() {
     );
   } finally {
     await pool.end();
+  }
+
+  if (process.env.E2E_SKIP_BUILD !== "1") {
+    execFileSync("node", [...nextArgs, "build"], {
+      env: { ...nextEnv, NODE_V8_COVERAGE: RAW_BUILD_DIR },
+      stdio: "inherit",
+      timeout: 300_000,
+    });
   }
 }
