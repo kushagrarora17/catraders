@@ -1,0 +1,65 @@
+name: Prepare release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: New version tag, for example v1.0.0
+        required: true
+        type: string
+      run_id:
+        description: Successful main CI run ID containing a production delivery artifact
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      RUN_ID: ${{ inputs.run_id }}
+    steps:
+      - name: Validate delivery and prepare a draft release
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Use a vMAJOR.MINOR.PATCH tag'; exit 1; }
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]] || { echo 'Invalid run ID'; exit 1; }
+          gh api "repos/$REPO/actions/runs/$RUN_ID" > "$RUNNER_TEMP/run.json"
+          jq -e --arg repo "$REPO" '
+            .path == ".github/workflows/ci.yml" and .head_branch == "main"
+            and .head_repository.full_name == $repo and .conclusion == "success"
+            and (.event == "push" or .event == "workflow_dispatch")' "$RUNNER_TEMP/run.json" > /dev/null
+          sha=$(jq -r '.head_sha' "$RUNNER_TEMP/run.json")
+          gh api "repos/$REPO/compare/$sha...main" --jq '.status' | grep -Eq '^(ahead|identical)$'
+          gh api --paginate "repos/$REPO/actions/runs/$RUN_ID/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.expired == false and (.name == "delivery-web" or .name == "delivery-studio")) | .name' \
+            > "$RUNNER_TEMP/delivered.txt"
+          test -s "$RUNNER_TEMP/delivered.txt" || { echo 'No retained delivery evidence for this run'; exit 1; }
+          # A pre-existing tag could point elsewhere; releases must use the validated SHA.
+          if gh api "repos/$REPO/git/ref/tags/$RELEASE_TAG" > /dev/null 2>&1; then
+            echo 'Choose a new tag; this tag already exists'
+            exit 1
+          fi
+          {
+            echo "Validated commit: [$sha]($GITHUB_SERVER_URL/$REPO/commit/$sha)"
+            echo "Delivery evidence: $GITHUB_SERVER_URL/$REPO/actions/runs/$RUN_ID"
+            echo
+            echo 'Components with delivery evidence in this run:'
+            sed 's/^/- /' "$RUNNER_TEMP/delivered.txt"
+            echo
+            echo 'Review the artifacts and verify acceptance criteria before publishing. Skipped components retain their previous versions.'
+          } > "$RUNNER_TEMP/release.md"
+          gh release create "$RELEASE_TAG" --repo "$REPO" --target "$sha" --draft \
+            --title "$RELEASE_TAG" --generate-notes --notes-file "$RUNNER_TEMP/release.md"

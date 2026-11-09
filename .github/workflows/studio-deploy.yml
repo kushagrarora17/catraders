@@ -75,7 +75,9 @@ jobs:
     if: needs.resolve-sha.outputs.sha != '' && needs.resolve-sha.outputs.changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: production
+    environment:
+      name: production
+      url: https://sanity.caelitelube.com
     defaults:
       run:
         working-directory: studio
@@ -154,3 +156,26 @@ jobs:
           grep -q '<html' "$RUNNER_TEMP/studio.html"
           curl --fail --silent --show-error https://sanity.caelitelube.com/structure -o "$RUNNER_TEMP/studio-route.html"
           cmp "$RUNNER_TEMP/studio.html" "$RUNNER_TEMP/studio-route.html"
+
+      - name: Record delivery evidence
+        if: steps.current.outputs.publish == 'true'
+        env:
+          RELEASE_SHA: ${{ needs.resolve-sha.outputs.sha }}
+        run: |
+          jq --arg sha "$RELEASE_SHA" \
+            --arg run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            '{component:"studio",sha:$sha,deploy_id:.deploy_id,url:"https://sanity.caelitelube.com",run:$run,smoke_checks:"passed",acceptance_verification:"pending"}' \
+            "$RUNNER_TEMP/studio-deploy.json" > "$RUNNER_TEMP/delivery-studio.json"
+          {
+            echo '### Studio delivery'
+            echo "Commit: [$RELEASE_SHA]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$RELEASE_SHA)"
+            echo 'URL: https://sanity.caelitelube.com'
+            echo 'Smoke checks passed. Issue acceptance verification remains manual.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        if: steps.current.outputs.publish == 'true'
+        with:
+          name: delivery-studio
+          path: ${{ runner.temp }}/delivery-studio.json
+          retention-days: 90
