@@ -19,6 +19,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_ID: ${{ github.event.pull_request.node_id }}
         run: |
+          # shellcheck disable=SC2016
           gh api graphql -f query='mutation($id: ID!) {
             convertPullRequestToDraft(input: {pullRequestId: $id}) {
               pullRequest { isDraft }
