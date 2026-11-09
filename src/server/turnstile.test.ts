@@ -72,4 +72,13 @@ describe("Turnstile verification", () => {
     fetchSpy.mockResolvedValueOnce(new Response("not JSON"));
     expect(await verifyTurnstile("token", "quote")).toBe(false);
   });
+
+  test("both forms recover with fresh verification after a rejected token", async () => {
+    for (const action of ["quote", "inquiry"]) {
+      fetchSpy.mockResolvedValueOnce(Response.json({ success: false, "error-codes": ["timeout-or-duplicate"] }));
+      expect(await verifyTurnstile("expired-token", action)).toBe(false);
+      fetchSpy.mockResolvedValueOnce(Response.json({ success: true, hostname: "caelitelube.com", action }));
+      expect(await verifyTurnstile("fresh-token", action)).toBe(true);
+    }
+  });
 });

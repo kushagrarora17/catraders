@@ -16,6 +16,12 @@ export const appEnv: Record<string, string> = {
   NODE_ENV: "production",
   NEXT_TELEMETRY_DISABLED: "1",
   E2E_COVERAGE: "1",
+  NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "",
+  NEXT_PUBLIC_POSTHOG_HOST: MOCK_URL,
+  CONTENT_REVIEW_ENABLED: "false",
+  CONTENT_REVIEW_QUEUE_URL: "",
+  CONTENT_REVIEW_MODEL: "e2e-model",
+  AZURE_OPENAI_ENDPOINT: "",
   // next start -p uses this same port. MCP cache flushes call back to it.
   PORT: String(APP_PORT),
   SITE_URL,

@@ -3,6 +3,7 @@ import MCR from "monocart-coverage-reports";
 import { coverageOptions } from "./coverage";
 import { SITE_URL } from "./env";
 import { resetContent } from "./helpers";
+import { startApp } from "./app-server";
 
 // 1×1 transparent PNG served for /_next/image so product images don't depend on the Sanity CDN.
 const PIXEL = Buffer.from(
@@ -12,11 +13,42 @@ const PIXEL = Buffer.from(
 
 /**
  * Every worker starts from the seed content (the app's data cache may hold content changed by an
- * earlier run), and every test collects Chromium JS coverage.
+ * earlier run). Each test gets a fresh app process to isolate in-memory quotas and collects
+ * Chromium JS coverage.
  */
-export const test = base.extend<{ autoCoverage: void }, { seedContent: void }>({
+export const test = base.extend<{ autoCoverage: void; isolatedApp: void }, { appServer: { restart(): Promise<void> }; seedContent: void }>({
+  appServer: [
+    async ({}, useApp) => {
+      let server: ReturnType<typeof startApp> | undefined;
+      async function restart() {
+        await server?.stop();
+        server = startApp();
+        await expect.poll(async () => {
+          if (server!.child.exitCode !== null) throw new Error(`E2E app exited: ${server!.child.exitCode}`);
+          return fetch(`${SITE_URL}/api/health`).then((response) => response.ok, () => false);
+        }, { timeout: 30_000 }).toBe(true);
+      }
+      try {
+        await restart();
+        await useApp({ restart });
+      } finally {
+        await server?.stop();
+      }
+    },
+    { scope: "worker" },
+  ],
+  isolatedApp: [
+    async ({ appServer, request }, use) => {
+      // Reset process-local quotas between tests/retries, never during a test's submissions.
+      await appServer.restart();
+      await resetContent(request);
+      await use();
+    },
+    { auto: true },
+  ],
   seedContent: [
-    async ({ playwright }, use) => {
+    async ({ playwright, appServer }, use) => {
+      void appServer;
       const request = await playwright.request.newContext({ baseURL: SITE_URL });
       await resetContent(request);
       await request.dispose();
@@ -25,7 +57,8 @@ export const test = base.extend<{ autoCoverage: void }, { seedContent: void }>({
     { scope: "worker", auto: true },
   ],
   autoCoverage: [
-    async ({ page }, use) => {
+    async ({ page, isolatedApp }, use) => {
+      void isolatedApp;
       await page.route("https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit", (route) =>
         route.fulfill({
           contentType: "application/javascript",

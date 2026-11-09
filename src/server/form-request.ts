@@ -46,6 +46,7 @@ export async function validateFormSubmission<T>(json: unknown, schema: z.ZodType
     ? (json as Record<string, unknown>)["cf-turnstile-response"]
     : undefined;
   if (!(await verifyTurnstile(token, action))) {
+    console.warn(`[form-abuse] form=${action} outcome=verification_failed`);
     return {
       ok: false,
       response: NextResponse.json(

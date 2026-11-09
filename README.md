@@ -135,6 +135,8 @@ The web app reads Sanity on the server only, so no CORS origin is needed for it.
 | `AZURE_COMMUNICATION_CONNECTION_STRING` | prod | If unset, lead mail is not sent and `[email] Failed` is logged with the lead id |
 | `EMAIL_SENDER_ADDRESS` | prod | A verified ACS sender, e.g. `DoNotReply@<id>.azurecomm.net` |
 | `QUOTE_NOTIFICATION_EMAIL` | prod | Internal inbox for new RFQs, inquiries, send-failure alerts, and the daily digest |
+| `TURNSTILE_SECRET_KEY` | prod | Server-side Cloudflare Turnstile verification; missing configuration fails closed in production. Azure references Key Vault secret `turnstile-secret-key` |
+| `TURNSTILE_SITE_KEY` | prod | Public widget key, paired with the secret; Terraform sets the production key |
 | `CRON_SECRET` | prod | Authenticates `POST /api/cron/lead-digest` (`x-cron-secret`). Terraform stores it in Key Vault as `cron-secret` and sets this app setting to that reference. The GitHub Actions repository secret `CRON_SECRET` must be the same value |
 | `SITE_URL` | prod | Public URL for canonical links, Open Graph, `sitemap.xml` and `robots.txt`. Defaults to `http://localhost:3000` |
 | `MCP_ADMIN_PASSWORD` | for MCP | Password on the MCP sign-in screen. Without it (and `MCP_JWT_SECRET`) `/api/mcp` returns 503 |
@@ -167,6 +169,28 @@ The route checks the `sanity-webhook-signature` HMAC and then calls `revalidateT
 > **Scaling out:** Next's data cache is per instance. If the app runs on more than one instance, revalidation only reaches the instance that got the webhook. Before scaling out, configure a shared [`cacheHandler`](https://nextjs.org/docs/app/api-reference/config/next-config-js/incrementalCacheHandlerPath), e.g. Redis.
 
 ## API
+
+### Public submission abuse policy (`POST /api/quotes`, `POST /api/inquiries`)
+
+Issue #70 triage: **high impact / P1 / small**. Unbounded public requests can pollute leads and consume transactional email capacity. Dependencies: existing Turnstile configuration, correct `SITE_URL` hostname, and the current single-worker deployment. No new service or database migration is required.
+
+Both routes validate their schemas and verify Turnstile server-side before saving leads or scheduling email. Verification requires success, the matching form action (`quote` or `inquiry`) and the `SITE_URL` hostname; missing production configuration, expired/replayed tokens and verification outages fail closed with `403 VERIFICATION_FAILED`. Unconfigured development bypasses verification. Inquiries also silently discard the hidden `website` honeypot with a synthetic success response; quotes rely on Turnstile. Existing decoded-body limits remain 100,000 characters for quotes and 20,000 for inquiries.
+
+Both routes share these sliding-window limits **per application process** (`src/server/form-abuse.ts`):
+
+| Control | Limit | Charged when |
+| --- | --- | --- |
+| Attempts | 60 per minute | Before reading the body, including malformed, honeypot and failed verification requests |
+| Verified submissions | 30 per 15 minutes | After schema and bot verification, before catalog/database/email work |
+| Recipient | 3 per 15 minutes | Same email across either form, trimming whitespace and ignoring case |
+
+These conservative starting limits allow normal requests and a few retries while bounding lead/email work. Verified reservations include idempotent retries, unavailable products and downstream failures; retries still retain existing deduplication semantics. Rejections do not extend the blocked window or consume verified capacity. The recipient queue holds only an HMAC of the normalized email with a random process-local key, expires entries after 15 minutes and is bounded to 30 entries. No IP headers are trusted, so forged forwarding headers cannot bypass the aggregate controls; shared networks do not share a per-IP quota. Email aliases are distinct recipients, but still consume the aggregate quota.
+
+Limits return `429 RATE_LIMITED`, `Cache-Control: no-store`, integer `Retry-After` seconds and a safe wait message, without echoing customer data. Wait that interval and resubmit with fresh Turnstile verification. Both forms preserve input on errors and remount the widget after each request; the quote cart and idempotency key survive retries. A window expires automatically without an operator reset.
+
+**Monitoring and operations:** count `[form-abuse]` logs by `form` and `outcome`: `attempt_limit`, `submission_limit`, `recipient_limit`, `verification_failed`, `honeypot`, `admitted`. These events contain no email, IP, token, body or recipient hash. `admitted` means reserved capacity, not successful persistence; correlate aggregate HTTP 201/200/403/429/5xx counts and existing `[email] Failed` events to assess delivery. Alert on sustained 429s over 5 minutes, a spike in verification failures, or any email failures; investigate Turnstile analytics and provider health before increasing limits. Never add request bodies or customer identifiers to abuse dashboards.
+
+For false positives, let the window expire, offer the existing phone contact, and tune the constants through a reviewed release. For verification failures, check the configured site/secret pair, hostname allowlist and `SITE_URL`, and restore provider connectivity; do not disable production verification. During active abuse, use edge/WAF rules for these two POST paths or temporarily block them while keeping phone contact available. Enable/tune edge controls through the normal infrastructure review process. Restarting a process resets all quotas and is not an abuse mitigation. Multiple workers/instances multiply the limits: deploy an atomic shared limiter or enforced edge quotas **before scaling out**. An attacker can exhaust the shared attempt quota and temporarily delay legitimate users; this application guard is not DDoS protection. Existing body checks buffer the body before rejecting oversize input, so ingress request-size/time limits remain necessary for transport-level attacks.
 
 ### `POST /api/quotes`
 
@@ -282,7 +306,7 @@ DATABASE_URL="$(terraform -chdir=iac/app output -raw database_url_command | sh)"
 ## Known limitations / next steps
 
 - The UI is intentionally bare.
-- There is no rate limiting or bot protection on `POST /api/quotes`. Consider Azure Front Door WAF or a captcha.
+- Public submission limits are per process and reset on restart; use shared or edge enforcement before scaling out (see the abuse policy above).
 - Reference numbers use 90,000 random values per year, and the insert retries on a collision. Widen the format if volume grows.
 - RFQ status is changed through the MCP server (`update_request_status`); there is no web admin UI for it.
 - The MCP server has one shared password and no per-person audit trail. Move the consent step to Microsoft Entra sign-in if more people need access.

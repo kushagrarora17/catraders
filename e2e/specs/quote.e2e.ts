@@ -130,12 +130,12 @@ test("a failing availability check doesn't block the cart", async ({ page }) => 
   await expect(page.getByRole("button", { name: "Submit quote request" })).toBeEnabled();
 });
 
-test("requires verification and preserves the submission key when retrying", async ({ page }) => {
+for (const status of [429, 503]) test(`requires verification and preserves the submission key when retrying after ${status}`, async ({ page }) => {
   const keys: (string | undefined)[] = [];
   await page.route("/api/quotes", async (route) => {
     keys.push(route.request().headers()["idempotency-key"]);
     if (keys.length === 1) {
-      await route.fulfill({ status: 503, json: { success: false, error: "UNAVAILABLE", message: "Please retry." } });
+      await route.fulfill({ status, headers: { "Retry-After": "1" }, json: { success: false, error: status === 429 ? "RATE_LIMITED" : "UNAVAILABLE", message: "Please retry." } });
     } else {
       await route.continue();
     }

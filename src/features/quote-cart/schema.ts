@@ -45,7 +45,7 @@ export type QuoteResponse =
   | { success: true; referenceNumber: string; message: string }
   | {
       success: false;
-      error: "INVALID_JSON" | "VALIDATION_FAILED" | "UNKNOWN_PRODUCTS" | "PAYLOAD_TOO_LARGE" | "VERIFICATION_FAILED" | "INTERNAL_ERROR";
+      error: "INVALID_JSON" | "VALIDATION_FAILED" | "UNKNOWN_PRODUCTS" | "PAYLOAD_TOO_LARGE" | "VERIFICATION_FAILED" | "RATE_LIMITED" | "INTERNAL_ERROR";
       message: string;
       issues?: FieldIssue[];
       productIds?: string[];

@@ -39,7 +39,7 @@ export type InquiryResponse =
   | { success: true; referenceNumber: string; message: string }
   | {
       success: false;
-      error: "INVALID_JSON" | "VALIDATION_FAILED" | "PAYLOAD_TOO_LARGE" | "VERIFICATION_FAILED" | "INTERNAL_ERROR";
+      error: "INVALID_JSON" | "VALIDATION_FAILED" | "PAYLOAD_TOO_LARGE" | "VERIFICATION_FAILED" | "RATE_LIMITED" | "INTERNAL_ERROR";
       message: string;
       issues?: FieldIssue[];
     };
