@@ -1,0 +1,30 @@
+name: Feature
+description: Propose an outcome and define when it is complete.
+labels: [feature]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Who needs this, and what are they trying to accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected outcome
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List observable outcomes as checkboxes. Split large features into sub-issues.
+      placeholder: "- [ ] A user can ..."
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Evidence and dependencies
+      description: Link related issues, designs, or relevant TRD sections. Include only public information.

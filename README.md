@@ -2,6 +2,8 @@
 
 A content-driven catalog of automotive fluids (engine oils, coolants, …). The landing page (`/`) markets the wholesale business and takes general inquiries; customers can also browse the catalog, add products to a quote cart and submit a Request for Quote (RFQ). The spec is in [TRD.md](TRD.md).
 
+Planning, delivery, releases, and incident handling follow the [project lifecycle](docs/lifecycle.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for the issue and PR workflow and [SECURITY.md](SECURITY.md) for private vulnerability reporting.
+
 | Layer | Tech |
 | --- | --- |
 | Web app | Next.js 16 (App Router, `standalone` output), React 19, Tailwind CSS 4 (semantic tokens + CVA) |

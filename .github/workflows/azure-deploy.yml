@@ -86,7 +86,9 @@ jobs:
       id-token: write
       contents: read
     # Must match the federated credential subject in iac/app/github.tf.
-    environment: production
+    environment:
+      name: production
+      url: https://caelitelube.com
     env:
       IMAGE: ${{ vars.ACR_LOGIN_SERVER }}/automotive-site:${{ needs.resolve-sha.outputs.sha }}
     steps:
@@ -212,3 +214,25 @@ jobs:
         env:
           ORIGIN: https://caelitelube.com
         run: bash .github/scripts/warmup-site.sh
+
+      - name: Record delivery evidence
+        env:
+          RELEASE_SHA: ${{ needs.resolve-sha.outputs.sha }}
+        run: |
+          jq -n --arg sha "$RELEASE_SHA" --arg image "$IMAGE" \
+            --arg run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            '{component:"web",sha:$sha,image:$image,url:"https://caelitelube.com",run:$run,smoke_checks:"passed",acceptance_verification:"pending"}' \
+            > "$RUNNER_TEMP/delivery-web.json"
+          {
+            echo '### Web delivery'
+            echo "Commit: [$RELEASE_SHA]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$RELEASE_SHA)"
+            echo "Image: \`$IMAGE\`"
+            echo 'URL: https://caelitelube.com'
+            echo 'Smoke checks passed. Issue acceptance verification remains manual.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: delivery-web
+          path: ${{ runner.temp }}/delivery-web.json
+          retention-days: 90
