@@ -10,4 +10,4 @@ Closes #<!-- issue number; use "Refs #" when more work remains -->
 
 ## Deployment and recovery
 
-<!-- Migration compatibility, environment changes, and recovery steps, or "Routine deployment". Keep infrastructure, authentication, and migration changes in draft until reviewed. -->
+<!-- Migration compatibility, environment changes, and recovery steps, or "Routine deployment". Create this PR as a draft. Keep it in draft until checks and review are complete and the owner explicitly approves marking it ready. Merge manually; never enable auto-merge. -->
