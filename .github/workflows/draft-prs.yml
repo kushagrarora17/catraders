@@ -1,0 +1,27 @@
+name: Draft new pull requests
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions: {}
+
+jobs:
+  draft:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Convert new pull request to draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_ID: ${{ github.event.pull_request.node_id }}
+        run: |
+          # shellcheck disable=SC2016
+          gh api graphql -f query='mutation($id: ID!) {
+            convertPullRequestToDraft(input: {pullRequestId: $id}) {
+              pullRequest { isDraft }
+            }
+          }' -f id="$PR_ID" --jq '.data.convertPullRequestToDraft.pullRequest.isDraft'

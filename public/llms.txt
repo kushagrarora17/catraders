@@ -1,0 +1,29 @@
+# CA EliteLube
+
+> CA EliteLube Inc, a CA Traders company, is a B2B wholesaler of automotive lubricants, fluids, filters, and shop supplies for mechanics, auto shops, and dealerships in Southwestern Ontario, Canada.
+
+The service area extends from Windsor and Chatham-Kent through London to Kitchener-Waterloo. Request a wholesale quote for current pricing and availability. Sales: sales@caelitelube.com or +1 647-548-6042. Business hours: Monday through Saturday, 8am to 6pm.
+
+## Website and catalog
+
+- [Home](https://caelitelube.com/): Business overview and contact information.
+- [Product catalog](https://caelitelube.com/products): Browse products and their published specifications.
+- [Engine oils](https://caelitelube.com/categories/engine-oils): Wholesale engine oil category.
+- [Coolants](https://caelitelube.com/categories/coolants): Automotive coolants.
+- [Transmission fluids](https://caelitelube.com/categories/transmission-fluids): Transmission fluid category.
+- [Filters](https://caelitelube.com/categories/filters): Automotive filters.
+- [Additives and chemicals](https://caelitelube.com/categories/additives-chemicals): Automotive additives and chemicals.
+- [Shop supplies](https://caelitelube.com/categories/shop-supplies): Supplies for automotive shops.
+
+## Service areas
+
+- [Windsor](https://caelitelube.com/service-areas/windsor): Local wholesale supply information.
+- [Chatham-Kent](https://caelitelube.com/service-areas/chatham-kent): Local wholesale supply information.
+- [London](https://caelitelube.com/service-areas/london): Local wholesale supply information.
+- [Kitchener](https://caelitelube.com/service-areas/kitchener): Local wholesale supply information.
+- [Waterloo](https://caelitelube.com/service-areas/waterloo): Local wholesale supply information.
+
+## Optional
+
+- [Sitemap](https://caelitelube.com/sitemap.xml): Complete list of published catalog and service-area URLs.
+- [Robots policy](https://caelitelube.com/robots.txt): Crawling and content-use signals.

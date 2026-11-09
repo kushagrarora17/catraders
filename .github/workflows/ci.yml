@@ -3,13 +3,12 @@ name: CI
 on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
-  # expected_sha is set when Dependabot auto-merge dispatches CI for the squash
-  # commit. workflow_dispatch resolves the ref when the run is created; a mismatch
+  # workflow_dispatch resolves the ref when the run is created; a mismatch
   # has to fail this workflow so deploy will not release a different SHA.
   workflow_dispatch:
     inputs:
       expected_sha:
-        description: Commit this run must check out. Set by Dependabot auto-merge.
+        description: Commit this manual run must check out.
         required: false
         type: string
   push:
@@ -181,7 +180,6 @@ jobs:
 
       - name: Test workflow guard scripts
         run: |
-          bash .github/scripts/dispatch-ci-after-automerge.test.sh
           bash .github/scripts/resolve-deploy-sha.test.sh
           bash .github/scripts/deploy-changes.test.sh
           bash .github/scripts/warmup-site.test.sh
@@ -233,7 +231,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Fail unless this is the commit Dependabot dispatched
+      - name: Fail unless this is the requested commit
         if: github.event_name == 'workflow_dispatch' && inputs.expected_sha != ''
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
@@ -250,10 +248,10 @@ jobs:
           expected=$(printf '%s' "$EXPECTED_SHA" | tr '[:upper:]' '[:lower:]')
           actual=$(printf '%s' "$GITHUB_SHA" | tr '[:upper:]' '[:lower:]')
           if [ "$expected" != "$actual" ]; then
-            echo "::error::This run checked out $actual but Dependabot auto-merge asked for $expected"
+            echo "::error::This run checked out $actual but the dispatch requested $expected"
             exit 1
           fi
-          echo "CI is running on the auto-merged commit $actual"
+          echo "CI is running on the requested commit $actual"
 
       - name: Fail unless every job passed or was skipped
         env:

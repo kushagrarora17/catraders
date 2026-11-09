@@ -31,6 +31,8 @@ Use milestones for meaningful release scope, without invented deadlines. Triage 
 
 ## Implementation and delivery
 
+Create all PRs as drafts. Complete checks and independent review, then obtain explicit owner approval before marking a PR ready. Merge manually only when explicitly authorized; auto-merge is disabled.
+
 Move an issue to Ready when its acceptance criteria and dependencies are clear, In progress when implementation starts, In review when its PR is ready, and Done when implementation is merged. Track partial work with `Refs #`; reserve `Closes #` for complete acceptance criteria.
 
 Delivery is independent of Status: Pending until production deployment succeeds, Deployed after successful deployment and automated smoke checks, and Verified after the issue's acceptance criteria have been checked in production. Update Delivery manually using the deployment evidence; do not equate merge or a successful build with production verification.
