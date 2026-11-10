@@ -54,7 +54,7 @@ Each document carries a `vertical` field (automotive, baby or home). Every web q
 
 ## Local development
 
-Prerequisites: Node 24 (`.nvmrc`), Bun 1.4.2, and Podman or Docker.
+Prerequisites: Node 24 (`.nvmrc`), Bun 1.4.4, and Podman or Docker.
 
 ```bash
 bun install
