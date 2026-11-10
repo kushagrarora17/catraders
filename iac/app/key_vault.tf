@@ -139,6 +139,39 @@ resource "azurerm_key_vault_secret" "sanity_write_token" {
   depends_on = [time_sleep.key_vault_rbac]
 }
 
+resource "azurerm_key_vault_secret" "sanity_operator_read_token" {
+  count = var.sanity_operator_api_read_token_version > 0 ? 1 : 0
+
+  name             = "sanity-operator-read-token"
+  key_vault_id     = azurerm_key_vault.main.id
+  value_wo         = var.sanity_operator_api_read_token
+  value_wo_version = var.sanity_operator_api_read_token_version
+
+  depends_on = [time_sleep.key_vault_rbac]
+}
+
+resource "azurerm_key_vault_secret" "google_oauth_client_secret" {
+  count = var.google_oauth_client_secret_version > 0 ? 1 : 0
+
+  name             = "google-oauth-client-secret"
+  key_vault_id     = azurerm_key_vault.main.id
+  value_wo         = var.google_oauth_client_secret
+  value_wo_version = var.google_oauth_client_secret_version
+
+  depends_on = [time_sleep.key_vault_rbac]
+}
+
+resource "azurerm_key_vault_secret" "microsoft_oauth_client_secret" {
+  count = var.microsoft_oauth_client_secret_version > 0 ? 1 : 0
+
+  name             = "microsoft-oauth-client-secret"
+  key_vault_id     = azurerm_key_vault.main.id
+  value_wo         = var.microsoft_oauth_client_secret
+  value_wo_version = var.microsoft_oauth_client_secret_version
+
+  depends_on = [time_sleep.key_vault_rbac]
+}
+
 # Import the origin certificate from the CLI (az keyvault certificate import).
 resource "azurerm_role_assignment" "key_vault_deployer_certificates" {
   scope                = azurerm_key_vault.main.id

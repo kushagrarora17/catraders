@@ -89,6 +89,21 @@ describe.skipIf(!process.env.DATABASE_URL)("OAuth repository (Postgres)", () => 
     expect(await rotateRefreshToken(db, rotated!.refreshToken, clientId)).not.toBeNull();
   });
 
+  test("rotates refresh tokens without losing operator attribution or credential version", async () => {
+    const db = getDb();
+    const clientId = await newClient();
+    const first = await createRefreshToken(db, {
+      clientId,
+      resource: "https://example.test/api/mcp",
+      operatorEmail: "owner@example.com",
+      operatorRevision: "revision-7",
+    });
+    const second = await rotateRefreshToken(db, first, clientId);
+    expect(second).toMatchObject({ operatorEmail: "owner@example.com", operatorRevision: "revision-7" });
+    const third = await rotateRefreshToken(db, second!.refreshToken, clientId);
+    expect(third).toMatchObject({ operatorEmail: "owner@example.com", operatorRevision: "revision-7" });
+  });
+
   test("a refresh token can't be redeemed by another client, and isn't consumed by trying", async () => {
     const db = getDb();
     const owner = await newClient();

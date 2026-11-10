@@ -1,5 +1,6 @@
 import "server-only";
 import { McpServer } from "@modelcontextprotocol/server";
+import { auditMcpWrites } from "./audit";
 import { registerCatalogReadTools } from "./tools/catalog-read";
 import { registerCatalogWriteTools } from "./tools/catalog-write";
 import { registerImportTool } from "./tools/import";
@@ -18,6 +19,7 @@ const INSTRUCTIONS = `Manage the Catraders automotive catalog, customer reviews,
 /** A fresh server per request: the endpoint is stateless. */
 export function createCatradersServer() {
   const server = new McpServer({ name: "catraders", version: "1.0.0" }, { instructions: INSTRUCTIONS });
+  auditMcpWrites(server);
   registerCatalogReadTools(server);
   registerCatalogWriteTools(server);
   registerTaxonomyWriteTools(server);

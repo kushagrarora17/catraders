@@ -80,10 +80,15 @@ output "database_url_app_secret_name" {
 }
 
 output "mcp" {
-  description = "Connect Claude to the MCP server: add this URL as a custom connector, then sign in with the password."
+  description = "Connect Claude to the MCP server and sign in with an authorized Google or Microsoft identity."
   value = {
-    url                      = "${local.site_url}/api/mcp"
-    read_password_with       = "az keyvault secret show --vault-name ${azurerm_key_vault.main.name} --name ${azurerm_key_vault_secret.mcp_admin_password.name} --query value -o tsv"
-    sanity_write_token_ready = var.sanity_write_token_version > 0
+    url                             = "${local.site_url}/api/mcp"
+    sanity_operator_project         = var.sanity_operator_project_id
+    sanity_operator_dataset         = var.sanity_operator_dataset
+    operator_read_token_ready       = var.sanity_operator_api_read_token_version > 0
+    google_sign_in_ready            = var.google_oauth_client_id != "" && var.google_oauth_client_secret_version > 0
+    microsoft_sign_in_ready         = var.microsoft_oauth_client_id != "" && var.microsoft_oauth_client_secret_version > 0
+    sanity_write_token_ready        = var.sanity_write_token_version > 0
+    legacy_password_secret_retained = azurerm_key_vault_secret.mcp_admin_password.name
   }
 }

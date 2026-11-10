@@ -82,7 +82,7 @@ variable "cron_secret_version" {
 # ── MCP server (catalog & RFQ management) ─────────────────────────────────
 
 variable "mcp_admin_password_version" {
-  description = "Bump to generate a new MCP sign-in password (all MCP clients keep working until their refresh tokens expire)."
+  description = "Legacy password secret retained for rollback to the prior app revision; new code uses Google and Microsoft OAuth."
   type        = number
   default     = 1
 }
@@ -91,6 +91,73 @@ variable "mcp_jwt_secret_version" {
   description = "Bump to generate a new MCP token-signing secret. Signs out every MCP client."
   type        = number
   default     = 1
+}
+
+variable "sanity_operator_dataset" {
+  description = "Existing private Sanity dataset that contains only MCP operator allowlist documents."
+  type        = string
+  default     = "mcp-operators"
+}
+
+variable "sanity_operator_project_id" {
+  description = "Separate Sanity project for operator identities; never share the project-wide catalog Editor token across the allowlist boundary."
+  type        = string
+  default     = ""
+  validation {
+    condition     = var.sanity_operator_project_id == "" || var.sanity_operator_project_id != var.sanity_project_id
+    error_message = "The MCP operator allowlist project must differ from the catalog Sanity project."
+  }
+}
+
+variable "google_oauth_client_id" {
+  description = "Google OAuth web application client ID; configure the app callback URL in Google Cloud Console."
+  type        = string
+  default     = ""
+}
+
+variable "google_oauth_client_secret" {
+  description = "Google OAuth client secret. Ephemeral; stored only in Key Vault when its version is above zero."
+  type        = string
+  default     = null
+  sensitive   = true
+  ephemeral   = true
+}
+
+variable "google_oauth_client_secret_version" {
+  type    = number
+  default = 0
+}
+
+variable "microsoft_oauth_client_id" {
+  description = "Microsoft identity platform application client ID; register personal Microsoft accounts and the app callback URL."
+  type        = string
+  default     = ""
+}
+
+variable "microsoft_oauth_client_secret" {
+  description = "Microsoft OAuth client secret. Ephemeral; stored only in Key Vault when its version is above zero."
+  type        = string
+  default     = null
+  sensitive   = true
+  ephemeral   = true
+}
+
+variable "microsoft_oauth_client_secret_version" {
+  type    = number
+  default = 0
+}
+
+variable "sanity_operator_api_read_token" {
+  description = "Viewer token scoped to the private operator dataset only. Ephemeral; never stored in Terraform state."
+  type        = string
+  default     = null
+  sensitive   = true
+  ephemeral   = true
+}
+
+variable "sanity_operator_api_read_token_version" {
+  type    = number
+  default = 0
 }
 
 variable "sanity_write_token" {

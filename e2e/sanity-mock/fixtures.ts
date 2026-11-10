@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 // Seed content for the mock Sanity API. Shaped like the Studio schema; ids are stable so specs
 // can refer to them. A few documents belong to another vertical or are drafts (hidden), which the
 // storefront must never show.
@@ -74,6 +76,12 @@ const product = (
 
 export function seedDocuments(): Doc[] {
   return [
+    {
+      _id: `mcpOperator.${createHash("sha256").update("kush-claude@agentmail.to").digest("hex")}`,
+      _type: "mcpOperator",
+      email: "kush-claude@agentmail.to",
+      enabled: true,
+    },
     // Categories: Engine Oil > Passenger Car > Synthetic, plus Coolants > Ready to Use.
     category("cat-engine-oil", "Engine Oil", 1, undefined, 1),
     category("cat-passenger-car", "Passenger Car", 2, "cat-engine-oil", 1),

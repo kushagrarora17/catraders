@@ -17,6 +17,7 @@
     "db:migrate": "bun scripts/migrate.ts",
     "studio:dev": "cd studio && bun run dev",
     "typegen": "cd studio && bun run typegen",
+    "mcp:operator": "bun scripts/manage-mcp-operator.ts",
     "seed": "cd studio && bun run seed",
     "upload-products": "cd studio && bun run upload-products",
     "review:build": "bun build workers/content-review/index.ts --target node --packages bundle --external @azure/functions --outdir workers/content-review/dist && bun workers/content-review/build.ts",

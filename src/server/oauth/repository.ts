@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq, gt, lt } from "drizzle-orm";
 import type { Database } from "@/server/db";
-import { oauthClients, oauthCodes, oauthRefreshTokens } from "@/server/db/schema";
+import { oauthClients, oauthCodes, oauthLoginStates, oauthRefreshTokens } from "@/server/db/schema";
 import { CODE_TTL_SECONDS, REFRESH_TOKEN_TTL_SECONDS } from "./config";
 import { randomToken, sha256Hex } from "./tokens";
 
@@ -22,9 +22,31 @@ export async function findClient(db: Database, clientId: string) {
   return client ?? null;
 }
 
+export async function createLoginState(db: Database, params: { state: string; nonce: string; provider: string; authorization: Record<string, string> }) {
+  await db.delete(oauthLoginStates).where(lt(oauthLoginStates.expiresAt, new Date()));
+  await db.insert(oauthLoginStates).values({
+    stateHash: sha256Hex(params.state),
+    nonce: params.nonce,
+    provider: params.provider,
+    authorization: params.authorization,
+    expiresAt: fromNow(10 * 60),
+  });
+}
+
+export async function consumeLoginState(db: Database, state: string, provider: string) {
+  const [row] = await db.delete(oauthLoginStates).where(
+    and(
+      eq(oauthLoginStates.stateHash, sha256Hex(state)),
+      eq(oauthLoginStates.provider, provider),
+      gt(oauthLoginStates.expiresAt, new Date()),
+    ),
+  ).returning();
+  return row ?? null;
+}
+
 export async function createAuthorizationCode(
   db: Database,
-  params: { clientId: string; redirectUri: string; codeChallenge: string; resource: string },
+  params: { clientId: string; redirectUri: string; codeChallenge: string; resource: string; operatorEmail?: string; operatorRevision?: string },
 ) {
   // Opportunistic cleanup keeps the tables small without a scheduled job.
   const now = new Date();
@@ -49,7 +71,14 @@ export async function consumeAuthorizationCode(db: Database, code: string) {
   return row ?? null;
 }
 
-export async function createRefreshToken(db: Pick<Database, "insert">, params: { clientId: string; resource: string }) {
+export async function findAuthorizationCode(db: Database, code: string) {
+  const [row] = await db.select().from(oauthCodes).where(
+    and(eq(oauthCodes.codeHash, sha256Hex(code)), gt(oauthCodes.expiresAt, new Date())),
+  ).limit(1);
+  return row ?? null;
+}
+
+export async function createRefreshToken(db: Pick<Database, "insert">, params: { clientId: string; resource: string; operatorEmail?: string; operatorRevision?: string }) {
   const token = randomToken();
   await db.insert(oauthRefreshTokens).values({
     tokenHash: sha256Hex(token),
@@ -76,7 +105,20 @@ export async function rotateRefreshToken(db: Database, token: string, clientId: 
     const next = await createRefreshToken(tx, {
       clientId: row.clientId,
       resource: row.resource,
+      operatorEmail: row.operatorEmail ?? undefined,
+      operatorRevision: row.operatorRevision ?? undefined,
     });
-    return { refreshToken: next, resource: row.resource };
+    return { refreshToken: next, resource: row.resource, operatorEmail: row.operatorEmail, operatorRevision: row.operatorRevision };
   });
+}
+
+export async function findRefreshToken(db: Database, token: string, clientId: string) {
+  const [row] = await db.select().from(oauthRefreshTokens).where(
+    and(
+      eq(oauthRefreshTokens.tokenHash, sha256Hex(token)),
+      eq(oauthRefreshTokens.clientId, clientId),
+      gt(oauthRefreshTokens.expiresAt, new Date()),
+    ),
+  ).limit(1);
+  return row ?? null;
 }

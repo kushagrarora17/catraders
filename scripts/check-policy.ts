@@ -101,9 +101,10 @@ function validateQuery(query: string, label: string) {
   const visit = (value: unknown, scoped = false) => {
     if (!value || typeof value !== "object") return;
     const node = value as ExprNode;
-    if (node.type === "Filter" && node.base.type === "Everything") {
+      if (node.type === "Filter" && node.base.type === "Everything") {
       const vertical = guarantees(node.expr, n => equality(n, "vertical", "automotive"));
-      if (!vertical && !inheritedAttribute(node.expr, scoped) && !publishedCounterpart(node.expr, scoped)) fail(`${label}: document selector does not guarantee vertical == "automotive"`);
+      const privateOperatorDirectory = label === "src/server/oauth/operators.ts" && guarantees(node.expr, n => equality(n, "_type", "mcpOperator"));
+      if (!vertical && !privateOperatorDirectory && !inheritedAttribute(node.expr, scoped) && !publishedCounterpart(node.expr, scoped)) fail(`${label}: document selector does not guarantee vertical == "automotive"`);
       scoped ||= vertical;
     }
     if (node.type === "Projection" || node.type === "Map" || node.type === "FlatMap") {
@@ -136,7 +137,7 @@ function checkImport(node: ts.Node, file: string) {
       const specifier = node.moduleSpecifier.text;
       const target = specifier.startsWith("@/") ? resolve("src", specifier.slice(2)) : resolve(dirname(file), specifier);
       const at = (path: string) => target.replace(/\.[cm]?[jt]sx?$/, "") === resolve(path);
-      if (at("src/sanity/client") && !["src/features/catalog/api.ts", "src/features/landing/api.ts"].includes(file)) fail(`${file}: use the catalog/landing API instead of the read client`);
+      if (at("src/sanity/client") && !["src/features/catalog/api.ts", "src/features/landing/api.ts", "src/server/oauth/operators.ts"].includes(file)) fail(`${file}: use the catalog/landing API instead of the read client`);
       if (at("src/features/catalog/queries") && file !== "src/features/catalog/api.ts") fail(`${file}: use the catalog API instead of catalog queries`);
       if (at("src/sanity/write-client-core") && file !== "src/sanity/write-client.ts") fail(`${file}: use src/sanity/write-client`);
       checkClientImport(node, specifier, file);
