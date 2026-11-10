@@ -4,7 +4,7 @@
 #   podman build -f docker/Dockerfile -t automotive-site .
 
 ARG NODE_IMAGE=docker.io/library/node:24-alpine
-ARG BUN_IMAGE=docker.io/oven/bun:1.4.2-alpine
+ARG BUN_IMAGE=docker.io/oven/bun:1.4.4-alpine
 
 FROM ${BUN_IMAGE} AS bun
 
