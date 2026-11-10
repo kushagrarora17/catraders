@@ -43,6 +43,13 @@
       "when": 1793969984739,
       "tag": "0005_lead_digest",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794229700000,
+      "tag": "0006_mcp_operator_auth",
+      "breakpoints": true
     }
   ]
 }

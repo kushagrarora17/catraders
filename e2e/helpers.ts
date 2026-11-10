@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
+import { Pool } from "pg";
 import type { APIRequestContext } from "@playwright/test";
 import { encodeSignatureHeader, SIGNATURE_HEADER_NAME } from "@sanity/webhook";
-import { ADMIN_PASSWORD, MOCK_URL, SITE_URL, WEBHOOK_SECRET } from "./env";
+import { MOCK_URL, MCP_TEST_OPERATOR_EMAIL, SITE_URL, WEBHOOK_SECRET } from "./env";
 
 // Never contacted: the browser test intercepts the redirect. (Chrome refuses "unsafe" ports like 9.)
 export const REDIRECT_URI = "http://127.0.0.1:47123/callback";
@@ -21,6 +22,17 @@ export async function sendWebhook(request: APIRequestContext, body: string) {
   return postRaw(request, "/api/webhooks/sanity", body, { [SIGNATURE_HEADER_NAME]: signature });
 }
 
+export async function setOperatorEnabled(request: APIRequestContext, enabled: boolean) {
+  const id = `mcpOperator.${createHash("sha256").update(MCP_TEST_OPERATOR_EMAIL).digest("hex")}`;
+  return request.post(`${MOCK_URL}/v2023-08-01/data/mutate/operators?returnIds=true`, {
+    data: { mutations: [{ patch: { id, set: { enabled } } }] },
+  });
+}
+
+export async function setOperatorLookupFailure(request: APIRequestContext, enabled: boolean) {
+  return request.post(`${MOCK_URL}/__operator-lookup-failure`, { data: { enabled } });
+}
+
 /** Restores the seed content and expires the app's cached copies of it. */
 export async function resetContent(request: APIRequestContext) {
   await request.post(`${MOCK_URL}/__reset`);
@@ -37,6 +49,8 @@ export function pkcePair() {
   const challenge = createHash("sha256").update(verifier).digest("base64url");
   return { verifier, challenge };
 }
+
+const e2eDatabase = new Pool({ connectionString: process.env.E2E_DATABASE_URL ?? "postgres://catraders:catraders@localhost:5432/catraders", max: 1 });
 
 export async function registerClient(request: APIRequestContext, name = "E2E client") {
   const res = await request.post("/oauth/register", {
@@ -60,14 +74,17 @@ export function authorizeParams(clientId: string, challenge: string, extra: Reco
   };
 }
 
-/** Runs the authorization-code flow over HTTP and returns the code. */
+/** Seeds a short-lived authorization code for the test operator, bypassing only third-party OIDC. */
 export async function authorizationCode(request: APIRequestContext, clientId: string, challenge: string) {
-  const res = await request.post("/oauth/authorize/submit", {
-    headers: { "x-forwarded-for": freshIp() },
-    form: { ...authorizeParams(clientId, challenge), password: ADMIN_PASSWORD },
-    maxRedirects: 0,
-  });
-  return new URL(res.headers().location).searchParams.get("code")!;
+  void request;
+  const code = randomBytes(32).toString("base64url");
+  const codeHash = createHash("sha256").update(code).digest("hex");
+  await e2eDatabase.query(
+    `INSERT INTO oauth_codes (code_hash, client_id, redirect_uri, code_challenge, resource, operator_email, operator_revision, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW() + INTERVAL '5 minutes')`,
+    [codeHash, clientId, REDIRECT_URI, challenge, `${SITE_URL}/api/mcp`, MCP_TEST_OPERATOR_EMAIL, "seed"],
+  );
+  return code;
 }
 
 export async function getTokens(request: APIRequestContext) {

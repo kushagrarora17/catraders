@@ -109,6 +109,14 @@ export const oauthClients = pgTable("oauth_clients", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const oauthLoginStates = pgTable("oauth_login_states", {
+  stateHash: varchar("state_hash", { length: 64 }).primaryKey(),
+  nonce: varchar("nonce", { length: 64 }).notNull(),
+  provider: varchar("provider", { length: 16 }).notNull(),
+  authorization: jsonb("authorization").$type<Record<string, string>>().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (table) => [index("idx_oauth_login_states_expires_at").on(table.expiresAt)]);
+
 /** One-time authorization codes for the MCP server's OAuth flow. Only the SHA-256 of the code is stored. */
 export const oauthCodes = pgTable("oauth_codes", {
   codeHash: varchar("code_hash", { length: 64 }).primaryKey(),
@@ -116,6 +124,9 @@ export const oauthCodes = pgTable("oauth_codes", {
   redirectUri: text("redirect_uri").notNull(),
   codeChallenge: varchar("code_challenge", { length: 128 }).notNull(),
   resource: text("resource").notNull(),
+  /** Verified operator identity; null grants issued by the retired shared-password flow are rejected. */
+  operatorEmail: varchar("operator_email", { length: 320 }),
+  operatorRevision: varchar("operator_revision", { length: 128 }),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -125,9 +136,23 @@ export const oauthRefreshTokens = pgTable("oauth_refresh_tokens", {
   tokenHash: varchar("token_hash", { length: 64 }).primaryKey(),
   clientId: text("client_id").notNull(),
   resource: text("resource").notNull(),
+  /** Null legacy refresh tokens are revoked by the individual-operator flow. */
+  operatorEmail: varchar("operator_email", { length: 320 }),
+  operatorRevision: varchar("operator_revision", { length: 128 }),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Write-ahead audit records for administrative MCP tool calls. */
+export const mcpAuditEvents = pgTable("mcp_audit_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  correlationId: uuid("correlation_id").notNull(),
+  operatorEmail: varchar("operator_email", { length: 320 }).notNull(),
+  action: varchar("action", { length: 128 }).notNull(),
+  target: varchar("target", { length: 255 }).notNull(),
+  outcome: varchar("outcome", { length: 16 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("idx_mcp_audit_events_created_at").on(table.createdAt)]);
 
 export type QuoteRequestRow = typeof quoteRequests.$inferSelect;
 export type NewQuoteItem = typeof quoteItems.$inferInsert;

@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { OAuthError, verifyBearerToken } from "@modelcontextprotocol/server";
 import { SignJWT } from "jose";
 import { getIssuer, getResourceUrl } from "./config";
-import { accessTokenVerifier, randomToken, safeEqual, sha256Hex, signAccessToken } from "./tokens";
+import { createAccessTokenVerifier, randomToken, safeEqual, sha256Hex, signAccessToken } from "./tokens";
 
 const SECRET = "test-secret-test-secret-test-secret-1234";
 
@@ -13,18 +13,27 @@ beforeAll(() => {
 
 describe("access tokens", () => {
   test("round-trips client, scope, expiry and audience", async () => {
-    const token = await signAccessToken({ clientId: "client-1", resource: getResourceUrl().href });
-    const info = await accessTokenVerifier.verifyAccessToken(token);
+    const verifier = createAccessTokenVerifier(async (_email, revision) => revision === "rev-1");
+    const token = await signAccessToken({ clientId: "client-1", resource: getResourceUrl().href, operatorEmail: "owner@example.com", operatorRevision: "rev-1" });
+    const info = await verifier.verifyAccessToken(token);
     expect(info.clientId).toBe("client-1");
     expect(info.scopes).toEqual(["mcp"]);
     expect(info.resource?.href).toBe("https://example.test/api/mcp");
     expect(info.expiresAt).toBeGreaterThan(Date.now() / 1000);
+    expect(info.extra).toEqual({ operatorEmail: "owner@example.com" });
+  });
+
+  test("rejects a token when the operator is no longer allowlisted", async () => {
+    const token = await signAccessToken({ clientId: "c", resource: getResourceUrl().href, operatorEmail: "owner@example.com", operatorRevision: "rev-1" });
+    await expect(createAccessTokenVerifier(async () => false).verifyAccessToken(token)).rejects.toBeInstanceOf(OAuthError);
+    await expect(createAccessTokenVerifier(async (_email, revision) => revision === "rev-2").verifyAccessToken(token)).rejects.toBeInstanceOf(OAuthError);
   });
 
   test("the bearer guard accepts our audience and rejects a token minted for another resource", async () => {
-    const guard = { verifier: accessTokenVerifier, expectedResource: getResourceUrl() };
-    const ours = await signAccessToken({ clientId: "c", resource: getResourceUrl().href });
-    const theirs = await signAccessToken({ clientId: "c", resource: "https://other.test/api/mcp" });
+    const verifier = createAccessTokenVerifier(async () => true);
+    const guard = { verifier, expectedResource: getResourceUrl() };
+    const ours = await signAccessToken({ clientId: "c", resource: getResourceUrl().href, operatorEmail: "owner@example.com", operatorRevision: "rev-1" });
+    const theirs = await signAccessToken({ clientId: "c", resource: "https://other.test/api/mcp", operatorEmail: "owner@example.com", operatorRevision: "rev-1" });
 
     expect((await verifyBearerToken(`Bearer ${ours}`, guard)).clientId).toBe("c");
     await expect(verifyBearerToken(`Bearer ${theirs}`, guard)).rejects.toBeInstanceOf(OAuthError);
@@ -32,13 +41,15 @@ describe("access tokens", () => {
   });
 
   test("rejects tampered, expired, wrong-issuer and wrong-key tokens", async () => {
-    const good = await signAccessToken({ clientId: "c", resource: getResourceUrl().href });
+    const good = await signAccessToken({ clientId: "c", resource: getResourceUrl().href, operatorEmail: "owner@example.com", operatorRevision: "rev-1" });
     const key = new TextEncoder().encode(SECRET);
+    const verifier = createAccessTokenVerifier(async () => true);
     const forge = (claims: { iss?: string; exp: number }, secret = key) =>
-      new SignJWT({ client_id: "c", scope: "mcp" })
+      new SignJWT({ client_id: "c", scope: "mcp", operator_email: "owner@example.com", operator_revision: "rev-1" })
         .setProtectedHeader({ alg: "HS256" })
         .setIssuer(claims.iss ?? getIssuer())
         .setAudience(getResourceUrl().href)
+        .setSubject("owner@example.com")
         .setExpirationTime(claims.exp)
         .sign(secret);
 
@@ -51,7 +62,7 @@ describe("access tokens", () => {
       "not-a-jwt",
     ];
     for (const token of bad) {
-      await expect(accessTokenVerifier.verifyAccessToken(token)).rejects.toBeInstanceOf(OAuthError);
+      await expect(verifier.verifyAccessToken(token)).rejects.toBeInstanceOf(OAuthError);
     }
   });
 });

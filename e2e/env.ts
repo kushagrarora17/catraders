@@ -10,7 +10,7 @@ export const SITE_URL = `http://localhost:${APP_PORT}`;
 
 export const WEBHOOK_SECRET = "e2e-webhook-secret";
 export const CRON_SECRET = "e2e-cron-secret";
-export const ADMIN_PASSWORD = "e2e-admin-password";
+export const MCP_TEST_OPERATOR_EMAIL = "kush-claude@agentmail.to";
 
 export const appEnv: Record<string, string> = {
   NODE_ENV: "production",
@@ -31,12 +31,18 @@ export const appEnv: Record<string, string> = {
   DATABASE_URL: process.env.E2E_DATABASE_URL ?? "postgres://catraders:catraders@localhost:5432/catraders",
   SANITY_PROJECT_ID: "51ngrb7a",
   SANITY_DATASET: "production",
+  SANITY_OPERATOR_PROJECT_ID: "mcp-operator-e2e",
+  SANITY_OPERATOR_DATASET: "operators",
+  SANITY_OPERATOR_API_READ_TOKEN: "e2e-operator-read-token",
   SANITY_API_HOST: MOCK_URL,
   SANITY_API_READ_TOKEN: "",
   SANITY_API_WRITE_TOKEN: "e2e-write-token",
   SANITY_WEBHOOK_SECRET: WEBHOOK_SECRET,
-  MCP_ADMIN_PASSWORD: ADMIN_PASSWORD,
   MCP_JWT_SECRET: "e2e-jwt-secret-that-is-at-least-32-characters",
+  GOOGLE_OAUTH_CLIENT_ID: "e2e-google-client-id",
+  GOOGLE_OAUTH_CLIENT_SECRET: "e2e-google-client-secret",
+  MICROSOFT_OAUTH_CLIENT_ID: "e2e-microsoft-client-id",
+  MICROSOFT_OAUTH_CLIENT_SECRET: "e2e-microsoft-client-secret",
   // Emails go to the mock's stand-in for Azure Communication Services, which the SDK only
   // reaches over HTTPS.
   AZURE_COMMUNICATION_CONNECTION_STRING: `endpoint=https://127.0.0.1:${MOCK_TLS_PORT}/;accesskey=${Buffer.from("e2e-access-key").toString("base64")}`,

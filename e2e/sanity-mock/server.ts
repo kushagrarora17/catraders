@@ -25,6 +25,7 @@ const certDir = process.env.MOCK_CERT_DIR ?? "coverage/e2e-certs";
 let docs = new Map<string, Doc>();
 let emails: unknown[] = [];
 let emailFailuresPerMessage = 0;
+let operatorLookupFailure = false;
 const emailFailureCounts = new Map<string, number>();
 let rev = 0;
 
@@ -34,6 +35,7 @@ function reset() {
   for (const doc of seedDocuments()) docs.set(doc._id, { _createdAt: now, _updatedAt: now, _rev: "seed", ...doc });
   emails = [];
   emailFailuresPerMessage = 0;
+  operatorLookupFailure = false;
   emailFailureCounts.clear();
 }
 reset();
@@ -234,12 +236,19 @@ async function route(req: Request) {
     emailFailureCounts.clear();
     return json({ perMessage: emailFailuresPerMessage });
   }
+  if (path === "/__operator-lookup-failure" && req.method === "POST") {
+    operatorLookupFailure = !!((await req.json()) as { enabled?: boolean }).enabled;
+    return json({ enabled: operatorLookupFailure });
+  }
   if ((m = path.match(/^\/__docs\/(.+)$/))) return json(docs.get(decodeURIComponent(m[1])) ?? null);
   if (path === "/__health") return json({ ok: true });
 
   if ((m = path.match(/^\/v[^/]+\/data\/query\/[^/]+$/))) return handleQuery(req, url);
   if ((m = path.match(/^\/v[^/]+\/data\/mutate\/[^/]+$/))) return handleMutate(req);
-  if ((m = path.match(/^\/v[^/]+\/data\/doc\/[^/]+\/(.+)$/))) return handleDocs(m[1]);
+  if ((m = path.match(/^\/v[^/]+\/data\/doc\/([^/]+)\/(.+)$/))) {
+    if (operatorLookupFailure && m[1] === "operators") return json({ error: "temporarily unavailable" }, 503);
+    return handleDocs(m[2]);
+  }
   if ((m = path.match(/^\/v[^/]+\/assets\/images\/[^/]+$/))) return handleUpload(req, url);
 
   if (path === "/emails:send" && req.method === "POST") return handleEmailSend(req);

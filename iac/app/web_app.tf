@@ -23,6 +23,21 @@ locals {
     "SANITY_API_WRITE_TOKEN" => "@Microsoft.KeyVault(SecretUri=${secret.versionless_id})"
   }
 
+  operator_read_token_setting = {
+    for secret in azurerm_key_vault_secret.sanity_operator_read_token :
+    "SANITY_OPERATOR_API_READ_TOKEN" => "@Microsoft.KeyVault(SecretUri=${secret.versionless_id})"
+  }
+
+  google_oauth_secret_setting = {
+    for secret in azurerm_key_vault_secret.google_oauth_client_secret :
+    "GOOGLE_OAUTH_CLIENT_SECRET" => "@Microsoft.KeyVault(SecretUri=${secret.versionless_id})"
+  }
+
+  microsoft_oauth_secret_setting = {
+    for secret in azurerm_key_vault_secret.microsoft_oauth_client_secret :
+    "MICROSOFT_OAUTH_CLIENT_SECRET" => "@Microsoft.KeyVault(SecretUri=${secret.versionless_id})"
+  }
+
   # Can't reference the web app's own default_hostname from its app_settings (cycle).
   web_app_name = "app-${local.name}-${local.suffix}"
   site_url     = coalesce(var.site_url, "https://${local.web_app_name}.azurewebsites.net")
@@ -60,7 +75,7 @@ resource "azurerm_linux_web_app" "main" {
     }
   }
 
-  app_settings = merge(local.sanity_write_token_setting, {
+  app_settings = merge(local.sanity_write_token_setting, local.operator_read_token_setting, local.google_oauth_secret_setting, local.microsoft_oauth_secret_setting, {
     WEBSITES_PORT                       = "3000"
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
     # Ask the platform to request /api/health before the container is given
@@ -72,9 +87,11 @@ resource "azurerm_linux_web_app" "main" {
     CONTENT_REVIEW_ENABLED   = tostring(var.content_review_enabled)
     CONTENT_REVIEW_QUEUE_URL = var.content_review_enabled ? "${azurerm_storage_account.content_review[0].primary_queue_endpoint}content-review" : ""
 
-    SANITY_PROJECT_ID     = var.sanity_project_id
-    SANITY_DATASET        = var.sanity_dataset
-    SANITY_WEBHOOK_SECRET = local.key_vault_ref.sanity_webhook_secret
+    SANITY_PROJECT_ID          = var.sanity_project_id
+    SANITY_DATASET             = var.sanity_dataset
+    SANITY_OPERATOR_PROJECT_ID = var.sanity_operator_project_id
+    SANITY_OPERATOR_DATASET    = var.sanity_operator_dataset
+    SANITY_WEBHOOK_SECRET      = local.key_vault_ref.sanity_webhook_secret
 
     # Least-privilege role. Migrations keep using the admin secret database-url.
     DATABASE_URL = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/database-url-app)"
@@ -86,9 +103,12 @@ resource "azurerm_linux_web_app" "main" {
     TURNSTILE_SITE_KEY   = "0x4AAAAAAFvcsO65-TpveKn1"
     TURNSTILE_SECRET_KEY = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/turnstile-secret-key)"
 
-    # Sign-in for the MCP server (/api/mcp); see the `mcp` output.
-    MCP_ADMIN_PASSWORD = local.key_vault_ref.mcp_admin_password
-    MCP_JWT_SECRET     = local.key_vault_ref.mcp_jwt_secret
+    # Individual MCP operator OAuth; provider secrets are optional Key Vault refs.
+    # Keep the legacy password reference during the image rollback compatibility window.
+    MCP_ADMIN_PASSWORD        = local.key_vault_ref.mcp_admin_password
+    MCP_JWT_SECRET            = local.key_vault_ref.mcp_jwt_secret
+    GOOGLE_OAUTH_CLIENT_ID    = var.google_oauth_client_id
+    MICROSOFT_OAUTH_CLIENT_ID = var.microsoft_oauth_client_id
 
     # Daily lead digest (/api/cron/lead-digest). See the `lead_digest` output.
     CRON_SECRET = local.key_vault_ref.cron_secret

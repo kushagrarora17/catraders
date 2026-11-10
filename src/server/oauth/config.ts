@@ -1,6 +1,7 @@
 import "server-only";
 import { getOAuthProtectedResourceMetadataUrl } from "@modelcontextprotocol/server";
 import { getSiteUrl } from "@/features/site/url";
+import { projectId as catalogProjectId } from "@/sanity/env";
 
 export const MCP_SCOPE = "mcp";
 export const ACCESS_TOKEN_TTL_SECONDS = 60 * 60;
@@ -24,7 +25,9 @@ export function getResourceMetadataUrl() {
 
 /** The MCP server stays off until both secrets are provisioned. */
 export function isMcpConfigured() {
-  return (process.env.MCP_JWT_SECRET?.length ?? 0) >= MIN_SECRET_LENGTH && !!process.env.MCP_ADMIN_PASSWORD;
+  return (process.env.MCP_JWT_SECRET?.length ?? 0) >= MIN_SECRET_LENGTH &&
+    !!process.env.SANITY_OPERATOR_PROJECT_ID && process.env.SANITY_OPERATOR_PROJECT_ID !== catalogProjectId &&
+    !!process.env.SANITY_OPERATOR_DATASET && !!process.env.SANITY_OPERATOR_API_READ_TOKEN;
 }
 
 export function getJwtSecret() {
@@ -33,10 +36,4 @@ export function getJwtSecret() {
     throw new Error(`MCP_JWT_SECRET must be set to at least ${MIN_SECRET_LENGTH} characters`);
   }
   return new TextEncoder().encode(secret);
-}
-
-export function getAdminPassword() {
-  const password = process.env.MCP_ADMIN_PASSWORD;
-  if (!password) throw new Error("MCP_ADMIN_PASSWORD is not set");
-  return password;
 }

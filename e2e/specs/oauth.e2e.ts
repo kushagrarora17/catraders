@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD, SITE_URL } from "../env";
+import { SITE_URL } from "../env";
 import {
   authorizationCode,
   authorizeParams,
@@ -8,6 +8,8 @@ import {
   postRaw,
   REDIRECT_URI,
   registerClient,
+  setOperatorEnabled,
+  setOperatorLookupFailure,
 } from "../helpers";
 import { expect, test } from "../test";
 
@@ -76,35 +78,39 @@ test.describe("authorization page", () => {
     await expect(await open(authorizeParams(clientId, challenge, { scope: "admin" }))).toContainText("unsupported permissions");
   });
 
-  test("asks for the admin password and redirects back with a code", async ({ page, request }) => {
+  test("requires explicit same-origin provider sign-in after displaying client consent", async ({ page, request }) => {
     const clientId = await registerClient(request, "Claude Desktop");
     const { challenge } = pkcePair();
     await page.setExtraHTTPHeaders({ "x-forwarded-for": freshIp() });
     await page.goto(`/oauth/authorize?${new URLSearchParams(authorizeParams(clientId, challenge))}`);
     await expect(page.getByText("Claude Desktop wants to manage the catalog")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue with Microsoft" })).toBeVisible();
 
-    await page.getByLabel("Admin password").fill("wrong");
-    await page.getByRole("button", { name: "Allow access" }).click();
-    await expect(page.getByRole("main").getByRole("alert")).toContainText("Incorrect password");
+    const form = authorizeParams(clientId, challenge);
+    const forbidden = await request.post("/oauth/login/google", { form, maxRedirects: 0 });
+    expect(forbidden.status()).toBe(403);
+    const directGet = await request.get(`/oauth/login/google?${new URLSearchParams(form)}`, { maxRedirects: 0 });
+    expect(directGet.status()).toBe(405);
 
-    // Nothing listens on the client's redirect URI; capturing the request is enough.
-    const redirect = page.waitForRequest((req) => req.url().startsWith(REDIRECT_URI));
-    await page.getByLabel("Admin password").fill(ADMIN_PASSWORD);
-    await page.getByRole("button", { name: "Allow access" }).click();
-    const redirected = new URL((await redirect).url());
-    expect(redirected.searchParams.get("code")).toBeTruthy();
-    expect(redirected.searchParams.get("state")).toBe("xyz");
-    expect(redirected.searchParams.get("iss")).toBe(SITE_URL);
-  });
-
-  test("bounces invalid submissions back to the page", async ({ request }) => {
-    const res = await request.post("/oauth/authorize/submit", {
-      headers: { "x-forwarded-for": freshIp() },
-      form: { client_id: "nope", password: ADMIN_PASSWORD },
+    const consent = await request.post("/oauth/login/google", {
+      headers: { origin: SITE_URL },
+      form,
       maxRedirects: 0,
     });
-    expect(res.status()).toBe(303);
-    expect(res.headers().location).toBe(`${SITE_URL}/oauth/authorize?error=request`);
+    expect(consent.status()).toBe(303);
+    const providerUrl = new URL(consent.headers().location);
+    expect(providerUrl.origin).toBe("https://accounts.google.com");
+    expect(providerUrl.searchParams.get("client_id")).toBe("e2e-google-client-id");
+    expect(consent.headers()["set-cookie"]).toContain("mcp_oidc_login=");
+  });
+
+  test("retires the shared-password authorization endpoint", async ({ request }) => {
+    const res = await request.post("/oauth/authorize/submit", {
+      form: { client_id: "nope", password: "ignored" },
+      maxRedirects: 0,
+    });
+    expect(res.status()).toBe(410);
   });
 });
 
@@ -125,6 +131,44 @@ test.describe("POST /oauth/token", () => {
       form: { grant_type: "refresh_token", client_id: clientId, refresh_token: refreshToken },
     });
     expect(await reused.json()).toMatchObject({ error: "invalid_grant" });
+  });
+
+  test("keeps a valid refresh token after a temporary allowlist outage", async ({ request }) => {
+    const { clientId, refreshToken } = await getTokens(request);
+    await setOperatorLookupFailure(request, true);
+    try {
+      const unavailable = await request.post("/oauth/token", {
+        form: { grant_type: "refresh_token", client_id: clientId, refresh_token: refreshToken },
+      });
+      expect(unavailable.status()).toBe(503);
+    } finally {
+      await setOperatorLookupFailure(request, false);
+    }
+    const retried = await request.post("/oauth/token", {
+      form: { grant_type: "refresh_token", client_id: clientId, refresh_token: refreshToken },
+    });
+    expect(retried.status()).toBe(200);
+  });
+
+  test("disabling and re-enabling an operator does not revive existing grants", async ({ request }) => {
+    const { clientId, accessToken, refreshToken } = await getTokens(request);
+    await setOperatorEnabled(request, false);
+    const denied = await request.post("/api/mcp", {
+      headers: { authorization: `Bearer ${accessToken}`, accept: "application/json, text/event-stream" },
+      data: { jsonrpc: "2.0", id: 1, method: "tools/list" },
+    });
+    expect(denied.status()).toBe(401);
+    await setOperatorEnabled(request, true);
+
+    const stillDenied = await request.post("/api/mcp", {
+      headers: { authorization: `Bearer ${accessToken}`, accept: "application/json, text/event-stream" },
+      data: { jsonrpc: "2.0", id: 2, method: "tools/list" },
+    });
+    expect(stillDenied.status()).toBe(401);
+    const refreshDenied = await request.post("/oauth/token", {
+      form: { grant_type: "refresh_token", client_id: clientId, refresh_token: refreshToken },
+    });
+    expect(refreshDenied.status()).toBe(401);
   });
 
   test("rejects invalid token requests", async ({ request }) => {

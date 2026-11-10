@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "sanity dev",
     "build": "sanity build",
+    "build:operators": "cd operators && sanity build dist",
+    "dev:operators": "cd operators && sanity dev",
     "start": "sanity start",
     "deploy": "sanity deploy",
     "deploy-schema": "sanity schemas deploy",

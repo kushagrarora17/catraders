@@ -16,6 +16,8 @@
 --   oauth_clients         INSERT, SELECT
 --   oauth_codes           INSERT, SELECT, DELETE (consume and expiry sweep)
 --   oauth_refresh_tokens  INSERT, SELECT, DELETE (rotate and expiry sweep)
+--   oauth_login_states    SELECT, INSERT, DELETE (consume single-use OIDC state)
+--   mcp_audit_events      SELECT, INSERT (append-only audit intent and outcome)
 -- DELETE ... RETURNING needs SELECT as well as DELETE.
 -- Nothing in the application TRUNCATEs, and nothing else is deleted.
 -- Test cleanup deletes rows as the table owner; those tests do not use this role.
@@ -65,6 +67,8 @@ BEGIN
     'oauth_clients',
     'oauth_codes',
     'oauth_refresh_tokens'
+    , 'oauth_login_states'
+    , 'mcp_audit_events'
   ]) AS name
   WHERE NOT EXISTS (
     SELECT 1
@@ -113,7 +117,9 @@ REVOKE ALL ON TABLE
   public.inquiries,
   public.oauth_clients,
   public.oauth_codes,
-  public.oauth_refresh_tokens
+  public.oauth_refresh_tokens,
+  public.oauth_login_states,
+  public.mcp_audit_events
 FROM catraders_app;
 
 GRANT SELECT, INSERT, UPDATE ON TABLE
@@ -124,6 +130,10 @@ GRANT SELECT, INSERT, UPDATE ON TABLE
   public.oauth_codes,
   public.oauth_refresh_tokens
 TO catraders_app;
+
+GRANT SELECT, INSERT, DELETE ON TABLE public.oauth_login_states TO catraders_app;
+GRANT SELECT, INSERT ON TABLE public.mcp_audit_events TO catraders_app;
+REVOKE UPDATE, DELETE, TRUNCATE ON TABLE public.mcp_audit_events FROM catraders_app;
 
 -- DELETE only where src/server/oauth/repository.ts removes rows.
 GRANT DELETE ON TABLE public.oauth_codes, public.oauth_refresh_tokens TO catraders_app;

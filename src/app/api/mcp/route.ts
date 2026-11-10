@@ -4,7 +4,6 @@ import { createCatradersServer } from "@/server/mcp/server";
 import { getResourceMetadataUrl, getResourceUrl, isMcpConfigured, MCP_SCOPE } from "@/server/oauth/config";
 import { accessTokenVerifier } from "@/server/oauth/tokens";
 
-const handler = createMcpHandler(() => createCatradersServer(), { legacy: "stateless" });
 
 // Browser-based MCP clients send an Origin; native and server-side clients (claude.ai's backend,
 // Claude Code, Claude Desktop) don't. A token is required either way.
@@ -26,8 +25,11 @@ async function handle(req: Request) {
     resourceMetadataUrl: getResourceMetadataUrl(),
   })(req);
   if (auth instanceof Response) return auth;
+  if (typeof auth.extra?.operatorEmail !== "string") {
+    return Response.json({ error: "A valid operator sign-in is required" }, { status: 401 });
+  }
 
-  return handler.fetch(req, { authInfo: auth });
+  return createMcpHandler(() => createCatradersServer(), { legacy: "stateless" }).fetch(req, { authInfo: auth });
 }
 
 export { handle as DELETE, handle as GET, handle as POST };

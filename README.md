@@ -139,8 +139,12 @@ The web app reads Sanity on the server only, so no CORS origin is needed for it.
 | `TURNSTILE_SITE_KEY` | prod | Public widget key, paired with the secret; Terraform sets the production key |
 | `CRON_SECRET` | prod | Authenticates `POST /api/cron/lead-digest` (`x-cron-secret`). Terraform stores it in Key Vault as `cron-secret` and sets this app setting to that reference. The GitHub Actions repository secret `CRON_SECRET` must be the same value |
 | `SITE_URL` | prod | Public URL for canonical links, Open Graph, `sitemap.xml` and `robots.txt`. Defaults to `http://localhost:3000` |
-| `MCP_ADMIN_PASSWORD` | for MCP | Password on the MCP sign-in screen. Without it (and `MCP_JWT_SECRET`) `/api/mcp` returns 503 |
 | `MCP_JWT_SECRET` | for MCP | At least 32 characters; signs MCP access tokens |
+| `SANITY_OPERATOR_PROJECT_ID` | for MCP | A separate Sanity project for the private operator list; must differ from `SANITY_PROJECT_ID` |
+| `SANITY_OPERATOR_DATASET` | for MCP | Private dataset in the operator project |
+| `SANITY_OPERATOR_API_READ_TOKEN` | for MCP | Read-only token scoped to the operator project; app fails closed without it |
+| `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` | for MCP | Google OAuth web app credentials |
+| `MICROSOFT_OAUTH_CLIENT_ID` / `MICROSOFT_OAUTH_CLIENT_SECRET` | for MCP | Microsoft identity platform credentials |
 | `SANITY_API_WRITE_TOKEN` | for MCP | Sanity **Editor** token; the MCP catalog and review tools fail without it |
 
 In Azure, Terraform (`iac/app`) sets these as App Settings. The secrets are Key Vault references. `CRON_SECRET` is the reference to Key Vault secret `cron-secret`, which Terraform generates and does not store in state. After apply, copy that value to the GitHub Actions repository secret `CRON_SECRET` (`terraform output lead_digest` prints the read command). The repository secret and the Key Vault value must match. Do not commit the value. The web app's `DATABASE_URL` is `@Microsoft.KeyVault(SecretUri=https://<vault>.vault.azure.net/secrets/database-url-app)` (role `catraders_app`). Migrations use the admin secret `database-url`. The web app's managed identity resolves the references.
@@ -287,21 +291,30 @@ DATABASE_URL="$(terraform -chdir=iac/app output -raw database_url_command | sh)"
 
 - **Writes publish immediately** and expire the catalog cache. There is no draft step. `set_visibility` unpublishes (moves the document to a draft), which is reversible; no tool deletes anything.
 - **CSV import** is a dry run by default. Columns: `sku` (required), `title`, `category`, `in_stock`, `description`, `image_url`, plus `attr:<attribute-slug>` columns with `|`-separated values. Rows with errors are skipped; valid rows still apply.
+- **Administrative writes are audited** in PostgreSQL before and after each MCP mutation. Audit entries contain operator email, tool name, affected identifiers (including every input SKU for CSV imports), a correlation ID, timestamp and `started`, `completed` or `failed` outcome. They do not store tool arguments, CSV content, customer details or provider credentials. `completed` means the tool handler returned successfully; for CSV imports, inspect the tool result because individual rows may still have been skipped or reported with errors. The runtime database role can append audit entries but cannot update or delete them.
 - **Studio rules are re-checked server-side** (category levels and parents, one value per single-valued attribute, reserved attribute slugs, unique SKUs and slugs) because API writes bypass Studio validation.
 - `update_request_status` only records the status; it does not email the customer.
 
-**Sign-in.** The server is its own OAuth 2.1 authorization server (dynamic client registration, PKCE S256, 1-hour access tokens, rotating 30-day refresh tokens). The consent screen asks for the single shared admin password. Discovery documents are at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource/api/mcp`. Tokens are bound to `${SITE_URL}/api/mcp` and rejected for any other audience. Failed sign-ins are rate-limited per IP, in memory, so per instance.
+**Sign-in.** The server remains its own OAuth 2.1 authorization server (dynamic client registration, PKCE S256, 1-hour access tokens, rotating 30-day refresh tokens). Each client authorization now requires an explicit same-origin submission from the consent page followed by Google or Microsoft OpenID Connect sign-in. Provider credentials are never sent to the MCP client. Every issued code and token carries the operator email and the Sanity document revision; the app checks the private allowlist on code exchange, refresh and every MCP request. Editing, revoking or restoring an operator changes Sanity's `_rev`, so existing access and refresh grants stay revoked after restoration. Discovery documents are at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource/api/mcp`. Tokens remain bound to `${SITE_URL}/api/mcp`. Login starts are rate-limited per IP in process memory.
+
+**Operator identity rules.** The operator allowlist is in a separate Sanity project with a private dataset and its own read-only runtime token. The catalog project's Editor token cannot read or change it. The operator-only Studio uses `studio/operators/sanity.config.ts`, has no create-document option, and is deployed separately from the public catalog Studio. New canonical records are created with `bun run mcp:operator -- enroll-google <verified-email>` using an operator-project admin token held only by the maintainer. Revocation and restoration use `revoke` and `restore`; each edit changes `_rev` and invalidates all existing grants. Never put operator records in the production catalog dataset.
+
+Google sign-in requires Google's signed `email_verified` claim. Gmail addresses can be enrolled by their verified email; Google Workspace addresses also require a matching verified `hd` domain. Other Google addresses must have their Google issuer and subject pinned in the private record. Microsoft email and `preferred_username` claims are not used as proof: a maintainer first verifies the operator's mailbox out of band, then enrolls the exact issuer and subject shown by the sign-in callback with `bun run mcp:operator -- bind-microsoft <verified-email> <issuer> <subject>`. The callback returns only those enrollment identifiers, never provider tokens, email claims or allowlist contents. Allowlist changes must be made in the separate operator project; every document update invalidates previous grants.
 
 **Connecting**
 
-1. In sanity.io/manage → API → Tokens, create a token with the **Editor** role.
-2. Provision it: `export TF_VAR_sanity_write_token=<token>`, set `sanity_write_token_version = 1` in `terraform.tfvars`, and apply. Keep the variable exported for every later plan or apply, or Terraform errors. The sign-in password and signing secret are generated by Terraform.
-3. Read the password: `terraform -chdir=iac/app output -json mcp` shows the URL and the Key Vault command that prints it.
-4. Add the URL as a connector:
+1. Register one Google OAuth web application and one Microsoft identity platform application. For Microsoft, choose the Web platform and [accounts in any organizational directory and personal Microsoft accounts](https://learn.microsoft.com/en-us/entra/identity-platform/supported-accounts-validation) (`signInAudience=AzureADandPersonalMicrosoftAccount`) so personal accounts work with the configured common endpoint. Add these exact redirect URLs: `https://<your-host>/oauth/callback/google` and `https://<your-host>/oauth/callback/microsoft`. No provider registrations or credentials are included in this repository.
+2. Create a separate Sanity project for operator access, create a **private** dataset (default name `mcp-operators`), and create its isolated operator Studio using `studio/netlify-operators.toml` with `SANITY_STUDIO_OPERATOR_PROJECT_ID` and `SANITY_STUDIO_OPERATOR_DATASET` set for the new project. Grant only trusted maintainers access to that project. Keep its project ID and dataset separate from the public catalog project.
+3. Create a read-only Sanity token for the operator project. Configure Terraform with `sanity_operator_project_id`, `sanity_operator_dataset`, and `sanity_operator_api_read_token_version = 1`; pass `TF_VAR_sanity_operator_api_read_token` ephemerally for every later plan/apply while the version is nonzero. Configure each OAuth client ID and its client secret version; pass each secret via `TF_VAR_google_oauth_client_secret` and `TF_VAR_microsoft_oauth_client_secret` for every later plan/apply. Terraform writes secrets to Key Vault using write-only values and does not store them in state. Keep the existing catalog Editor token separate and provision it as before.
+4. Enroll the initial verified Gmail account in the private project with `bun run mcp:operator -- enroll-google <verified-email>`; set `SANITY_OPERATOR_PROJECT_ID`, `SANITY_OPERATOR_DATASET`, and `SANITY_OPERATOR_ADMIN_TOKEN` only in the maintainer's shell. The token is a privileged operator-project credential and is never configured on the web app.
+5. Build and deploy the operator Studio as a separate access-controlled site using `studio/netlify-operators.toml`. Do not add the operator schema to the public catalog Studio.
+6. Connect Claude using the URL shown by `terraform -chdir=iac/app output -json mcp`:
    - **Claude Code:** `claude mcp add --transport http catraders https://<your-host>/api/mcp`, then `/mcp` to sign in.
    - **claude.ai / Claude Desktop:** Settings → Connectors → Add custom connector.
 
-**Locally,** put `MCP_ADMIN_PASSWORD`, `MCP_JWT_SECRET` (32+ characters) and, for the content tools, `SANITY_API_WRITE_TOKEN` in `.env.local`, run `bun run db:migrate` (it adds the `oauth_*` tables), start `bun run dev`, and add `http://localhost:3000/api/mcp`. Local writes go to whatever `SANITY_DATASET` points at, which is `production` by default, so point it at a scratch dataset before experimenting.
+**Locally,** configure `MCP_JWT_SECRET`, a separate private operator project/dataset and read-only token, and provider credentials before using MCP. Run `bun run db:migrate` (it adds OAuth state, actor grant and audit tables), start `bun run dev`, and add `http://localhost:3000/api/mcp`. Keep catalog writes pointed at a scratch `SANITY_DATASET` before experimenting. The old `MCP_ADMIN_PASSWORD` secret remains attached to the Azure app only during the old-image rollback compatibility window; the new code ignores it.
+
+For local provider registrations, use `http://localhost:3000/oauth/callback/google` and `http://localhost:3000/oauth/callback/microsoft` as redirect URLs. A Microsoft enrollment response exposes the verified issuer and subject for that sign-in only; a maintainer must verify mailbox ownership out of band before binding them. If an operator changes or restores a Sanity entry, they must sign in again because the document revision invalidates every earlier grant. Keep the operator Studio and its privileged admin token restricted to trusted maintainers; never use the public production Sanity dataset for operator records.
 
 ## Known limitations / next steps
 
@@ -309,9 +322,9 @@ DATABASE_URL="$(terraform -chdir=iac/app output -raw database_url_command | sh)"
 - Public submission limits are per process and reset on restart; use shared or edge enforcement before scaling out (see the abuse policy above).
 - Reference numbers use 90,000 random values per year, and the insert retries on a collision. Widen the format if volume grows.
 - RFQ status is changed through the MCP server (`update_request_status`); there is no web admin UI for it.
-- The MCP server has one shared password and no per-person audit trail. Move the consent step to Microsoft Entra sign-in if more people need access.
+- OAuth sign-in rate limits are in memory; use a shared store before scaling out.
+- Operator allowlist deployment and OAuth provider registration require explicit maintainer setup; they are not performed by this code change.
 - MCP client registration uses dynamic client registration only (no Client ID Metadata Documents yet).
-- The MCP sign-in rate limiter is in memory; it needs a shared store before scaling out (same caveat as the cache).
 
 
 ### Automatic AI product review
