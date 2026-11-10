@@ -36,6 +36,7 @@ jobs:
                 or .path == ".github/workflows/azure-deploy.yml"
                 or .path == ".github/workflows/studio-deploy.yml"
                 or .path == ".github/workflows/postgres-firewall-drift.yml"
+                or .path == ".github/workflows/runtime-incidents.yml"
                 or .path == ".github/workflows/lead-digest.yml")]
               | group_by(.workflow_id) | map(max_by(.run_started_at))[]' > "$RUNNER_TEMP/failures.json"
           jq -c '.' "$RUNNER_TEMP/failures.json" | while IFS= read -r run; do

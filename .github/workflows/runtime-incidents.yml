@@ -1,0 +1,39 @@
+name: Runtime incidents
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+concurrency:
+  group: runtime-incidents
+  cancel-in-progress: false
+
+jobs:
+  route:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && vars.AZURE_RESOURCE_GROUP != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Route configured Azure alerts to owner-assigned incidents
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          RUNTIME_INCIDENT_OWNER: ${{ vars.RUNTIME_INCIDENT_OWNER || github.repository_owner }}
+          RUNTIME_RULE_PREFIX: catraders-prod
+        run: bun scripts/runtime-incidents.ts
