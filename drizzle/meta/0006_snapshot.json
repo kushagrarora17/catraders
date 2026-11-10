@@ -305,6 +305,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "operator_revision": {
+          "name": "operator_revision",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "expires_at": {
           "name": "expires_at",
           "type": "timestamp with time zone",
@@ -362,7 +368,23 @@
           "notNull": true
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_oauth_login_states_expires_at": {
+          "name": "idx_oauth_login_states_expires_at",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -395,6 +417,12 @@
         "operator_email": {
           "name": "operator_email",
           "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "operator_revision": {
+          "name": "operator_revision",
+          "type": "varchar(128)",
           "primaryKey": false,
           "notNull": false
         },
