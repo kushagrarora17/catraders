@@ -4,6 +4,30 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import "./navigation-progress.css";
 
+function modifiedClick(event: MouseEvent) {
+  return [event.defaultPrevented, event.button !== 0, event.metaKey, event.ctrlKey, event.shiftKey, event.altKey].some(Boolean);
+}
+
+const opensCurrentTab = (link: HTMLAnchorElement) => !link.target || link.target === "_self";
+
+const closestAnchor = (target: EventTarget | null) => target instanceof Element ? target.closest("a[href]") : null;
+
+function clickedLink(event: MouseEvent) {
+  const link = closestAnchor(event.target);
+  if (!(link instanceof HTMLAnchorElement) || link.hasAttribute("download")) return null;
+  return opensCurrentTab(link) ? link : null;
+}
+
+function changesPage(destination: URL) {
+  if (destination.origin !== location.origin) return false;
+  return destination.pathname !== location.pathname || destination.search !== location.search;
+}
+
+function navigates(event: MouseEvent) {
+  const link = clickedLink(event);
+  return link && changesPage(new URL(link.href));
+}
+
 export function NavigationProgress() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -19,13 +43,8 @@ export function NavigationProgress() {
     stop();
 
     const onClick = (event: MouseEvent) => {
-      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
-      if (!(link instanceof HTMLAnchorElement) || link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
-
-      const destination = new URL(link.href);
-      if (destination.origin !== location.origin ||
-        (destination.pathname === location.pathname && destination.search === location.search)) return;
+      if (modifiedClick(event)) return;
+      if (!navigates(event)) return;
 
       if (indicator.current) indicator.current.hidden = false;
       clearTimeout(timeout.current);

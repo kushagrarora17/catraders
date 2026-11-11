@@ -45,7 +45,7 @@ const logFailed = (reference: string, leadType: string, reason: string) => {
   console.error(`[email] Failed reference=${reference} type=${leadType} reason=${reason}`);
 };
 
-export function buildFailureAlert(lead: LeadNotice, sender: string, recipient: string): EmailMessage {
+function buildFailureAlert(lead: LeadNotice, sender: string, recipient: string): EmailMessage {
   const lines = [
     `A saved ${lead.leadType} lead was not fully notified.`,
     `Type: ${lead.leadType}`,

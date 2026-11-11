@@ -1,6 +1,6 @@
 import {defineField} from 'sanity'
 
-export const VERTICALS = [
+const VERTICALS = [
   {title: 'Automotive', value: 'automotive'},
   {title: 'Baby Products', value: 'baby'},
   {title: 'Home Needs', value: 'home'},

@@ -14,18 +14,21 @@ export type EditorialContent = NonNullable<
   NonNullable<SEO_CITY_QUERY_RESULT>["content"]
 >;
 
+function landingSeo(content: EditorialContent) {
+  return { title: content.seo?.title ?? content.heading, description: content.seo?.description };
+}
+
 export function landingMetadata(
   content: EditorialContent | undefined | null,
   path: string,
 ): Metadata {
   if (!content) return { title: "Page not found", robots: { index: false } };
+  const {title, description} = landingSeo(content);
   return {
-    title: content.seo?.title ?? content.heading,
-    description: content.seo?.description,
+    title, description,
     alternates: { canonical: path },
     openGraph: {
-      title: content.seo?.title ?? content.heading,
-      description: content.seo?.description,
+      title, description,
       url: path,
     },
   };
@@ -42,9 +45,8 @@ export function JsonLd({ value }: { value: unknown }) {
   );
 }
 
-export function EditorialBody({ content }: { content: EditorialContent }) {
+function EditorialNavigation({content}: {content: EditorialContent}) {
   return (
-    <>
       <nav
         aria-label="On this page"
         className="my-8 border-y border-border py-5"
@@ -70,6 +72,39 @@ export function EditorialBody({ content }: { content: EditorialContent }) {
           </li>
         </ul>
       </nav>
+  );
+}
+
+function EditorialSources({content}: {content: EditorialContent}) {
+  return <>
+          {!!content.sources?.length && (
+            <section>
+              <h2 className="mb-3 font-heading text-xl font-bold">
+                Technical references
+              </h2>
+              <ul className="space-y-2 text-sm">
+                {content.sources.map((source) => (
+                  <li key={source._key}>
+                    <a
+                      href={source.url}
+                      className="underline underline-offset-4 hover:text-highlight"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      {source.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+  </>;
+}
+
+export function EditorialBody({ content }: { content: EditorialContent }) {
+  return (
+    <>
+      <EditorialNavigation content={content} />
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="min-w-0 space-y-12">
           {content.sections?.map((section) => (
@@ -151,27 +186,7 @@ export function EditorialBody({ content }: { content: EditorialContent }) {
               </details>
             ))}
           </section>
-          {!!content.sources?.length && (
-            <section>
-              <h2 className="mb-3 font-heading text-xl font-bold">
-                Technical references
-              </h2>
-              <ul className="space-y-2 text-sm">
-                {content.sources.map((source) => (
-                  <li key={source._key}>
-                    <a
-                      href={source.url}
-                      className="underline underline-offset-4 hover:text-highlight"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      {source.title}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          <EditorialSources content={content} />
         </div>
         <aside className="h-fit border-t-3 border-primary bg-secondary p-6 lg:sticky lg:top-24">
           <p className="text-xs font-bold uppercase tracking-wide text-highlight">

@@ -9,6 +9,34 @@ import { fail, IDEMPOTENT_WRITE, ok } from "./util";
 
 const slugRef = (current: string) => ({ _type: "slug" as const, current });
 
+function definedFields(fields: Record<string, unknown>) {
+  return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined));
+}
+
+async function patchTaxonomyDocument(id: string, fields: Record<string, unknown>) {
+  await getWriteClient().patch(id).set(definedFields(fields)).commit();
+  return revalidateCatalog();
+}
+
+type Category = Awaited<ReturnType<typeof loadTaxonomy>>['categories'][number];
+
+function categoryPlacement(taxonomy: Awaited<ReturnType<typeof loadTaxonomy>>, parent: string | undefined, level: number) {
+  const category = parent ? taxonomy.categoryBySlug.get(slugify(parent)) : undefined;
+  if (parent && !category) return {error: `Unknown parent category "${parent}"`};
+  const error = checkCategoryPlacement(level, category?.level ?? null);
+  return {category, error};
+}
+
+async function updateCategory(existing: Category, title: string, level: number, slug: string, parent?: Category, sortOrder?: number) {
+  if (existing.level !== level) return fail(`Category "${slug}" is level ${existing.level}; the level of an existing category can't change`);
+  let patch = getWriteClient().patch(existing._id).set({ title });
+  if (parent) patch = patch.set({ parent: { _type: "reference", _ref: parent._id } });
+  if (sortOrder !== undefined) patch = patch.set({ sortOrder });
+  await patch.commit();
+  const cacheResult = await revalidateCatalog();
+  return ok({ ...cacheResult, id: existing._id, slug, created: false });
+}
+
 export function registerTaxonomyWriteTools(server: McpServer) {
   server.registerTool(
     "upsert_category",
@@ -30,25 +58,14 @@ export function registerTaxonomyWriteTools(server: McpServer) {
       const categorySlug = slugify(slug ?? title);
       if (!categorySlug) return fail("Slug has no usable characters");
 
-      const parentCategory = parent ? taxonomy.categoryBySlug.get(slugify(parent)) : undefined;
-      if (parent && !parentCategory) return fail(`Unknown parent category "${parent}"`);
-      const placementError = checkCategoryPlacement(level, parentCategory?.level ?? null);
-      if (placementError) return fail(placementError);
+      const placement = categoryPlacement(taxonomy, parent, level);
+      if (placement.error) return fail(placement.error);
+      const parentCategory = placement.category;
 
       const existing = taxonomy.categoryBySlug.get(categorySlug);
       const client = getWriteClient();
 
-      if (existing) {
-        if (existing.level !== level) {
-          return fail(`Category "${categorySlug}" is level ${existing.level}; the level of an existing category can't change`);
-        }
-        let patch = client.patch(existing._id).set({ title });
-        if (parentCategory) patch = patch.set({ parent: { _type: "reference", _ref: parentCategory._id } });
-        if (sortOrder !== undefined) patch = patch.set({ sortOrder });
-        await patch.commit();
-        const cacheResult = await revalidateCatalog();
-        return ok({ ...cacheResult, id: existing._id, slug: categorySlug, created: false });
-      }
+      if (existing) return updateCategory(existing, title, level, categorySlug, parentCategory, sortOrder);
 
       const created = await client.create({
         _type: "category",
@@ -89,12 +106,7 @@ export function registerTaxonomyWriteTools(server: McpServer) {
       const client = getWriteClient();
 
       if (existing) {
-        const set: Record<string, unknown> = { title };
-        if (filterable !== undefined) set.filterable = filterable;
-        if (allowMultiple !== undefined) set.allowMultiple = allowMultiple;
-        if (sortOrder !== undefined) set.sortOrder = sortOrder;
-        await client.patch(existing._id).set(set).commit();
-        const cacheResult = await revalidateCatalog();
+        const cacheResult = await patchTaxonomyDocument(existing._id, { title, filterable, allowMultiple, sortOrder });
         return ok({ ...cacheResult, id: existing._id, slug: attributeSlug, created: false });
       }
 
@@ -139,10 +151,7 @@ export function registerTaxonomyWriteTools(server: McpServer) {
       const client = getWriteClient();
 
       if (existing) {
-        const set: Record<string, unknown> = { label };
-        if (sortOrder !== undefined) set.sortOrder = sortOrder;
-        await client.patch(existing._id).set(set).commit();
-        const cacheResult = await revalidateCatalog();
+        const cacheResult = await patchTaxonomyDocument(existing._id, { label, sortOrder });
         return ok({ ...cacheResult, id: existing._id, attribute, slug: valueSlug, created: false });
       }
 

@@ -13,6 +13,7 @@ import {
   lookupBySku,
   lookupProducts,
   type ProductPatch,
+  type ProductRef,
   resolveProduct,
 } from "../products";
 import { revalidateCatalog, revalidateReviews } from "../revalidate";
@@ -25,6 +26,115 @@ const attributesSchema = z
   .describe('Attribute slug → value labels, e.g. {"viscosity": ["5W-30"], "pack-size": ["4 L"]}');
 
 const DRAFT_PREFIX = "drafts.";
+
+async function skuConflict(sku: string | undefined, exceptId?: string) {
+  if (!sku) return undefined;
+  const matches = (await lookupBySku([sku])).get(sku) ?? [];
+  const clash = matches.find((product) => product.baseId !== exceptId);
+  if (clash) return `SKU "${sku}" is already used by "${clash.title}" (${clash.baseId})`;
+}
+
+async function uploadImages(urls: string[] = [], title: string) {
+  const images: UploadedImage[] = [];
+  for (const url of urls) images.push(await uploadImageFromUrl(url, title));
+  return images;
+}
+
+async function createSlug(title: string, slug: string | undefined) {
+  if (!slug) return { slug: await freeProductSlug(title) };
+  const productSlug = slugify(slug);
+  if (!productSlug) return { error: "slug has no usable characters" };
+  if ((await lookupProducts([productSlug])).some((product) => product.slug === productSlug)) {
+    return { error: `Slug "${productSlug}" is already taken` };
+  }
+  return { slug: productSlug };
+}
+
+async function patchCategory(patch: ProductPatch, taxonomy: Awaited<ReturnType<typeof loadTaxonomy>>, category: string) {
+  const resolved = resolveCategory(taxonomy, category);
+  if (typeof resolved === "string") return resolved;
+  patch.categoryId = resolved._id;
+}
+
+async function patchAttributes(patch: ProductPatch, taxonomy: Awaited<ReturnType<typeof loadTaxonomy>>, attributes: Record<string, string[]>, docId: string) {
+  const selection = resolveAttributeSelection(taxonomy, attributes);
+  if (selection.errors.length) return selection.errors.join("\n");
+  const current = await getWriteClient().getDocument<{ attributeValues?: { _ref: string }[] }>(docId);
+  patch.attributeValueIds = mergeAttributeValueIds(taxonomy, (current?.attributeValues ?? []).map((value) => value._ref), selection.valueIds);
+}
+
+async function patchTaxonomy(patch: ProductPatch, docId: string, category?: string, attributes?: Record<string, string[]>) {
+  if (category === undefined && attributes === undefined) return;
+  const taxonomy = await loadTaxonomy();
+  if (category !== undefined) {
+    const error = await patchCategory(patch, taxonomy, category);
+    if (error) return error;
+  }
+  if (attributes !== undefined) return patchAttributes(patch, taxonomy, attributes, docId);
+}
+
+function replaceImages(set: Record<string, unknown>, unset: string[], images: UploadedImage[], clearImages?: boolean) {
+  if (clearImages && images.length) set.images = images;
+  else if (clearImages) unset.push("images");
+}
+
+async function commitPatch(docId: string, set: Record<string, unknown>, unset: string[], images: UploadedImage[], clearImages?: boolean) {
+  let transaction = getWriteClient().patch(docId);
+  if (Object.keys(set).length) transaction = transaction.set(set);
+  if (unset.length) transaction = transaction.unset(unset);
+  if (images.length && !clearImages) transaction = transaction.setIfMissing({ images: [] }).insert("after", "images[-1]", images);
+  await transaction.commit();
+}
+
+function stockTargets(found: ProductRef[], skus: string[], ids: string[]) {
+  const targets = new Map<string, ProductRef>();
+  const notFound: string[] = [];
+  const ambiguous: string[] = [];
+  for (const sku of new Set(skus)) {
+    const matches = found.filter((product) => product.sku === sku);
+    if (matches.length === 1) targets.set(matches[0].baseId, matches[0]);
+    else (matches.length ? ambiguous : notFound).push(sku);
+  }
+  for (const id of new Set(ids)) {
+    const match = found.find((product) => product.baseId === id);
+    if (match) targets.set(match.baseId, match);
+    else notFound.push(id);
+  }
+  return {targets, notFound, ambiguous};
+}
+
+async function changeStock(changing: ProductRef[], inStock: boolean) {
+  if (!changing.length) return {};
+  const transaction = getWriteClient().transaction();
+  for (const product of changing) transaction.patch(product.docId, { set: { inStock } });
+  await transaction.commit();
+  return revalidateCatalog();
+}
+
+const emptyPatch = (set: Record<string, unknown>, unset: string[], images: UploadedImage[]) =>
+  !Object.keys(set).length && !unset.length && !images.length;
+
+type VisibilityDocument = { _id: string; _type: string; vertical?: string; _rev?: string; _updatedAt?: string };
+
+async function visibilityId(type: string, key: string) {
+  if (type !== "product") return {id: baseId(key)};
+  const ref = await resolveProduct(key);
+  if (typeof ref === "string") return {error: ref};
+  return {id: ref.baseId};
+}
+
+function isAutomotiveDocument(doc: VisibilityDocument | null | undefined, expectedType: string): doc is VisibilityDocument {
+  return Boolean(doc && doc._type === expectedType && doc.vertical === "automotive");
+}
+
+const sameVisibility = (visible: boolean, published: VisibilityDocument | null) => visible ? Boolean(published) : !published;
+
+// Copy content without Sanity's server-managed revision fields.
+const copyAs = (source: VisibilityDocument, newId: string) => ({
+  ...Object.fromEntries(Object.entries(source).filter(([key]) => key !== "_rev" && key !== "_updatedAt")),
+  _id: newId,
+  _type: source._type,
+});
 
 export function registerCatalogWriteTools(server: McpServer) {
   server.registerTool(
@@ -53,24 +163,12 @@ export function registerCatalogWriteTools(server: McpServer) {
       const selection = resolveAttributeSelection(taxonomy, attributes ?? {});
       if (selection.errors.length) return fail(selection.errors.join("\n"));
 
-      if (sku) {
-        const existing = (await lookupBySku([sku])).get(sku);
-        if (existing?.length) return fail(`SKU "${sku}" is already used by "${existing[0].title}" (${existing[0].baseId})`);
-      }
-
-      let productSlug: string;
-      if (slug) {
-        productSlug = slugify(slug);
-        if (!productSlug) return fail("slug has no usable characters");
-        if ((await lookupProducts([productSlug])).some((p) => p.slug === productSlug)) {
-          return fail(`Slug "${productSlug}" is already taken`);
-        }
-      } else {
-        productSlug = await freeProductSlug(title);
-      }
-
-      const images: UploadedImage[] = [];
-      for (const url of imageUrls ?? []) images.push(await uploadImageFromUrl(url, title));
+      const conflict = await skuConflict(sku);
+      if (conflict) return fail(conflict);
+      const requestedSlug = await createSlug(title, slug);
+      if (requestedSlug.error) return fail(requestedSlug.error);
+      const productSlug = requestedSlug.slug!;
+      const images = await uploadImages(imageUrls, title);
 
       const id = randomUUID();
       await getWriteClient().create(
@@ -121,47 +219,18 @@ export function registerCatalogWriteTools(server: McpServer) {
       if (typeof ref === "string") return fail(ref);
 
       const patch: ProductPatch = { title, sku, inStock, description };
-      let taxonomy: Awaited<ReturnType<typeof loadTaxonomy>> | undefined;
-
-      if (category !== undefined || attributes !== undefined) {
-        taxonomy = await loadTaxonomy();
-        if (category !== undefined) {
-          const resolved = resolveCategory(taxonomy, category);
-          if (typeof resolved === "string") return fail(resolved);
-          patch.categoryId = resolved._id;
-        }
-        if (attributes !== undefined) {
-          const selection = resolveAttributeSelection(taxonomy, attributes);
-          if (selection.errors.length) return fail(selection.errors.join("\n"));
-          const current = await getWriteClient().getDocument<{ attributeValues?: { _ref: string }[] }>(ref.docId);
-          patch.attributeValueIds = mergeAttributeValueIds(
-            taxonomy,
-            (current?.attributeValues ?? []).map((v) => v._ref),
-            selection.valueIds,
-          );
-        }
-      }
-
-      if (sku) {
-        const clash = ((await lookupBySku([sku])).get(sku) ?? []).find((p) => p.baseId !== ref.baseId);
-        if (clash) return fail(`SKU "${sku}" is already used by "${clash.title}" (${clash.baseId})`);
-      }
+      const taxonomyError = await patchTaxonomy(patch, ref.docId, category, attributes);
+      if (taxonomyError) return fail(taxonomyError);
+      const conflict = await skuConflict(sku, ref.baseId);
+      if (conflict) return fail(conflict);
 
       const { set, unset } = buildProductPatch(patch);
-      const images: UploadedImage[] = [];
-      for (const url of addImageUrls ?? []) images.push(await uploadImageFromUrl(url, title ?? ref.title));
-      if (clearImages && images.length) set.images = images;
-      else if (clearImages) unset.push("images");
+      const images = await uploadImages(addImageUrls, title ?? ref.title);
+      replaceImages(set, unset, images, clearImages);
 
-      if (!Object.keys(set).length && !unset.length && !images.length) return fail("Nothing to update: pass at least one field to change");
+      if (emptyPatch(set, unset, images)) return fail("Nothing to update: pass at least one field to change");
 
-      let transaction = getWriteClient().patch(ref.docId);
-      if (Object.keys(set).length) transaction = transaction.set(set);
-      if (unset.length) transaction = transaction.unset(unset);
-      if (images.length && !clearImages) {
-        transaction = transaction.setIfMissing({ images: [] }).insert("after", "images[-1]", images);
-      }
-      await transaction.commit();
+      await commitPatch(ref.docId, set, unset, images, clearImages);
       const cacheResult = await revalidateCatalog();
 
       return ok({
@@ -190,29 +259,9 @@ export function registerCatalogWriteTools(server: McpServer) {
       if (!skus.length && !ids.length) return fail("Pass at least one SKU or product id");
 
       const found = await lookupProducts([...skus, ...ids]);
-      const targets = new Map<string, (typeof found)[number]>();
-      const notFound: string[] = [];
-      const ambiguous: string[] = [];
-
-      for (const sku of new Set(skus)) {
-        const matches = found.filter((p) => p.sku === sku);
-        if (matches.length === 1) targets.set(matches[0].baseId, matches[0]);
-        else (matches.length ? ambiguous : notFound).push(sku);
-      }
-      for (const id of new Set(ids)) {
-        const match = found.find((p) => p.baseId === id);
-        if (match) targets.set(match.baseId, match);
-        else notFound.push(id);
-      }
-
-      let cacheResult = {};
-      const changing = [...targets.values()].filter((p) => p.inStock !== inStock);
-      if (changing.length) {
-        const transaction = getWriteClient().transaction();
-        for (const product of changing) transaction.patch(product.docId, { set: { inStock } });
-        await transaction.commit();
-        cacheResult = await revalidateCatalog();
-      }
+      const {targets, notFound, ambiguous} = stockTargets(found, skus, ids);
+      const changing = [...targets.values()].filter((product) => product.inStock !== inStock);
+      const cacheResult = await changeStock(changing, inStock);
 
       return ok({
         ...cacheResult,
@@ -239,35 +288,23 @@ export function registerCatalogWriteTools(server: McpServer) {
       annotations: IDEMPOTENT_WRITE,
     },
     async ({ type, key, visible }) => {
-      let id = key;
-      if (type === "product") {
-        const ref = await resolveProduct(key);
-        if (typeof ref === "string") return fail(ref);
-        id = ref.baseId;
-      } else {
-        id = baseId(key);
-      }
+      const resolved = await visibilityId(type, key);
+      if (resolved.error) return fail(resolved.error);
+      const id = resolved.id!;
 
       const client = getWriteClient();
-      const [published, draft] = await client.getDocuments<{ _id: string; _type: string; vertical?: string; _rev?: string; _updatedAt?: string }>([
+      const [published, draft] = await client.getDocuments<VisibilityDocument>([
         id,
         `${DRAFT_PREFIX}${id}`,
       ]);
       const doc = published ?? draft;
       const expectedType = type === "product" ? "product" : "testimonial";
-      if (!doc || doc._type !== expectedType || doc.vertical !== "automotive") {
+      if (!isAutomotiveDocument(doc, expectedType)) {
         return fail(`No automotive ${type} with id "${id}"`);
       }
 
-      if (visible && published) return ok({ id, visible: true, changed: false });
-      if (!visible && !published) return ok({ id, visible: false, changed: false });
+      if (sameVisibility(visible, published)) return ok({ id, visible, changed: false });
 
-      // Copy the content under the other id, minus the server-managed revision fields.
-      const copyAs = (source: typeof doc, newId: string) => ({
-        ...Object.fromEntries(Object.entries(source).filter(([key]) => key !== "_rev" && key !== "_updatedAt")),
-        _id: newId,
-        _type: source._type,
-      });
       const transaction = client.transaction();
       if (visible) {
         transaction.createOrReplace(copyAs(draft!, id));

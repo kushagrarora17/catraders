@@ -20,9 +20,9 @@ const toronto = new Intl.DateTimeFormat("en-CA", {
 });
 
 /** Wall time in Ontario, where the daily digest is read. */
-export const formatToronto = (date: Date) => toronto.format(date);
+const formatToronto = (date: Date) => toronto.format(date);
 
-export function leadSnippet(value: string | null | undefined) {
+function leadSnippet(value: string | null | undefined) {
   const compact = (value ?? "").replace(/\s+/g, " ").trim();
   if (!compact) return "—";
   if (compact.length <= SNIPPET_MAX) return compact;

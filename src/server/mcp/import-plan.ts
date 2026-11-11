@@ -69,6 +69,68 @@ export function slugCandidatesForNewRows(records: CsvRecord[], knownSkus: Set<st
 const splitList = (cell: string) => cell.split("|").map((part) => part.trim()).filter(Boolean);
 const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((id) => b.includes(id));
 
+function rowStock(cells: Record<string, string>, errors: string[]) {
+  const parsed = cells.in_stock ? parseBoolean(cells.in_stock) : undefined;
+  if (parsed === null) errors.push(`in_stock "${cells.in_stock}" isn't yes/no or true/false`);
+  return parsed ?? undefined;
+}
+
+function rowCategory(taxonomy: Taxonomy, cell: string, errors: string[]) {
+  if (!cell) return undefined;
+  const category = resolveCategory(taxonomy, cell);
+  if (typeof category === "string") {
+    errors.push(category);
+    return undefined;
+  }
+  return category._id;
+}
+
+function rowSelection(cells: Record<string, string>) {
+  const selection: Record<string, string[]> = {};
+  for (const [column, cell] of Object.entries(cells)) {
+    if (column.startsWith(ATTRIBUTE_PREFIX) && cell) selection[column.slice(ATTRIBUTE_PREFIX.length).trim()] = splitList(cell);
+  }
+  return selection;
+}
+
+function rowImages(cell: string, errors: string[]) {
+  const urls = cell ? splitList(cell) : [];
+  for (const url of urls) if (!/^https:\/\//i.test(url)) errors.push(`image_url "${url}" must be an https link`);
+  return urls;
+}
+
+function rowMatches(row: RowPlan, existing: Map<string, ProductRef[]>, seenSkus: Map<string, number>) {
+  const {sku} = row;
+    if (!sku) {
+      row.errors.push("sku is required");
+      return null;
+    }
+    const firstLine = seenSkus.get(sku);
+    if (firstLine) {
+      row.errors.push(`Duplicate SKU in the file (first seen on line ${firstLine})`);
+      return null;
+    }
+    seenSkus.set(sku, row.line);
+
+    const matches = existing.get(sku) ?? [];
+    if (matches.length > 1) {
+      row.errors.push(`${matches.length} products already share this SKU (${matches.map((m) => m.baseId).join(", ")}); fix the duplicates first`);
+      return null;
+    }
+
+  return matches;
+}
+
+function createSlug(cells: Record<string, string>, row: RowPlan, takenSlugs: Set<string>) {
+      if (!cells.title) row.errors.push("title is required for new products");
+      if (!cells.category) row.errors.push("category is required for new products");
+      const slugBase = slugify(cells.title ?? "");
+      const slug = slugBase ? firstFreeSlug(slugBase, takenSlugs) : null;
+      if (cells.title && !slug) row.errors.push(`Couldn't derive a free slug from "${cells.title}"`);
+
+  return slug;
+}
+
 export function planImport(input: {
   headers: string[];
   records: CsvRecord[];
@@ -101,38 +163,13 @@ export function planImport(input: {
     const row: RowPlan = { line: record.line, sku, action: "error", errors: [], changes: [] };
     plan.rows.push(row);
 
-    if (!sku) {
-      row.errors.push("sku is required");
-      continue;
-    }
-    const firstLine = seenSkus.get(sku);
-    if (firstLine) {
-      row.errors.push(`Duplicate SKU in the file (first seen on line ${firstLine})`);
-      continue;
-    }
-    seenSkus.set(sku, record.line);
+    const matches = rowMatches(row, input.existing, seenSkus);
+    if (!matches) continue;
 
-    const matches = input.existing.get(sku) ?? [];
-    if (matches.length > 1) {
-      row.errors.push(`${matches.length} products already share this SKU (${matches.map((m) => m.baseId).join(", ")}); fix the duplicates first`);
-      continue;
-    }
+    const inStock = rowStock(cells, row.errors);
+    const categoryId = rowCategory(taxonomy, cells.category, row.errors);
 
-    const parsedStock = cells.in_stock ? parseBoolean(cells.in_stock) : undefined;
-    if (parsedStock === null) row.errors.push(`in_stock "${cells.in_stock}" isn't yes/no or true/false`);
-    const inStock = parsedStock ?? undefined;
-
-    let categoryId: string | undefined;
-    if (cells.category) {
-      const category = resolveCategory(taxonomy, cells.category);
-      if (typeof category === "string") row.errors.push(category);
-      else categoryId = category._id;
-    }
-
-    const selection: Record<string, string[]> = {};
-    for (const [column, cell] of Object.entries(cells)) {
-      if (column.startsWith(ATTRIBUTE_PREFIX) && cell) selection[column.slice(ATTRIBUTE_PREFIX.length).trim()] = splitList(cell);
-    }
+    const selection = rowSelection(cells);
     const pendingBefore = plan.newValues.length;
     const resolution = resolveAttributeSelection(taxonomy, selection, {
       createMissing: input.createMissingValues,
@@ -140,21 +177,16 @@ export function planImport(input: {
     });
     row.errors.push(...resolution.errors);
 
-    const imageUrls = cells.image_url ? splitList(cells.image_url) : [];
-    for (const url of imageUrls) if (!/^https:\/\//i.test(url)) row.errors.push(`image_url "${url}" must be an https link`);
+    const imageUrls = rowImages(cells.image_url, row.errors);
 
     const description = cells.description || undefined;
 
-    if (matches.length === 0) {
-      if (!cells.title) row.errors.push("title is required for new products");
-      if (!cells.category) row.errors.push("category is required for new products");
-      const slugBase = slugify(cells.title ?? "");
-      const slug = slugBase ? firstFreeSlug(slugBase, takenSlugs) : null;
-      if (cells.title && !slug) row.errors.push(`Couldn't derive a free slug from "${cells.title}"`);
+    function planCreate() {
+      const slug = createSlug(cells, row, takenSlugs);
 
       if (row.errors.length || !slug || !categoryId) {
         plan.newValues.length = pendingBefore; // don't create values for a row that won't be written
-        continue;
+        return;
       }
       takenSlugs.add(slug);
       row.action = "create";
@@ -172,6 +204,10 @@ export function planImport(input: {
           description,
         },
       };
+      return;
+    }
+    if (matches.length === 0) {
+      planCreate();
       continue;
     }
 
@@ -180,18 +216,24 @@ export function planImport(input: {
       continue;
     }
 
-    const [ref] = matches;
+    function planUpdate(ref: ProductRef) {
     const doc = input.existingDocs.get(ref.docId) ?? {};
     const patch: ProductPatch = {};
 
+    function scalarPatch() {
     if (cells.title && cells.title !== doc.title) patch.title = cells.title;
     if (inStock !== undefined && inStock !== doc.inStock) patch.inStock = inStock;
     if (categoryId && categoryId !== doc.category?._ref) patch.categoryId = categoryId;
+    }
+    scalarPatch();
+    function attributePatch() {
     if (Object.keys(selection).length) {
       const current = (doc.attributeValues ?? []).map((v) => v._ref);
       const merged = mergeAttributeValueIds(taxonomy, current, resolution.valueIds);
       if (!sameSet(current, merged)) patch.attributeValueIds = merged;
     }
+    }
+    attributePatch();
     if (description && description !== blocksToText(doc.description)) patch.description = description;
 
     const label: Record<string, string> = { categoryId: "category", attributeValueIds: "attributes" };
@@ -199,6 +241,8 @@ export function planImport(input: {
     row.action = row.changes.length ? "update" : "unchanged";
     if (row.action === "update") row.update = { docId: ref.docId, patch, imageUrls };
     else plan.newValues.length = pendingBefore;
+    }
+    planUpdate(matches[0]);
   }
 
   return plan;

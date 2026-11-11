@@ -1,6 +1,6 @@
 import type {ProductInput} from '../types'
 
-export const products: ProductInput[] = [
+export const oil: ProductInput[] = [
   // source: https://www.mobil.com/en/lubricants/for-personal-vehicles/our-products/products/mobil-1-0w-20 ; https://www.mobil.com/en/lubricants/for-personal-vehicles/our-products/products/mobil-1-5w-30 ; https://www.mobil.com/en/lubricants/for-personal-vehicles/our-products/products/mobil-1-5w-20
   {
     title: 'Mobil 1 Advanced Fuel Economy 0W-20 Full Synthetic Motor Oil - 3 x 4.73 L',

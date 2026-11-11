@@ -9,15 +9,21 @@ type Props = {
   readonly style?: React.CSSProperties;
 };
 
+function timeSinceClick(clickAt: Props["clickAt"], frame: number) {
+  const clicks = clickAt === undefined ? [] : [clickAt].flat();
+  const last = clicks.filter((click) => click <= frame).pop();
+  return last === undefined ? -1 : frame - last;
+}
+
+const within = (frame: number, duration: number) => frame >= 0 && frame < duration;
+
 /** Arrow cursor whose tip sits at the element's origin; position it with `translate`. */
 export const Cursor: React.FC<Props> = ({ clickAt, size = 44, style }) => {
   const frame = useCurrentFrame();
-  const clicks = clickAt === undefined ? [] : [clickAt].flat();
-  const last = clicks.filter((c) => c <= frame).pop();
-  const since = last === undefined ? -1 : frame - last;
+  const since = timeSinceClick(clickAt, frame);
   return (
     <div style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0, ...style }}>
-      {since >= 0 && since < 18 ? (
+      {within(since, 18) ? (
         <div
           style={{
             position: "absolute",
@@ -40,7 +46,7 @@ export const Cursor: React.FC<Props> = ({ clickAt, size = 44, style }) => {
           position: "absolute",
           left: 0,
           top: 0,
-          scale: String(since >= 0 && since < 6 ? 0.85 : 1),
+          scale: String(within(since, 6) ? 0.85 : 1),
           transformOrigin: "0 0",
           filter: "drop-shadow(0 3px 6px rgba(0,0,0,0.5))",
         }}

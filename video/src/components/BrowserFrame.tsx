@@ -1,4 +1,5 @@
 import type React from "react";
+import { Easing, interpolate, useCurrentFrame } from "remotion";
 import { colors, bodyFont } from "../brand";
 
 type Props = {
@@ -12,7 +13,7 @@ type Props = {
 
 const BAR_HEIGHT = 44;
 
-export const BrowserFrame: React.FC<Props> = ({ url, width, height, dark = true, children, style }) => {
+const BrowserFrame: React.FC<Props> = ({ url, width, height, dark = true, children, style }) => {
   return (
     <div
       style={{
@@ -61,4 +62,18 @@ export const BrowserFrame: React.FC<Props> = ({ url, width, height, dark = true,
       <div style={{ position: "relative", width, height, overflow: "hidden" }}>{children}</div>
     </div>
   );
+};
+
+export const AnimatedBrowserFrame: React.FC<Omit<Props, "style"> & { top: number }> = ({top, ...props}) => {
+  const frame = useCurrentFrame();
+  return <BrowserFrame {...props} style={{
+    left: 600,
+    top,
+    opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+    translate: interpolate(frame, [0, 25], ["80px 0px", "0px 0px"], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+    }),
+  }} />;
 };

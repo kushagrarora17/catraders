@@ -6,30 +6,39 @@ export function parseCsv(input: string): string[][] {
   let cell = "";
   let quoted = false;
 
+  function readQuoted(char: string, index: number) {
+    if (char !== '"') {
+      cell += char;
+      return index;
+    }
+    if (text[index + 1] === '"') {
+      cell += '"';
+      return index + 1;
+    }
+    quoted = false;
+    return index;
+  }
+
+  function readNewline(index: number) {
+    if (text[index] === "\r" && text[index + 1] === "\n") index++;
+    row.push(cell);
+    rows.push(row);
+    row = [];
+    cell = "";
+    return index;
+  }
+
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
     if (quoted) {
-      if (char === '"') {
-        if (text[i + 1] === '"') {
-          cell += '"';
-          i++;
-        } else {
-          quoted = false;
-        }
-      } else {
-        cell += char;
-      }
+      i = readQuoted(char, i);
     } else if (char === '"' && cell === "") {
       quoted = true;
     } else if (char === ",") {
       row.push(cell);
       cell = "";
     } else if (char === "\n" || char === "\r") {
-      if (char === "\r" && text[i + 1] === "\n") i++;
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
+      i = readNewline(i);
     } else {
       cell += char;
     }

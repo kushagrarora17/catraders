@@ -53,22 +53,39 @@ function auditTargets(name: string, input: unknown) {
   return [...new Set(targets)];
 }
 
+function resultContent(result: unknown): unknown[] | undefined {
+  if (!result || typeof result !== "object" || !("content" in result)) return;
+  return Array.isArray(result.content) ? result.content : undefined;
+}
+
+function blockText(block: unknown) {
+  if (!block || typeof block !== "object") return;
+  const text = (block as {text?: unknown}).text;
+  return typeof text === "string" ? text : undefined;
+}
+
+function objectIdentifiers(object: Record<string, unknown>, identifiers: Set<string>) {
+  for (const key of ["id", "reference", "referenceNumber", "slug", "sku"]) {
+    const candidate = object[key];
+    if (typeof candidate === "string" && /^[A-Za-z0-9._:-]{1,120}$/.test(candidate)) identifiers.add(`${key}:${candidate}`);
+  }
+}
+
 function resolvedTargets(result: unknown, fallback: string[]) {
-  if (!result || typeof result !== "object" || !("content" in result) || !Array.isArray(result.content)) return fallback;
+  const content = resultContent(result);
+  if (!content) return fallback;
   const identifiers = new Set<string>();
   const visit = (value: unknown) => {
     if (!value || typeof value !== "object") return;
     if (Array.isArray(value)) return value.forEach(visit);
     const object = value as Record<string, unknown>;
-    for (const key of ["id", "reference", "referenceNumber", "slug", "sku"]) {
-      const candidate = object[key];
-      if (typeof candidate === "string" && /^[A-Za-z0-9._:-]{1,120}$/.test(candidate)) identifiers.add(`${key}:${candidate}`);
-    }
-    for (const child of Object.values(object)) if (child && typeof child === "object") visit(child);
+    objectIdentifiers(object, identifiers);
+    Object.values(object).forEach(visit);
   };
-  for (const block of result.content) {
-    if (block && typeof block === "object" && typeof (block as { text?: unknown }).text === "string") {
-      try { visit(JSON.parse((block as { text: string }).text)); } catch { /* non-JSON tool text contains no resolved identifiers */ }
+  for (const block of content) {
+    const text = blockText(block);
+    if (text !== undefined) {
+      try { visit(JSON.parse(text)); } catch { /* non-JSON tool text contains no resolved identifiers */ }
     }
   }
   return [...new Set([...fallback, ...identifiers])];
@@ -77,6 +94,9 @@ function resolvedTargets(result: unknown, fallback: string[]) {
 export const getAuditTargets = auditTargets;
 export const getResolvedAuditTargets = resolvedTargets;
 
+const operatorFromContext = (context: Parameters<Handler>[1]) => context.http?.authInfo?.extra?.operatorEmail;
+const toolFailed = (result: unknown) => !!result && typeof result === "object" && "isError" in result && result.isError === true;
+
 export function auditMcpWrites(server: McpServer, dependencies: { getDb?: typeof getDb } = {}) {
   const original = server.registerTool.bind(server) as unknown as (
     name: Registration[0], config: ToolConfig, callback: Handler,
@@ -84,7 +104,7 @@ export function auditMcpWrites(server: McpServer, dependencies: { getDb?: typeof
   server.registerTool = ((name: Registration[0], config: ToolConfig, callback: Handler) => {
     if (config.annotations?.readOnlyHint === true) return original(name, config, callback);
     return original(name, config, async (input, context) => {
-      const operatorEmail = context.http?.authInfo?.extra?.operatorEmail;
+      const operatorEmail = operatorFromContext(context);
       if (typeof operatorEmail !== "string") return fail("Operator identity is missing; no change was made.");
       const correlationId = randomUUID();
       const action = String(name).slice(0, 128);
@@ -97,7 +117,7 @@ export function auditMcpWrites(server: McpServer, dependencies: { getDb?: typeof
       }
       try {
         const result = await callback(input, context);
-        const failed = !!result && typeof result === "object" && "isError" in result && result.isError === true;
+        const failed = toolFailed(result);
         const resolved = failed ? targets : resolvedTargets(result, targets);
         await db.insert(mcpAuditEvents).values(resolved.map((target) => ({ correlationId, operatorEmail, action, target, outcome: failed ? "failed" : "completed" })));
         return result;

@@ -44,15 +44,28 @@ function setCookie(value: string) {
   return `${LOGIN_COOKIE}=${value}; Path=/oauth/callback; Max-Age=${LOGIN_TTL}; HttpOnly${secure}; SameSite=Lax`;
 }
 
+type ConfiguredProvider = ProviderConfig & { clientId: string; clientSecret: string };
+type ValidAuthorization = Extract<Awaited<ReturnType<typeof validateAuthorizeRequest>>, { ok: true }>;
+
+function validProvider(provider: string): provider is Provider {
+  return provider === "google" || provider === "microsoft";
+}
+
 export async function POST(request: Request, context: { params: Promise<{ provider: string }> }) {
   if (!isMcpConfigured()) return Response.json({ error: "MCP access is not configured" }, { status: 503 });
   if (request.headers.get("origin") !== new URL(getIssuer()).origin) return Response.json({ error: "Sign-in must start from the authorization page" }, { status: 403 });
-  const { provider: rawProvider } = await context.params;
-  if (rawProvider !== "google" && rawProvider !== "microsoft") return new Response("Not found", { status: 404 });
-  const provider = rawProvider as Provider;
+  const { provider } = await context.params;
+  if (!validProvider(provider)) return new Response("Not found", { status: 404 });
+  return loginProvider(request, provider);
+}
+
+function loginProvider(request: Request, provider: Provider) {
   const config = providerConfig(provider);
   if (!config.clientId || !config.clientSecret) return Response.json({ error: "Sign-in provider is not configured" }, { status: 503 });
+  return prepareLogin(request, provider, { ...config, clientId: config.clientId, clientSecret: config.clientSecret });
+}
 
+async function prepareLogin(request: Request, provider: Provider, config: ConfiguredProvider) {
   let form: FormData;
   try { form = await request.formData(); } catch { return Response.json({ error: "Invalid authorization request" }, { status: 400 }); }
   const params = Object.fromEntries([...form.entries()].filter((entry): entry is [string, string] => typeof entry[1] === "string"));
@@ -62,6 +75,10 @@ export async function POST(request: Request, context: { params: Promise<{ provid
     return Response.json({ error: "Too many sign-in attempts. Try again later." }, { status: 429 });
   }
 
+  return beginLogin(provider, config, validation);
+}
+
+async function beginLogin(provider: Provider, config: ConfiguredProvider, validation: ValidAuthorization) {
   let authorizationEndpoint = config.authorizationEndpoint;
   if (provider === "microsoft") authorizationEndpoint = (await microsoftMetadata()).authorization_endpoint;
 

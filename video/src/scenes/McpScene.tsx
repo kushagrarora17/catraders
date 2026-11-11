@@ -1,11 +1,13 @@
 import type React from "react";
 import { AbsoluteFill, Easing, Interactive, interpolate, useCurrentFrame, useVideoConfig, type InteractivitySchema } from "remotion";
 import { Backdrop } from "../components/Backdrop";
-import { BrowserFrame } from "../components/BrowserFrame";
+import { AnimatedBrowserFrame } from "../components/BrowserFrame";
 import { Highlight } from "../components/Highlight";
 import { Shot } from "../components/Shot";
 import { Bullet, Heading } from "../components/SideText";
 import { bodyFont, colors, headingFont } from "../brand";
+
+import { typed } from "../animation";
 
 const W = 1240;
 const H = 697;
@@ -21,8 +23,7 @@ const chat = {
 const appear = (frame: number, start: number) =>
   interpolate(frame, [start, start + 10], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-const typed = (text: string, frame: number, start: number, end: number) =>
-  text.slice(0, Math.round(interpolate(frame, [start, end], [0, text.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })));
+
 
 const UserBubble: React.FC<{ children: string }> = ({ children }) => (
   <div
@@ -45,6 +46,13 @@ const UserBubble: React.FC<{ children: string }> = ({ children }) => (
 const ToolChip: React.FC<{ tool: string; start: number; doneAt: number }> = ({ tool, start, doneAt }) => {
   const frame = useCurrentFrame();
   const done = frame >= doneAt;
+  const appearance = done ? {
+    borderColor: colors.gold, backgroundColor: colors.gold, border: "none",
+    borderTopColor: undefined, rotate: "0deg", label: "✓",
+  } : {
+    borderColor: "#4a4844", backgroundColor: "transparent", border: `3px solid ${chat.accent}`,
+    borderTopColor: "transparent", rotate: `${frame * 18}deg`, label: "",
+  };
   return (
     <div
       style={{
@@ -54,7 +62,7 @@ const ToolChip: React.FC<{ tool: string; start: number; doneAt: number }> = ({ t
         gap: 12,
         padding: "10px 18px",
         borderRadius: 12,
-        border: `1.5px solid ${done ? colors.gold : "#4a4844"}`,
+        border: `1.5px solid ${appearance.borderColor}`,
         color: chat.muted,
         fontSize: 22,
         opacity: appear(frame, start),
@@ -70,14 +78,14 @@ const ToolChip: React.FC<{ tool: string; start: number; doneAt: number }> = ({ t
           justifyContent: "center",
           fontSize: 15,
           fontWeight: 800,
-          backgroundColor: done ? colors.gold : "transparent",
+          backgroundColor: appearance.backgroundColor,
           color: colors.navyDark,
-          border: done ? "none" : `3px solid ${chat.accent}`,
-          borderTopColor: done ? undefined : "transparent",
-          rotate: done ? "0deg" : `${frame * 18}deg`,
+          border: appearance.border,
+          borderTopColor: appearance.borderTopColor,
+          rotate: appearance.rotate,
         }}
       >
-        {done ? "✓" : ""}
+        {appearance.label}
       </div>
       <span>
         catraders · <span style={{ color: chat.text, fontFamily: "monospace" }}>{tool}</span>
@@ -105,6 +113,54 @@ type Props = {
   readonly style?: React.CSSProperties;
 };
 
+const SearchResponse = () => {
+  const frame = useCurrentFrame();
+  return <>
+          {frame >= 60 ? <ToolChip tool="search_products" start={60} doneAt={85} /> : null}
+          {frame >= 92 ? (
+            <div style={{ fontSize: 25, lineHeight: 1.4 }}>
+              <AnswerLine start={92}>We carry two, and both are in stock:</AnswerLine>
+              <AnswerLine start={104}>
+                • <b>Castrol EDGE 5W-30</b>, 3 × 5 L (API SP, dexos1 Gen 3)
+              </AnswerLine>
+              <AnswerLine start={116}>
+                • <b>Castrol EDGE Euro 5W-30</b>, 3 × 5 L (ACEA A3/B4, VW 502/505)
+              </AnswerLine>
+            </div>
+          ) : null}
+  </>;
+};
+
+const Conversation = () => {
+  const frame = useCurrentFrame();
+  return (
+        <div
+          style={{
+            position: "absolute",
+            left: 40,
+            top: 32,
+            width: 760,
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+            color: chat.text,
+            fontFamily: bodyFont,
+          }}
+        >
+          <UserBubble>{typed("Which Castrol EDGE 5W-30 oils do we carry? Are they in stock?", frame, 8, 50)}</UserBubble>
+          <SearchResponse />
+          {frame >= 165 ? <UserBubble>{typed("Mark the Euro one out of stock.", frame, 168, 195)}</UserBubble> : null}
+          {frame >= 205 ? <ToolChip tool="set_stock" start={205} doneAt={230} /> : null}
+          {frame >= 238 ? (
+            <div style={{ fontSize: 25, lineHeight: 1.4 }}>
+              <AnswerLine start={238}>Done. Castrol EDGE Euro 5W-30 now shows “Out of stock” on the website.</AnswerLine>
+              <AnswerLine start={252}>Customers can still view it, but can’t add it to a quote.</AnswerLine>
+            </div>
+          ) : null}
+        </div>
+  );
+};
+
 const McpSceneInner: React.FC<Props> = ({ headline, style }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -128,57 +184,14 @@ const McpSceneInner: React.FC<Props> = ({ headline, style }) => {
         Track quote requests
       </Bullet>
 
-      <BrowserFrame
+      <AnimatedBrowserFrame
         url="Claude  ·  catraders connector"
         width={W}
         height={H}
-        style={{
-          left: 600,
-          top: 170,
-          opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
-          translate: interpolate(frame, [0, 25], ["80px 0px", "0px 0px"], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-            easing: Easing.bezier(0.16, 1, 0.3, 1),
-          }),
-        }}
+        top={170}
       >
         <AbsoluteFill style={{ backgroundColor: chat.bg }} />
-        <div
-          style={{
-            position: "absolute",
-            left: 40,
-            top: 32,
-            width: 760,
-            display: "flex",
-            flexDirection: "column",
-            gap: 20,
-            color: chat.text,
-            fontFamily: bodyFont,
-          }}
-        >
-          <UserBubble>{typed("Which Castrol EDGE 5W-30 oils do we carry? Are they in stock?", frame, 8, 50)}</UserBubble>
-          {frame >= 60 ? <ToolChip tool="search_products" start={60} doneAt={85} /> : null}
-          {frame >= 92 ? (
-            <div style={{ fontSize: 25, lineHeight: 1.4 }}>
-              <AnswerLine start={92}>We carry two, and both are in stock:</AnswerLine>
-              <AnswerLine start={104}>
-                • <b>Castrol EDGE 5W-30</b>, 3 × 5 L (API SP, dexos1 Gen 3)
-              </AnswerLine>
-              <AnswerLine start={116}>
-                • <b>Castrol EDGE Euro 5W-30</b>, 3 × 5 L (ACEA A3/B4, VW 502/505)
-              </AnswerLine>
-            </div>
-          ) : null}
-          {frame >= 165 ? <UserBubble>{typed("Mark the Euro one out of stock.", frame, 168, 195)}</UserBubble> : null}
-          {frame >= 205 ? <ToolChip tool="set_stock" start={205} doneAt={230} /> : null}
-          {frame >= 238 ? (
-            <div style={{ fontSize: 25, lineHeight: 1.4 }}>
-              <AnswerLine start={238}>Done. Castrol EDGE Euro 5W-30 now shows “Out of stock” on the website.</AnswerLine>
-              <AnswerLine start={252}>Customers can still view it, but can’t add it to a quote.</AnswerLine>
-            </div>
-          ) : null}
-        </div>
+        <Conversation />
 
         <div
           style={{
@@ -229,7 +242,7 @@ const McpSceneInner: React.FC<Props> = ({ headline, style }) => {
             </Shot>
           </div>
         </div>
-      </BrowserFrame>
+      </AnimatedBrowserFrame>
     </AbsoluteFill>
   );
 };

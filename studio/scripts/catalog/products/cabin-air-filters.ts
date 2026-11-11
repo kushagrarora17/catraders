@@ -5,7 +5,7 @@ const pack = {'pack-size': '12 Pack'}
 // Fitment/media notes come from retailer and cross-reference listings for the matching
 // CF-series part numbers (e.g. finditparts.com, canadiantire.ca, knfilters.com cross-reference).
 // Lists are typical applications only; confirm against the vehicle before ordering.
-export const products: ProductInput[] = [
+export const cabinAirFilters: ProductInput[] = [
   {
     title: 'Cabin Air Filter 10329',
     sku: '10329',

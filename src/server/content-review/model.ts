@@ -38,6 +38,17 @@ type ResponseBody = {
   output: {type: string; content?: {type: string; text?: string; annotations?: {type: string; url?: string}[]}[]}[];
 };
 
+function retryDelay(response: Response) {
+  return Number(response.headers.get("retry-after-ms")) || Number(response.headers.get("retry-after")) * 1000 || 60_000;
+}
+
+const invalidRetryDelay = (delay: number) => !Number.isFinite(delay) || delay < 0 || delay > 90_000;
+
+async function responseError(response: Response) {
+  const error = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+  return new Error(`Foundry request failed (${response.status}): ${error?.error?.message ?? "Unknown error"}`);
+}
+
 async function respond(body: Record<string, unknown>): Promise<ResponseBody> {
   const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
   if (!endpoint) throw new Error("Foundry endpoint is not configured");
@@ -49,17 +60,13 @@ async function respond(body: Record<string, unknown>): Promise<ResponseBody> {
   });
   let response = await request();
   for (let retry = 0; response.status === 429 && retry < 2; retry++) {
-    const retryMs = Number(response.headers.get("retry-after-ms")) ||
-      Number(response.headers.get("retry-after")) * 1000 || 60_000;
-    if (!Number.isFinite(retryMs) || retryMs < 0 || retryMs > 90_000) break;
+    const retryMs = retryDelay(response);
+    if (invalidRetryDelay(retryMs)) break;
     await response.body?.cancel();
     await new Promise(resolve => setTimeout(resolve, Math.max(60_000, retryMs)));
     response = await request();
   }
-  if (!response.ok) {
-    const error = await response.json().catch(() => null) as { error?: { message?: string } } | null;
-    throw new Error(`Foundry request failed (${response.status}): ${error?.error?.message ?? "Unknown error"}`);
-  }
+  if (!response.ok) throw await responseError(response);
   const result = await response.json() as ResponseBody;
   if (result.status !== "completed") throw new Error("Foundry returned an incomplete review");
   return result;

@@ -1,5 +1,5 @@
 import { expect, test } from "../test";
-import { resetContent } from "../helpers";
+import { expectVerificationRequired, resetContent, retryableSubmission } from "../helpers";
 
 test.describe("landing page", () => {
   test.beforeEach(async ({ request }) => resetContent(request));
@@ -103,6 +103,12 @@ test.describe("inquiry form", () => {
     await page.getByLabel("Message / Order Details").fill("Two pallets of 50/50 coolant.");
   };
 
+  const submitInquiry = async (page: import("@playwright/test").Page) => {
+    await page.goto("/#contact");
+    await fill(page);
+    await page.getByRole("button", { name: /Send Inquiry/ }).click();
+  };
+
   test("shows validation errors and focuses the first invalid field", async ({ page }) => {
     await page.goto("/#contact");
     await page.getByRole("button", { name: /Send Inquiry/ }).click();
@@ -112,9 +118,7 @@ test.describe("inquiry form", () => {
   });
 
   test("submits, shows the reference, and can start again", async ({ page }) => {
-    await page.goto("/#contact");
-    await fill(page);
-    await page.getByRole("button", { name: /Send Inquiry/ }).click();
+    await submitInquiry(page);
 
     const status = page.getByRole("status");
     await expect(status).toContainText("Thanks — inquiry received");
@@ -136,9 +140,7 @@ test.describe("inquiry form", () => {
         },
       }),
     );
-    await page.goto("/#contact");
-    await fill(page);
-    await page.getByRole("button", { name: /Send Inquiry/ }).click();
+    await submitInquiry(page);
     await expect(page.locator("form").getByRole("alert")).toHaveText("Please correct the highlighted fields.");
     await expect(page.getByText("Enter a valid phone number")).toBeVisible();
     await expect(page.getByLabel("Phone Number")).toBeFocused();
@@ -170,30 +172,19 @@ test.describe("inquiry form", () => {
 
   test("reports network failures", async ({ page }) => {
     await page.route("/api/inquiries", (route) => route.abort());
-    await page.goto("/#contact");
-    await fill(page);
-    await page.getByRole("button", { name: /Send Inquiry/ }).click();
+    await submitInquiry(page);
     await expect(page.locator("form").getByRole("alert")).toContainText("Network error");
   });
 
   for (const status of [429, 503]) test(`requires verification and preserves entered details and the key when retrying after ${status}`, async ({ page }) => {
-    const keys: (string | undefined)[] = [];
-    await page.route("/api/inquiries", async (route) => {
-      keys.push(route.request().headers()["idempotency-key"]);
-      if (keys.length === 1) {
-        await route.fulfill({ status, headers: { "Retry-After": "1" }, json: { success: false, error: status === 429 ? "RATE_LIMITED" : "UNAVAILABLE", message: "Please retry." } });
-      } else {
-        await route.continue();
-      }
-    });
+    const keys = await retryableSubmission(page, "/api/inquiries", status);
     await page.goto("/#contact");
     await fill(page);
     const token = page.locator('[name="cf-turnstile-response"]');
     await expect(token).toHaveValue("e2e-inquiry");
     await token.evaluate((input: HTMLInputElement) => { input.value = ""; });
     const submit = page.getByRole("button", { name: /Send Inquiry/ });
-    await submit.click();
-    await expect(page.locator("form").getByRole("alert")).toHaveText("Please complete the verification before submitting.");
+    await expectVerificationRequired(page, submit);
     expect(keys).toHaveLength(0);
 
     await token.evaluate((input: HTMLInputElement) => { input.value = "e2e-inquiry"; });
