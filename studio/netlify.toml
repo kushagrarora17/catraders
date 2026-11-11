@@ -4,7 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "24"
-  BUN_VERSION = "1.4.2"
+  BUN_VERSION = "1.4.4"
 
 [[redirects]]
   from = "/*"
