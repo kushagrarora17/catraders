@@ -11,6 +11,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "bun --env-file=.env.local test",
     "test:e2e": "rm -rf coverage/e2e-raw && playwright test && bun e2e/coverage-report.ts",
+    "probe:lightpanda": "bun --no-env-file scripts/probe-lightpanda.ts",
     "db:up": "sh scripts/db-up.sh",
     "db:down": "${CONTAINER_CLI:-podman} stop catraders-postgres",
     "db:generate": "drizzle-kit generate",
