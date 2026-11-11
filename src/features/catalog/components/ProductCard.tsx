@@ -13,7 +13,7 @@ export function ProductCard({ product, eager = false }: { product: Product; eage
         {product.image?.asset ? (
           <Image
             src={urlFor(product.image.asset).width(800).height(800).fit("max").url()}
-            alt={product.image.alt ?? product.title}
+            alt={product.title}
             fill
             loading={eager ? "eager" : "lazy"}
             sizes="(min-width: 1280px) 300px, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
