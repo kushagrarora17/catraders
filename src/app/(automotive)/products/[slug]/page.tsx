@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps<"/products/[slug]">
     alternates: { canonical: `/products/${product.slug}` },
     openGraph: {
       title, description, url: `/products/${product.slug}`,
-      ...(product.images?.[0]?.asset ? { images: [{ url: urlFor(product.images[0]).width(1200).url(), alt: product.images[0].alt ?? product.title }] } : {}),
+      ...(product.images?.[0]?.asset ? { images: [{ url: urlFor(product.images[0]).width(1200).url(), alt: product.title }] } : {}),
     },
   };
 }
@@ -75,7 +75,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
                 <div key={image._key} className="relative aspect-square w-full rounded-xs bg-white">
                   <Image
                     src={urlFor(image.asset).width(1200).height(1200).fit("max").url()}
-                    alt={image.alt ?? product.title}
+                    alt={product.title}
                     loading={index === 0 ? "eager" : "lazy"}
                     fill
                     sizes="(min-width: 1280px) 584px, (min-width: 768px) 50vw, 100vw"
