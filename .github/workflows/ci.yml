@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, ready_for_review]
+    types: [opened, reopened, synchronize]
   # workflow_dispatch resolves the ref when the run is created; a mismatch
   # has to fail this workflow so deploy will not release a different SHA.
   workflow_dispatch:

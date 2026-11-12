@@ -26,7 +26,7 @@ function productFallbackText(product: Product) {
 const fallbackDescription = (product: Product) => (product.descriptionText?.trim() || productFallbackText(product)).replace(/\s+/g, " ").slice(0, 180);
 const metadataDescription = (product: Product) => product.seo?.description?.trim() || fallbackDescription(product);
 const metadataTitle = (product: Product) => product.seo?.title?.trim() || product.title;
-const imageAlt = (image: ProductImages[number], title: string) => image.alt ?? title;
+const imageAlt = (image: ProductImages[number], title: string) => image.alt?.trim() ? image.alt : title;
 function metadataImages(product: Product) {
   const image = product.images?.[0];
   if (!image?.asset) return {};
@@ -91,7 +91,7 @@ function ProductGallery({images, title}: {images: ProductImages; title: string})
                 <div key={image._key} className="relative aspect-square w-full rounded-xs bg-white">
                   <Image
                     src={urlFor(image.asset).width(1200).height(1200).fit("max").url()}
-                    alt={image.alt ?? title}
+                    alt={imageAlt(image, title)}
                     loading={index === 0 ? "eager" : "lazy"}
                     fill
                     sizes="(min-width: 1280px) 584px, (min-width: 768px) 50vw, 100vw"

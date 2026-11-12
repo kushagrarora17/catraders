@@ -24,7 +24,7 @@ export function ProductCard({ product, eager = false }: { product: Product; eage
   );
 }
 
-const imageAlt = (image: NonNullable<Product["image"]>, title: string) => image.alt ?? title;
+const imageAlt = (image: NonNullable<Product["image"]>, title: string) => image.alt?.trim() ? image.alt : title;
 
 function CardImage({product, eager}: {product: Product; eager: boolean}) {
   return (

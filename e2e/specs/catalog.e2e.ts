@@ -150,6 +150,38 @@ test.describe("product listing", () => {
   });
 });
 
+test.describe("product image alt text", () => {
+  for (const [label, alt] of [
+    ["missing", undefined],
+    ["empty", ""],
+    ["whitespace", " \t "],
+    ["custom", " Castrol EDGE bottle "],
+  ] as const) {
+    test(`handles ${label} alt text on cards, product images and metadata`, async ({ page, request }) => {
+      const product = await mockDoc(request, "prod-castrol-edge-5w30-4l");
+      const expectedAlt = alt?.trim() ? alt : product.title;
+      try {
+        const response = await request.post(`${MOCK_URL}/v2026-09-01/data/mutate/production`, {
+          data: { mutations: [{ patch: { id: product._id, set: {
+            images: [{ ...product.images[0], alt }],
+          } } }] },
+        });
+        expect(response.ok()).toBe(true);
+        await sendWebhook(request, JSON.stringify({ _type: "product" }));
+
+        await page.goto("/products");
+        const card = page.locator("article").filter({ hasText: product.title });
+        await expect(card.getByRole("img")).toHaveAttribute("alt", expectedAlt);
+        await card.getByRole("link", { name: product.title, exact: true }).click();
+        await expect(page.locator("article img")).toHaveAttribute("alt", expectedAlt);
+        await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute("content", expectedAlt);
+      } finally {
+        await resetContent(request);
+      }
+    });
+  }
+});
+
 test.describe("product page", () => {
   test("shows details and adds to the quote list", async ({ page }) => {
     await page.goto("/products");
