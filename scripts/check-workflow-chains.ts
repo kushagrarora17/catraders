@@ -6,11 +6,11 @@ type Run = { path: string; event: string; upstreamEvent?: string };
 
 // Only infer event restrictions from conjunctions; unknown expressions remain possible.
 function possible(condition: string | undefined, run: Run): boolean {
-  if (!condition || condition.includes("||")) return true;
-  for (const [, field, expected] of condition.matchAll(/github\.(event_name|event\.workflow_run\.event)\s*==\s*['"]([^'"]+)['"]/g)) {
-    if ((field === "event_name" ? run.event : run.upstreamEvent) !== expected) return false;
-  }
-  return true;
+  if (!condition) return true;
+  if (condition.includes("||")) return true;
+  const restrictions = [...condition.matchAll(/github\.(event_name|event\.workflow_run\.event)\s*==\s*['"]([^'"]+)['"]/g)];
+  return restrictions.every(([, field, expected]) =>
+    (field === "event_name" ? run.event : run.upstreamEvent) === expected);
 }
 
 type Context = {
@@ -35,32 +35,53 @@ function resolveTarget(target: string, context: Context): string | undefined {
   return path;
 }
 
-async function dispatches(job: Job, context: Context): Promise<Run[]> {
+function dispatchTargets(code: string, context: Context): Run[] {
   const targets: Run[] = [];
-  for (const step of job.steps ?? []) {
-    const code = await sourceCode(step.run ?? "", context.scriptFiles);
-    for (const [, target] of code.matchAll(/\bgh\s+workflow\s+run\s+([^\s;|]+)/g)) {
-      const path = resolveTarget(target, context);
-      if (path) targets.push({ path, event: "workflow_dispatch" });
-    }
+  for (const [, target] of code.matchAll(/\bgh\s+workflow\s+run\s+([^\s;|]+)/g)) {
+    const path = resolveTarget(target, context);
+    if (path) targets.push({ path, event: "workflow_dispatch" });
   }
   return targets;
 }
 
+async function dispatches(job: Job, context: Context): Promise<Run[]> {
+  const targets: Run[] = [];
+  for (const step of job.steps ?? []) {
+    const code = await sourceCode(step.run ?? "", context.scriptFiles);
+    targets.push(...dispatchTargets(code, context));
+  }
+  return targets;
+}
+
+function followsWorkflow(candidate: Workflow, name: string) {
+  return (candidate.on?.workflow_run?.workflows ?? []).includes(name);
+}
+
+function possibleJobs(candidate: Workflow, run: Run) {
+  return Object.values(candidate.jobs ?? {}).some(job => possible(job.if, run));
+}
+
+function workflowName(workflow: Workflow, path: string) {
+  return workflow.name ?? basename(path);
+}
+
 function triggeredRuns(run: Run, context: Context): Run[] {
-  const workflow = context.workflows.get(run.path)!;
+  const name = workflowName(context.workflows.get(run.path)!, run.path);
   const result: Run[] = [];
   for (const [path, candidate] of context.workflows) {
     const following = { path, event: "workflow_run", upstreamEvent: run.event };
-    if ((candidate.on?.workflow_run?.workflows ?? []).includes(workflow.name ?? basename(run.path)) &&
-        Object.values(candidate.jobs ?? {}).some(job => possible(job.if, following))) result.push(following);
+    if (followsWorkflow(candidate, name) && possibleJobs(candidate, following)) result.push(following);
   }
   return result;
 }
 
+function workflowJobs(context: Context, run: Run) {
+  return Object.values(context.workflows.get(run.path)?.jobs ?? {});
+}
+
 async function nextRuns(run: Run, context: Context): Promise<Run[]> {
   const result = triggeredRuns(run, context);
-  for (const job of Object.values(context.workflows.get(run.path)?.jobs ?? {})) {
+  for (const job of workflowJobs(context, run)) {
     if (possible(job.if, run)) result.push(...await dispatches(job, context));
   }
   return result;

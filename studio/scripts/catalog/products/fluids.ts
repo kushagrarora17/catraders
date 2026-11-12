@@ -3,7 +3,7 @@ import type {ProductInput} from '../types'
 const coolantNote =
   'Colour is only a typical indicator of coolant chemistry; always match the coolant to the vehicle manufacturer requirement before topping up or mixing.'
 
-export const products: ProductInput[] = [
+export const fluids: ProductInput[] = [
   // ---- Coolant: 50/50 premix, 6 pack (colour -> technology is "typical" only) ----
   // source: https://www.prestoneuk.com/blog/different-coolant-types-explained/
   {

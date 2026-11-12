@@ -1,7 +1,7 @@
 import type React from "react";
 import { AbsoluteFill, Easing, Interactive, interpolate, Sequence, useCurrentFrame, useVideoConfig, type InteractivitySchema } from "remotion";
 import { Backdrop } from "../components/Backdrop";
-import { BrowserFrame } from "../components/BrowserFrame";
+import { AnimatedBrowserFrame } from "../components/BrowserFrame";
 import { Cursor } from "../components/Cursor";
 import { Highlight } from "../components/Highlight";
 import { Shot } from "../components/Shot";
@@ -9,11 +9,12 @@ import { Bullet, Heading } from "../components/SideText";
 import { Toast } from "../components/Toast";
 import { bodyFont, colors, SITE_URL } from "../brand";
 
+import { typed } from "../animation";
+
 const W = 1240;
 const H = 697;
 
-const typed = (text: string, frame: number, start: number, end: number) =>
-  text.slice(0, Math.round(interpolate(frame, [start, end], [0, text.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })));
+
 
 const FieldText: React.FC<{ x: number; y: number; children: string }> = ({ x, y, children }) => (
   <div style={{ position: "absolute", left: x + 12, top: y + 7, fontFamily: bodyFont, fontSize: 17, color: colors.offWhite }}>{children}</div>
@@ -47,20 +48,11 @@ const CustomerSceneInner: React.FC<Props> = ({ headline, style }) => {
         Request a quote in one click
       </Bullet>
 
-      <BrowserFrame
+      <AnimatedBrowserFrame
         url={SITE_URL}
         width={W}
         height={H}
-        style={{
-          left: 600,
-          top: 170,
-          opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
-          translate: interpolate(frame, [0, 25], ["80px 0px", "0px 0px"], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-            easing: Easing.bezier(0.16, 1, 0.3, 1),
-          }),
-        }}
+        top={170}
       >
         <Sequence name="Home" durationInFrames={110} premountFor={fps}>
           <Shot
@@ -222,7 +214,7 @@ const CustomerSceneInner: React.FC<Props> = ({ headline, style }) => {
             }}
           />
         </Sequence>
-      </BrowserFrame>
+      </AnimatedBrowserFrame>
     </AbsoluteFill>
   );
 };

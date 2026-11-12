@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 import posthog from "posthog-js";
 import { trackLead } from "@/lib/analytics";
 
+const analyticsEnabled = () => process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN && !posthog.has_opted_out_capturing();
+
 export function useFormAnalytics(formType: "inquiry" | "quote") {
   const formRef = useRef<HTMLFormElement>(null);
   const viewed = useRef(false);
@@ -47,7 +49,7 @@ export function useFormAnalytics(formType: "inquiry" | "quote") {
 
   function headers(): Record<string, string> {
     try {
-      if (!process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN || posthog.has_opted_out_capturing()) return {};
+      if (!analyticsEnabled()) return {};
       const distinctId = posthog.get_distinct_id();
       if (!distinctId) return {};
       return {

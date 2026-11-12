@@ -23,6 +23,11 @@ type NodeProps = {
 
 const Node: React.FC<NodeProps> = ({ x, y, title, detail, icon, start, highlight }) => {
   const frame = useCurrentFrame();
+  const theme = highlight ? {
+    background: colors.gold, border: colors.goldLight, title: colors.navyDark, detail: colors.navy,
+  } : {
+    background: colors.navy, border: "rgba(240,165,0,0.45)", title: "#ffffff", detail: colors.slateLight,
+  };
   return (
     <div
       style={{
@@ -39,8 +44,8 @@ const Node: React.FC<NodeProps> = ({ x, y, title, detail, icon, start, highlight
         padding: "0 30px",
         boxSizing: "border-box",
         borderRadius: 16,
-        backgroundColor: highlight ? colors.gold : colors.navy,
-        border: `2px solid ${highlight ? colors.goldLight : "rgba(240,165,0,0.45)"}`,
+        backgroundColor: theme.background,
+        border: `2px solid ${theme.border}`,
         boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
         opacity: interpolate(frame, [start, start + 12], [0, 1], clamp),
         scale: interpolate(frame, [start, start + 18], [0.7, 1], {
@@ -61,8 +66,8 @@ const Node: React.FC<NodeProps> = ({ x, y, title, detail, icon, start, highlight
         )}
       </svg>
       <div>
-        <div style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 44, lineHeight: 1, color: highlight ? colors.navyDark : "#ffffff" }}>{title}</div>
-        <div style={{ fontFamily: bodyFont, fontWeight: 500, fontSize: 24, marginTop: 8, color: highlight ? colors.navy : colors.slateLight }}>{detail}</div>
+        <div style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 44, lineHeight: 1, color: theme.title }}>{title}</div>
+        <div style={{ fontFamily: bodyFont, fontWeight: 500, fontSize: 24, marginTop: 8, color: theme.detail }}>{detail}</div>
       </div>
     </div>
   );

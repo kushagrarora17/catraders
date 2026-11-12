@@ -14,21 +14,26 @@ declare global {
   }
 }
 
+function mountTurnstile(container: HTMLElement | null, siteKey: string | undefined, action: string, onError: (error: boolean) => void) {
+  if (!siteKey || !container || !window.turnstile) return;
+  const api = window.turnstile;
+  const id = api.render(container, {
+    sitekey: siteKey,
+    action,
+    "error-callback": () => onError(true),
+    callback: () => onError(false),
+  });
+  return () => api.remove(id);
+}
+
 export function Turnstile({ siteKey, action }: { siteKey?: string; action: string }) {
   const container = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!ready || !siteKey || !container.current || !window.turnstile) return;
-    const api = window.turnstile;
-    const id = api.render(container.current, {
-      sitekey: siteKey,
-      action,
-      "error-callback": () => setError(true),
-      callback: () => setError(false),
-    });
-    return () => api.remove(id);
+    if (!ready) return;
+    return mountTurnstile(container.current, siteKey, action, setError);
   }, [ready, siteKey, action]);
 
   if (!siteKey) return null;

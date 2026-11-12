@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { Pool } from "pg";
-import type { APIRequestContext } from "@playwright/test";
+import { expect, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 import { encodeSignatureHeader, SIGNATURE_HEADER_NAME } from "@sanity/webhook";
 import { MOCK_URL, MCP_TEST_OPERATOR_EMAIL, SITE_URL, WEBHOOK_SECRET } from "./env";
 
@@ -14,6 +14,33 @@ export const freshIp = () => `10.${octet()}.${octet()}.${octet()}`;
 /** Posts a body exactly as given (Playwright would JSON-encode a string passed as `data`). */
 export function postRaw(request: APIRequestContext, url: string, body: string, headers: Record<string, string> = {}) {
   return request.post(url, { headers: { "content-type": "application/json", ...headers }, data: Buffer.from(body) });
+}
+
+export async function retryableSubmission(page: Page, path: string, status: number) {
+  const keys: (string | undefined)[] = [];
+  await page.route(path, async (route) => {
+    keys.push(route.request().headers()["idempotency-key"]);
+    if (keys.length === 1) {
+      await route.fulfill({ status, headers: { "Retry-After": "1" }, json: {
+        success: false, error: status === 429 ? "RATE_LIMITED" : "UNAVAILABLE", message: "Please retry.",
+      } });
+    } else {
+      await route.continue();
+    }
+  });
+  return keys;
+}
+
+export async function expectVerificationRequired(page: Page, submit: Locator) {
+  await submit.click();
+  await expect(page.locator("form").getByRole("alert")).toHaveText("Please complete the verification before submitting.");
+}
+
+export async function expectCreatedReference(response: import("@playwright/test").APIResponse, pattern: RegExp) {
+  expect(response.status()).toBe(201);
+  const { referenceNumber } = await response.json();
+  expect(referenceNumber).toMatch(pattern);
+  return referenceNumber as string;
 }
 
 /** Sends a correctly signed Sanity webhook. */

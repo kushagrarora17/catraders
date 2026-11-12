@@ -52,17 +52,22 @@ async function runQuery(query: string, params: Record<string, unknown>, perspect
   return value.get();
 }
 
-async function handleQuery(req: Request, url: URL) {
-  let query: string;
-  let params: Record<string, unknown> = {};
+async function queryInput(req: Request, url: URL) {
   if (req.method === "POST") {
     const body = (await req.json()) as { query: string; params?: Record<string, unknown> };
-    query = body.query;
-    params = body.params ?? {};
-  } else {
-    query = url.searchParams.get("query") ?? "";
-    for (const [key, raw] of url.searchParams) if (key.startsWith("$")) params[key.slice(1)] = JSON.parse(raw);
+    return { query: body.query, params: body.params ?? {} };
   }
+  return { query: url.searchParams.get("query") ?? "", params: queryParams(url) };
+}
+
+function queryParams(url: URL) {
+  const params: Record<string, unknown> = {};
+  for (const [key, raw] of url.searchParams) if (key.startsWith("$")) params[key.slice(1)] = JSON.parse(raw);
+  return params;
+}
+
+async function handleQuery(req: Request, url: URL) {
+  const { query, params } = await queryInput(req, url);
   const perspective = url.searchParams.get("perspective") ?? "raw";
   try {
     return json({ result: await runQuery(query, params, perspective), ms: 1, query });
@@ -110,25 +115,47 @@ function unsetPath(doc: Record<string, unknown>, path: string) {
   if (parent) delete parent[parts.at(-1)!];
 }
 
-function applyPatch(doc: Doc, patch: Patch) {
-  for (const [path, value] of Object.entries(patch.setIfMissing ?? {})) {
+function insertItems(doc: Doc, insert: NonNullable<Patch["insert"]>) {
+  const { items, ...where } = insert;
+  const [position, selector] = Object.entries(where)[0] as [string, string];
+  const match = selector.match(/^(.+)\[(-?\d+)\]$/);
+  if (!match) throw new Error(`Unsupported insert selector ${selector}`);
+  const list = [...((getPath(doc, match[1]) as unknown[] | undefined) ?? [])];
+  let index = Number(match[2]);
+  if (index < 0) index += list.length;
+  spliceItems(list, position, index, items);
+  setPath(doc, match[1], list);
+}
+
+function spliceItems(list: unknown[], position: string, index: number, items: unknown[]) {
+  const at = position === "before" ? index : index + 1;
+  list.splice(position === "replace" ? index : Math.max(0, at), position === "replace" ? 1 : 0, ...items);
+}
+
+function setMissingFields(doc: Doc, fields: Patch["setIfMissing"]) {
+  for (const [path, value] of Object.entries(fields ?? {})) {
     if (getPath(doc, path) === undefined) setPath(doc, path, structuredClone(value));
   }
-  for (const [path, value] of Object.entries(patch.set ?? {})) setPath(doc, path, structuredClone(value));
-  for (const path of patch.unset ?? []) unsetPath(doc, path);
-  for (const [path, by] of Object.entries(patch.inc ?? {})) setPath(doc, path, Number(getPath(doc, path) ?? 0) + by);
-  if (patch.insert) {
-    const { items, ...where } = patch.insert;
-    const [position, selector] = Object.entries(where)[0] as [string, string];
-    const match = selector.match(/^(.+)\[(-?\d+)\]$/);
-    if (!match) throw new Error(`Unsupported insert selector ${selector}`);
-    const list = [...((getPath(doc, match[1]) as unknown[] | undefined) ?? [])];
-    let index = Number(match[2]);
-    if (index < 0) index += list.length;
-    const at = position === "before" ? index : index + 1;
-    list.splice(position === "replace" ? index : Math.max(0, at), position === "replace" ? 1 : 0, ...items);
-    setPath(doc, match[1], list);
-  }
+}
+
+function incrementFields(doc: Doc, fields: Patch["inc"]) {
+  for (const [path, by] of Object.entries(fields ?? {})) setPath(doc, path, Number(getPath(doc, path) ?? 0) + by);
+}
+
+function applyPatch(doc: Doc, patch: Patch) {
+  setMissingFields(doc, patch.setIfMissing);
+  setFields(doc, patch.set);
+  unsetFields(doc, patch.unset);
+  incrementFields(doc, patch.inc);
+  if (patch.insert) insertItems(doc, patch.insert);
+}
+
+function setFields(doc: Doc, fields: Patch["set"]) {
+  for (const [path, value] of Object.entries(fields ?? {})) setPath(doc, path, structuredClone(value));
+}
+
+function unsetFields(doc: Doc, fields: Patch["unset"]) {
+  for (const path of fields ?? []) unsetPath(doc, path);
 }
 
 function stamp(doc: Doc, created?: string): Doc {
@@ -136,36 +163,52 @@ function stamp(doc: Doc, created?: string): Doc {
   return { ...doc, _createdAt: created ?? (doc._createdAt as string) ?? now, _updatedAt: now, _rev: `rev${++rev}` };
 }
 
+function createDocument(next: Map<string, Doc>, fields: Doc) {
+  const doc = { ...fields, _id: fields._id ?? randomUUID() };
+  if (next.has(doc._id)) throw new Error(`Document by ID "${doc._id}" already exists`);
+  next.set(doc._id, stamp(doc));
+  return { id: doc._id, operation: "create", document: next.get(doc._id) };
+}
+
+function replaceDocument(next: Map<string, Doc>, doc: Doc) {
+  next.set(doc._id, stamp(doc, next.get(doc._id)?._createdAt as string | undefined));
+  return { id: doc._id, operation: "createOrReplace", document: next.get(doc._id) };
+}
+
+function createIfNotExists(next: Map<string, Doc>, doc: Doc) {
+  if (!next.has(doc._id)) next.set(doc._id, stamp(doc));
+  return { id: doc._id, operation: "create", document: next.get(doc._id) };
+}
+
+function patchDocument(next: Map<string, Doc>, patch: Patch) {
+  const doc = next.get(patch.id);
+  if (!doc) throw new Error(`Cannot modify document "${patch.id}" because it does not exist`);
+  applyPatch(doc, patch);
+  next.set(doc._id, stamp(doc));
+  return { id: doc._id, operation: "update", document: next.get(doc._id) };
+}
+
+function createMutation(next: Map<string, Doc>, mutation: Exclude<Mutation, { patch: Patch } | { delete: { id: string } }>) {
+  if ("create" in mutation) return createDocument(next, mutation.create);
+  if ("createOrReplace" in mutation) return replaceDocument(next, mutation.createOrReplace);
+  return createIfNotExists(next, mutation.createIfNotExists);
+}
+
+function applyMutation(next: Map<string, Doc>, mutation: Mutation) {
+  if ("delete" in mutation) {
+    next.delete(mutation.delete.id);
+    return { id: mutation.delete.id, operation: "delete" };
+  }
+  if ("patch" in mutation) return patchDocument(next, mutation.patch);
+  return createMutation(next, mutation);
+}
+
 async function handleMutate(req: Request) {
   const { mutations } = (await req.json()) as { mutations: Mutation[] };
   const next = new Map([...docs].map(([id, doc]) => [id, structuredClone(doc)]));
-  const results: { id: string; operation: string; document?: Doc }[] = [];
+  let results;
   try {
-    for (const mutation of mutations) {
-      if ("create" in mutation) {
-        const doc = { ...mutation.create, _id: mutation.create._id ?? randomUUID() };
-        if (next.has(doc._id)) throw new Error(`Document by ID "${doc._id}" already exists`);
-        next.set(doc._id, stamp(doc));
-        results.push({ id: doc._id, operation: "create", document: next.get(doc._id) });
-      } else if ("createOrReplace" in mutation) {
-        const doc = mutation.createOrReplace;
-        next.set(doc._id, stamp(doc, next.get(doc._id)?._createdAt as string | undefined));
-        results.push({ id: doc._id, operation: "createOrReplace", document: next.get(doc._id) });
-      } else if ("createIfNotExists" in mutation) {
-        const doc = mutation.createIfNotExists;
-        if (!next.has(doc._id)) next.set(doc._id, stamp(doc));
-        results.push({ id: doc._id, operation: "create", document: next.get(doc._id) });
-      } else if ("delete" in mutation) {
-        next.delete(mutation.delete.id);
-        results.push({ id: mutation.delete.id, operation: "delete" });
-      } else {
-        const doc = next.get(mutation.patch.id);
-        if (!doc) throw new Error(`Cannot modify document "${mutation.patch.id}" because it does not exist`);
-        applyPatch(doc, mutation.patch);
-        next.set(doc._id, stamp(doc));
-        results.push({ id: doc._id, operation: "update", document: next.get(doc._id) });
-      }
-    }
+    results = mutations.map((mutation) => applyMutation(next, mutation));
   } catch (error) {
     return json({ error: { description: String((error as Error).message), type: "mutationError" } }, 409);
   }
@@ -201,16 +244,25 @@ async function handleUpload(req: Request, url: URL) {
 
 // --- Azure Communication Services email --------------------------------------------------------
 
-async function handleEmailSend(req: Request) {
-  const body = (await req.json()) as { content?: { subject?: string } };
-  const subject = body.content?.subject ?? "";
+function recordEmailFailure(subject: string) {
+  const used = emailFailureCounts.get(subject) ?? 0;
+  if (used >= emailFailuresPerMessage) return false;
+  emailFailureCounts.set(subject, used + 1);
+  return true;
+}
+
+function rejectEmail(subject: string) {
   // 400 is not in the Azure SDK's retry list, so each rejection is one attempt by the app.
   if (emailFailuresPerMessage > 0 && !subject.startsWith("Email failed for ")) {
-    const used = emailFailureCounts.get(subject) ?? 0;
-    if (used < emailFailuresPerMessage) {
-      emailFailureCounts.set(subject, used + 1);
-      return json({ error: { code: "ForcedFailure", message: "forced failure" } }, 400);
-    }
+    return recordEmailFailure(subject);
+  }
+  return false;
+}
+
+async function handleEmailSend(req: Request) {
+  const body = (await req.json()) as { content?: { subject?: string } };
+  if (rejectEmail(body.content?.subject ?? "")) {
+    return json({ error: { code: "ForcedFailure", message: "forced failure" } }, 400);
   }
   emails.push(body);
   const id = randomUUID();
@@ -222,37 +274,55 @@ async function handleEmailSend(req: Request) {
 
 // --- router ------------------------------------------------------------------------------------
 
+async function setEmailFailures(req: Request) {
+  const body = (await req.json()) as { perMessage?: unknown };
+  emailFailuresPerMessage = typeof body.perMessage === "number" && body.perMessage > 0 ? body.perMessage : 0;
+  emailFailureCounts.clear();
+  return json({ perMessage: emailFailuresPerMessage });
+}
+
+async function setOperatorLookupFailure(req: Request) {
+  operatorLookupFailure = !!((await req.json()) as { enabled?: boolean }).enabled;
+  return json({ enabled: operatorLookupFailure });
+}
+
+function handleDocumentRoute(m: RegExpMatchArray) {
+  if (operatorLookupFailure && m[1] === "operators") return json({ error: "temporarily unavailable" }, 503);
+  return handleDocs(m[2]);
+}
+
+type RouteHandler = (req: Request, url: URL, match: RegExpMatchArray) => Response | Promise<Response>;
+const literalRoutes = new Map<string, (req: Request) => Response | Promise<Response>>([
+  ["POST /__reset", () => { reset(); return json({ ok: true }); }],
+  ["/__emails", () => json(emails)],
+  ["GET /__email-failures", () => json({ perMessage: emailFailuresPerMessage })],
+  ["POST /__email-failures", setEmailFailures],
+  ["POST /__operator-lookup-failure", setOperatorLookupFailure],
+  ["/__health", () => json({ ok: true })],
+  ["POST /emails:send", handleEmailSend],
+]);
+const patternRoutes: [RegExp, RouteHandler][] = [
+  [/^\/__docs\/(.+)$/, (_req, _url, m) => json(docs.get(decodeURIComponent(m[1])) ?? null)],
+  [/^\/v[^/]+\/data\/query\/[^/]+$/, handleQuery],
+  [/^\/v[^/]+\/data\/mutate\/[^/]+$/, handleMutate],
+  [/^\/v[^/]+\/data\/doc\/([^/]+)\/(.+)$/, (_req, _url, m) => handleDocumentRoute(m)],
+  [/^\/v[^/]+\/assets\/images\/[^/]+$/, handleUpload],
+  [/^\/emails\/operations\/(.+)$/, (_req, _url, m) => json({ id: m[1], status: "Succeeded" })],
+];
+
+function literalRoute(req: Request, path: string) {
+  return literalRoutes.get(`${req.method} ${path}`) ?? literalRoutes.get(path);
+}
+
 async function route(req: Request) {
   const url = new URL(req.url);
   const path = url.pathname;
-  let m: RegExpMatchArray | null;
-
-  if (path === "/__reset" && req.method === "POST") return reset(), json({ ok: true });
-  if (path === "/__emails") return json(emails);
-  if (path === "/__email-failures" && req.method === "GET") return json({ perMessage: emailFailuresPerMessage });
-  if (path === "/__email-failures" && req.method === "POST") {
-    const body = (await req.json()) as { perMessage?: unknown };
-    emailFailuresPerMessage = typeof body.perMessage === "number" && body.perMessage > 0 ? body.perMessage : 0;
-    emailFailureCounts.clear();
-    return json({ perMessage: emailFailuresPerMessage });
+  const literal = literalRoute(req, path);
+  if (literal) return literal(req);
+  for (const [pattern, handler] of patternRoutes) {
+    const match = path.match(pattern);
+    if (match) return handler(req, url, match);
   }
-  if (path === "/__operator-lookup-failure" && req.method === "POST") {
-    operatorLookupFailure = !!((await req.json()) as { enabled?: boolean }).enabled;
-    return json({ enabled: operatorLookupFailure });
-  }
-  if ((m = path.match(/^\/__docs\/(.+)$/))) return json(docs.get(decodeURIComponent(m[1])) ?? null);
-  if (path === "/__health") return json({ ok: true });
-
-  if ((m = path.match(/^\/v[^/]+\/data\/query\/[^/]+$/))) return handleQuery(req, url);
-  if ((m = path.match(/^\/v[^/]+\/data\/mutate\/[^/]+$/))) return handleMutate(req);
-  if ((m = path.match(/^\/v[^/]+\/data\/doc\/([^/]+)\/(.+)$/))) {
-    if (operatorLookupFailure && m[1] === "operators") return json({ error: "temporarily unavailable" }, 503);
-    return handleDocs(m[2]);
-  }
-  if ((m = path.match(/^\/v[^/]+\/assets\/images\/[^/]+$/))) return handleUpload(req, url);
-
-  if (path === "/emails:send" && req.method === "POST") return handleEmailSend(req);
-  if ((m = path.match(/^\/emails\/operations\/(.+)$/))) return json({ id: m[1], status: "Succeeded" });
 
   return json({ error: { description: `Mock has no route for ${req.method} ${path}` } }, 404);
 }

@@ -1,11 +1,19 @@
 import {defineField, defineType, type SlugValidationContext} from 'sanity'
 import {apiVersion} from '../../env'
 
+function publishedId(document: SlugValidationContext['document']) {
+  return document?._id.replace(/^drafts\./, '')
+}
+
+function referenceId(value: unknown) {
+  return (value as {_ref?: string} | undefined)?._ref
+}
+
 // Slugs only need to be unique within their attribute ("4-l" can exist for several).
 async function isUniqueWithinAttribute(slug: string, context: SlugValidationContext) {
   const {document, getClient} = context
-  const id = document?._id.replace(/^drafts\./, '')
-  const attributeRef = (document?.attribute as {_ref?: string} | undefined)?._ref
+  const id = publishedId(document)
+  const attributeRef = referenceId(document?.attribute)
   if (!id || !attributeRef) return true
   const count = await getClient({apiVersion}).fetch<number>(
     'count(*[_type == "attributeValue" && attribute._ref == $attributeRef && slug.current == $slug && !(_id in [$id, "drafts." + $id])])',

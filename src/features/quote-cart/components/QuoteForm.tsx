@@ -7,10 +7,17 @@ import { IDEMPOTENCY_HEADER } from "@/lib/validation";
 import {
   type FieldIssue,
   type QuoteResponse,
+  type QuoteRequest,
   quoteRequestSchema,
   toFieldIssues,
 } from "../schema";
 import type { QuoteItem } from "../store/useQuoteStore";
+
+const verificationMissing = (siteKey: string | undefined, token: string) => siteKey && !token;
+const responseIssues = (body: Exclude<QuoteResponse, {success: true}>) => body.issues ?? [];
+function notifyUnavailable(body: Exclude<QuoteResponse, {success: true}>, onUnavailable: (ids: string[]) => void) {
+  if (body.productIds?.length) onUnavailable(body.productIds);
+}
 
 interface QuoteFormProps {
   items: QuoteItem[];
@@ -67,21 +74,27 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnsti
     }
 
     const token = text("cf-turnstile-response");
-    if (turnstileSiteKey && !token) {
+    if (verificationMissing(turnstileSiteKey, token)) {
       analytics.capture("form_submit_failed", { error_type: "verification" });
       setError("Please complete the verification before submitting.");
       return;
     }
 
+    await submitQuote(parsed.data, token);
+  }
+
+  const submissionKey = () => idempotencyKey.current ??= crypto.randomUUID();
+
+  async function submitQuote(data: QuoteRequest, token: string) {
     setPending(true);
     setIssues([]);
     setError(null);
-    idempotencyKey.current ??= crypto.randomUUID();
+    const key = submissionKey();
     try {
       const res = await fetch("/api/quotes", {
         method: "POST",
-        headers: { ...analytics.headers(), "content-type": "application/json", [IDEMPOTENCY_HEADER]: idempotencyKey.current },
-        body: JSON.stringify({ ...parsed.data, "cf-turnstile-response": token }),
+        headers: { ...analytics.headers(), "content-type": "application/json", [IDEMPOTENCY_HEADER]: key },
+        body: JSON.stringify({ ...data, "cf-turnstile-response": token }),
       });
       const body = (await res.json()) as QuoteResponse;
       if (body.success) {
@@ -90,8 +103,8 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnsti
         return;
       }
       analytics.capture("form_submit_failed", { error_type: body.error, status: res.status });
-      if (body.productIds?.length) onUnavailable(body.productIds);
-      setIssues(body.issues ?? []);
+      notifyUnavailable(body, onUnavailable);
+      setIssues(responseIssues(body));
       setError(body.message);
     } catch {
       analytics.capture("form_submit_failed", { error_type: "network" });
@@ -142,14 +155,7 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnsti
 
       <Turnstile key={verificationAttempt} siteKey={turnstileSiteKey} action="quote" />
 
-      {(error || formIssues.length > 0) && (
-        <div role="alert" className="text-destructive">
-          {error && <p>{error}</p>}
-          {formIssues.map((i) => (
-            <p key={`${i.path}-${i.message}`}>{i.message}</p>
-          ))}
-        </div>
-      )}
+      <QuoteErrors error={error} formIssues={formIssues} />
 
       <button
         type="submit"
@@ -160,4 +166,17 @@ export function QuoteForm({ items, disabled, onSubmitted, onUnavailable, turnsti
       </button>
     </form>
   );
+}
+
+function QuoteErrors({error, formIssues}: {error: string | null; formIssues: FieldIssue[]}) {
+  return <>
+      {(error || formIssues.length > 0) && (
+        <div role="alert" className="text-destructive">
+          {error && <p>{error}</p>}
+          {formIssues.map((i) => (
+            <p key={`${i.path}-${i.message}`}>{i.message}</p>
+          ))}
+        </div>
+      )}
+  </>;
 }

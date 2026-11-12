@@ -3,7 +3,7 @@ import type {ProductInput} from '../types'
 // Unbranded oil filters; fitment is only stated where a retailer listing for the matching number supports it.
 // source: https://www.carid.com/fram/extra-guard-spin-on-engine-oil-filter-mpn-ph2870a.html (PH2870A)
 
-export const products: ProductInput[] = [
+export const oilFilters: ProductInput[] = [
   {
     title: 'Oil Filter 4610',
     sku: '4610',

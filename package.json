@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "audit": "fallow --format json --quiet --explain --fail-on-issues --fail-on-parse-error",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "bun --env-file=.env.local test",
     "test:e2e": "rm -rf coverage/e2e-raw && playwright test && bun e2e/coverage-report.ts",
@@ -69,7 +70,7 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "packageManager": "bun@1.4.2",
+  "packageManager": "bun@1.4.4",
   "ignoreScripts": [
     "sharp",
     "unrs-resolver"

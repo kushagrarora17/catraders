@@ -8,28 +8,31 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
 const FETCH_TIMEOUT_MS = 15_000;
 
+const PRIVATE_IPV4_RANGES: Record<number, [number, number][]> = {
+  100: [[64, 127]],
+  169: [[254, 254]],
+  172: [[16, 31]],
+  192: [[168, 168]],
+};
+
+function isPrivateIpv4(address: string) {
+  const [a, b] = address.split(".").map(Number);
+  const reserved = PRIVATE_IPV4_RANGES[a]?.some(([min, max]) => b >= min && b <= max) ?? false;
+  return [0, 10, 127].includes(a) || a >= 224 || reserved;
+}
+
+function isPrivateIpv6(address: string): boolean {
+  const lower = address.toLowerCase();
+  const mapped = lower.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (mapped) return isPrivateAddress(mapped[1]);
+  return /^(?:::1?$|f[cd]|fe[89ab]|ff)/.test(lower);
+}
+
 /** Loopback, private, link-local, CGNAT, multicast and other non-routable addresses (v4 and v6). */
 export function isPrivateAddress(address: string): boolean {
   const version = isIP(address);
-  if (version === 4) {
-    const [a, b] = address.split(".").map(Number);
-    return (
-      a === 0 ||
-      a === 10 ||
-      a === 127 ||
-      (a === 100 && b >= 64 && b <= 127) ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      a >= 224
-    );
-  }
-  if (version === 6) {
-    const lower = address.toLowerCase();
-    const mapped = lower.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (mapped) return isPrivateAddress(mapped[1]);
-    return lower === "::" || lower === "::1" || /^f[cd]/.test(lower) || /^fe[89ab]/.test(lower) || lower.startsWith("ff");
-  }
+  if (version === 4) return isPrivateIpv4(address);
+  if (version === 6) return isPrivateIpv6(address);
   return true;
 }
 

@@ -20,6 +20,24 @@ import { fail, ok, WRITE } from "./util";
 
 const REPORT_ROW_LIMIT = 100;
 
+async function createRow(row: NonNullable<RowPlan['create']>, transaction: ReturnType<ReturnType<typeof getWriteClient>['transaction']>) {
+  const images: UploadedImage[] = [];
+  for (const url of row.imageUrls) images.push(await uploadImageFromUrl(url, row.fields.title));
+  transaction.create(buildProductDocument(row.id, { ...row.fields, images }));
+}
+
+async function updateRow(row: NonNullable<RowPlan['update']>, sku: string, transaction: ReturnType<ReturnType<typeof getWriteClient>['transaction']>) {
+  const {set, unset} = buildProductPatch(row.patch);
+  const images: UploadedImage[] = [];
+  for (const url of row.imageUrls) images.push(await uploadImageFromUrl(url, sku));
+  transaction.patch(row.docId, (patch) => {
+    if (Object.keys(set).length) patch.set(set);
+    if (unset.length) patch.unset(unset);
+    if (images.length) patch.setIfMissing({ images: [] }).insert("after", "images[-1]", images);
+    return patch;
+  });
+}
+
 async function applyPlan(plan: ImportPlan) {
   const client = getWriteClient();
   const transaction = client.transaction();
@@ -38,20 +56,10 @@ async function applyPlan(plan: ImportPlan) {
   for (const row of plan.rows) {
     try {
       if (row.create) {
-        const images: UploadedImage[] = [];
-        for (const url of row.create.imageUrls) images.push(await uploadImageFromUrl(url, row.create.fields.title));
-        transaction.create(buildProductDocument(row.create.id, { ...row.create.fields, images }));
+        await createRow(row.create, transaction);
         writes++;
       } else if (row.update) {
-        const { set, unset } = buildProductPatch(row.update.patch);
-        const images: UploadedImage[] = [];
-        for (const url of row.update.imageUrls) images.push(await uploadImageFromUrl(url, row.sku));
-        transaction.patch(row.update.docId, (patch) => {
-          if (Object.keys(set).length) patch.set(set);
-          if (unset.length) patch.unset(unset);
-          if (images.length) patch.setIfMissing({ images: [] }).insert("after", "images[-1]", images);
-          return patch;
-        });
+        await updateRow(row.update, row.sku, transaction);
         writes++;
       }
     } catch (error) {
@@ -72,38 +80,23 @@ const summarize = (rows: RowPlan[]) => ({
   error: rows.filter((r) => r.action === "error").length,
 });
 
-export function registerImportTool(server: McpServer) {
-  server.registerTool(
-    "import_products_csv",
-    {
-      title: "Import products from CSV",
-      description: [
-        "Create or update many products from CSV text, matched by SKU. Defaults to a dry run that validates every row and reports what would change without writing; run it first, then repeat with dryRun false.",
-        "Columns (header row required, case-insensitive): sku (required); title and category (required for new products; category is a slug or exact title); in_stock (yes/no); description; image_url (https links separated by |); and one 'attr:<attribute-slug>' column per attribute with values separated by | (e.g. attr:viscosity = 5W-30).",
-        "For existing SKUs, only non-blank cells change anything, and an attr: cell replaces that attribute's values. Rows with errors are skipped and reported; valid rows still apply. Max 500 rows.",
-      ].join(" "),
-      inputSchema: z.object({
-        csv: z.string().min(1).max(1_000_000).describe("The CSV file contents"),
-        dryRun: z.boolean().default(true),
-        createMissingValues: z
-          .boolean()
-          .default(false)
-          .describe("Create attribute values that don't exist yet (attributes and categories are never created)"),
-      }),
-      annotations: { ...WRITE, openWorldHint: true },
-    },
-    async ({ csv, dryRun, createMissingValues }) => {
+function parseImport(csv: string) {
       let parsed: ReturnType<typeof csvToRecords>;
       try {
         parsed = csvToRecords(csv);
       } catch (error) {
-        return fail(error instanceof Error ? error.message : "Couldn't parse the CSV");
+        return error instanceof Error ? error.message : "Couldn't parse the CSV";
       }
-      if (!parsed.headers.includes("sku")) return fail("The CSV needs a 'sku' column in its header row");
-      if (!parsed.records.length) return fail("The CSV has no data rows");
+      if (!parsed.headers.includes("sku")) return "The CSV needs a 'sku' column in its header row";
+      if (!parsed.records.length) return "The CSV has no data rows";
       if (parsed.records.length > MAX_IMPORT_ROWS) {
-        return fail(`The CSV has ${parsed.records.length} rows; the limit is ${MAX_IMPORT_ROWS} per import. Split it up`);
+        return `The CSV has ${parsed.records.length} rows; the limit is ${MAX_IMPORT_ROWS} per import. Split it up`;
       }
+
+  return parsed;
+}
+
+async function preparePlan(parsed: ReturnType<typeof csvToRecords>, createMissingValues: boolean) {
 
       const client = getWriteClient();
       const taxonomy = await loadTaxonomy();
@@ -126,6 +119,34 @@ export function registerImportTool(server: McpServer) {
         takenSlugs,
         createMissingValues,
       });
+
+  return plan;
+}
+
+export function registerImportTool(server: McpServer) {
+  server.registerTool(
+    "import_products_csv",
+    {
+      title: "Import products from CSV",
+      description: [
+        "Create or update many products from CSV text, matched by SKU. Defaults to a dry run that validates every row and reports what would change without writing; run it first, then repeat with dryRun false.",
+        "Columns (header row required, case-insensitive): sku (required); title and category (required for new products; category is a slug or exact title); in_stock (yes/no); description; image_url (https links separated by |); and one 'attr:<attribute-slug>' column per attribute with values separated by | (e.g. attr:viscosity = 5W-30).",
+        "For existing SKUs, only non-blank cells change anything, and an attr: cell replaces that attribute's values. Rows with errors are skipped and reported; valid rows still apply. Max 500 rows.",
+      ].join(" "),
+      inputSchema: z.object({
+        csv: z.string().min(1).max(1_000_000).describe("The CSV file contents"),
+        dryRun: z.boolean().default(true),
+        createMissingValues: z
+          .boolean()
+          .default(false)
+          .describe("Create attribute values that don't exist yet (attributes and categories are never created)"),
+      }),
+      annotations: { ...WRITE, openWorldHint: true },
+    },
+    async ({ csv, dryRun, createMissingValues }) => {
+      const parsed = parseImport(csv);
+      if (typeof parsed === "string") return fail(parsed);
+      const plan = await preparePlan(parsed, createMissingValues);
 
       let cacheResult = {};
       let written = 0;

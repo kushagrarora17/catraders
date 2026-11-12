@@ -84,9 +84,17 @@ const plans = Object.entries(categoryGuides).map(([slug, guide]) => {
   return {
     category,
     guide,
-    skip: hasDraft || Boolean(category.landing && !updateExisting),
+    skip: skipExisting(hasDraft, category.landing),
   };
 });
+function skipExisting(hasDraft: boolean, existing: unknown) {
+  return hasDraft || Boolean(existing && !updateExisting);
+}
+
+function sameCity(page: CityPage, city: string, slug: string) {
+  return page.city === city || page.slug === slug;
+}
+
 const cityPlans = area.cities.map((city) => {
   const slug = slugify(city);
   const guide = cityGuide(city);
@@ -103,16 +111,14 @@ const cityPlans = area.cities.map((city) => {
   const hasDraft = existingCities.some(
     (page) =>
       page._id.startsWith("drafts.") &&
-      (page.city === city ||
-        page.slug === slug ||
-        page._id === `drafts.${existing?._id}`),
+      (sameCity(page, city, slug) || page._id === `drafts.${existing?._id}`),
   );
   return {
     city,
     slug,
     guide,
     existing,
-    skip: hasDraft || Boolean(existing && !updateExisting),
+    skip: skipExisting(hasDraft, existing),
   };
 });
 for (const guide of [

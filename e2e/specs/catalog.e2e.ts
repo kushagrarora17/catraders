@@ -1,6 +1,13 @@
 import { expect, test } from "../test";
 import { MOCK_URL } from "../env";
 import { mockDoc, resetContent, sendWebhook } from "../helpers";
+import type { Page } from "@playwright/test";
+
+async function searchProducts(page: Page, query: string) {
+  await page.getByLabel("Search products", { exact: true }).fill(query);
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`q=${query}`));
+}
 
 test.describe("product listing", () => {
   test("lists automotive products only, with facets", async ({ page }) => {
@@ -19,9 +26,7 @@ test.describe("product listing", () => {
   test("filters by search, stock and attributes, and clears", async ({ page }) => {
     await page.goto("/products");
 
-    await page.getByLabel("Search products", { exact: true }).fill("castrol");
-    await page.getByRole("button", { name: "Search", exact: true }).click();
-    await expect(page).toHaveURL(/q=castrol/);
+    await searchProducts(page, "castrol");
     await expect(page.getByText("1 product", { exact: true })).toBeVisible();
 
     await page.getByLabel("Search products", { exact: true }).fill("");
@@ -34,9 +39,7 @@ test.describe("product listing", () => {
     await expect(page.getByText("2 products")).toBeVisible();
     await expect(page.getByText("Valvoline 10W-40 4L")).toHaveCount(0);
     await expect(page.getByLabel(/^4 L/)).toBeChecked();
-    await page.getByLabel("Search products", { exact: true }).fill("castrol");
-    await page.getByRole("button", { name: "Search", exact: true }).click();
-    await expect(page).toHaveURL(/q=castrol/);
+    await searchProducts(page, "castrol");
     await expect(page).toHaveURL(/available=1/);
     await expect(page).toHaveURL(/pack-size=4-l/);
 

@@ -1,9 +1,6 @@
 import type {AttributeDef, CategoryNode} from './types'
 
-// Existing slugs from scripts/seed.ts are kept so re-runs reuse those documents.
-// Products must point at a leaf category (level 2 or 3).
-export const CATEGORY_TREE: CategoryNode[] = [
-  {
+export const ENGINE_OIL_CATEGORY: CategoryNode = {
     title: 'Engine Oils',
     slug: 'engine-oils',
     children: [
@@ -21,7 +18,12 @@ export const CATEGORY_TREE: CategoryNode[] = [
         children: [{title: 'Mineral', slug: 'hddo-mineral'}],
       },
     ],
-  },
+  }
+
+// Existing slugs from scripts/seed.ts are kept so re-runs reuse those documents.
+// Products must point at a leaf category (level 2 or 3).
+export const CATEGORY_TREE: CategoryNode[] = [
+  ENGINE_OIL_CATEGORY,
   {
     title: 'Coolants',
     slug: 'coolants',

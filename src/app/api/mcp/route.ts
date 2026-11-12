@@ -9,13 +9,16 @@ import { accessTokenVerifier } from "@/server/oauth/tokens";
 // Claude Code, Claude Desktop) don't. A token is required either way.
 const allowedOriginHosts = () => [new URL(getSiteUrl()).hostname, "claude.ai", "localhost", "127.0.0.1", "[::1]"];
 
+function mcpRejection(req: Request) {
+  if (!isMcpConfigured()) return Response.json({ error: "MCP access is not configured on this server" }, { status: 503 });
+  return originValidationResponse(req, allowedOriginHosts());
+}
+
+const operatorEmail = (auth: { extra?: Record<string, unknown> }) => auth.extra?.operatorEmail;
+
 /** /api/mcp — streamable HTTP MCP endpoint, guarded by OAuth bearer tokens minted for this resource. */
 async function handle(req: Request) {
-  if (!isMcpConfigured()) {
-    return Response.json({ error: "MCP access is not configured on this server" }, { status: 503 });
-  }
-
-  const rejected = originValidationResponse(req, allowedOriginHosts());
+  const rejected = mcpRejection(req);
   if (rejected) return rejected;
 
   const auth = await requireBearerAuth({
@@ -25,7 +28,7 @@ async function handle(req: Request) {
     resourceMetadataUrl: getResourceMetadataUrl(),
   })(req);
   if (auth instanceof Response) return auth;
-  if (typeof auth.extra?.operatorEmail !== "string") {
+  if (typeof operatorEmail(auth) !== "string") {
     return Response.json({ error: "A valid operator sign-in is required" }, { status: 401 });
   }
 
