@@ -16,19 +16,20 @@ function varyOnAccept(headers: Headers) {
   }
 }
 
+const acceptedTypes = (request: NextRequest) => request.headers.get("Accept") ?? "";
+
+function requestsMarkdown(request: NextRequest, accept: string) {
+  const markdownQuality = quality(accept, "text/markdown");
+  return ["GET", "HEAD"].includes(request.method) && !request.headers.has("RSC") && markdownQuality > 0 && markdownQuality >= quality(accept, "text/html");
+}
+
+const isHtml = (response: Response) => response.ok && response.headers.get("Content-Type")?.includes("text/html");
+
 export async function proxy(request: NextRequest) {
   const next = NextResponse.next();
   varyOnAccept(next.headers);
-  const accept = request.headers.get("Accept") ?? "";
-  const markdownQuality = quality(accept, "text/markdown");
-  if (
-    !["GET", "HEAD"].includes(request.method) ||
-    request.headers.has("RSC") ||
-    markdownQuality <= 0 ||
-    markdownQuality < quality(accept, "text/html")
-  ) {
-    return next;
-  }
+  const accept = acceptedTypes(request);
+  if (!requestsMarkdown(request, accept)) return next;
 
   // Fetch only the configured origin, with HTML negotiation to avoid re-entering conversion.
   const url = new URL(getSiteUrl());
@@ -45,8 +46,12 @@ export async function proxy(request: NextRequest) {
   } catch {
     return next;
   }
-  if (!html.ok || !html.headers.get("Content-Type")?.includes("text/html")) return next;
+  if (!isHtml(html)) return next;
 
+  return markdownResponse(request, html);
+}
+
+async function markdownResponse(request: NextRequest, html: Response) {
   const converter = new TurndownService({ headingStyle: "atx", codeBlockStyle: "fenced" });
   converter.remove(["script", "style", "nav", "header", "footer"]);
   const markdown = converter.turndown(await html.text());

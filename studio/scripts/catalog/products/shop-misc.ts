@@ -1,6 +1,6 @@
 import type {ProductInput} from '../types'
 
-export const products: ProductInput[] = [
+export const shopMisc: ProductInput[] = [
   {
     title: 'R134a Refrigerant - 12 Pack',
     category: 'refrigerant',

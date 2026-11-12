@@ -16,6 +16,8 @@ const TAG_BY_TYPE: Record<string, string> = {
   serviceAreaLandingPage: SERVICE_AREA_TAG,
 };
 
+const validSignature = (body: string, signature: string | null, secret: string) => signature && isValidSignature(body, signature, secret);
+
 export async function POST(req: NextRequest) {
   const secret = process.env.SANITY_WEBHOOK_SECRET;
   if (!secret) {
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   const signature = req.headers.get(SIGNATURE_HEADER_NAME);
   const body = await req.text();
-  if (!signature || !(await isValidSignature(body, signature, secret))) {
+  if (!(await validSignature(body, signature, secret))) {
     return NextResponse.json({ message: "Invalid signature" }, { status: 401 });
   }
 
@@ -36,6 +38,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
   }
 
+  return revalidatePayload(payload);
+}
+
+function revalidatePayload(payload: { _type?: unknown }) {
   const tag = typeof payload._type === "string" ? TAG_BY_TYPE[payload._type] : undefined;
   if (tag) {
     // Webhook callers need content gone now, not served stale while revalidating.

@@ -37,8 +37,30 @@ export async function validateAuthorizeRequest(
   if (!parsed.success) {
     return { ok: false, message: "This sign-in link is invalid or incomplete. Start again from your MCP client." };
   }
-  const params = parsed.data;
+  return validateRegisteredClient(db, parsed.data);
+}
 
+function resourceError(params: AuthorizeParams, resource: string) {
+  if (params.resource && normalizeUrl(params.resource) !== normalizeUrl(resource)) {
+    return { ok: false as const, message: "This client asked for access to a different resource." };
+  }
+}
+
+function scopeError(params: AuthorizeParams) {
+  if (params.scope && !params.scope.split(" ").every((s) => s === MCP_SCOPE)) {
+    return { ok: false as const, message: "This client asked for unsupported permissions." };
+  }
+}
+
+function clientLabel(name: string | null) {
+  return name || "An MCP client";
+}
+
+function permissionError(params: AuthorizeParams, resource: string) {
+  return resourceError(params, resource) ?? scopeError(params);
+}
+
+async function validateRegisteredClient(db: Database, params: AuthorizeParams): Promise<AuthorizeValidation> {
   const client = await findClient(db, params.client_id);
   if (!client) return { ok: false, message: "Unknown client. Reconnect from your MCP client." };
   if (!redirectUriMatches(client.redirectUris, params.redirect_uri)) {
@@ -46,14 +68,10 @@ export async function validateAuthorizeRequest(
   }
 
   const resource = getResourceUrl().href;
-  if (params.resource && normalizeUrl(params.resource) !== normalizeUrl(resource)) {
-    return { ok: false, message: "This client asked for access to a different resource." };
-  }
-  if (params.scope && !params.scope.split(" ").every((s) => s === MCP_SCOPE)) {
-    return { ok: false, message: "This client asked for unsupported permissions." };
-  }
+  const error = permissionError(params, resource);
+  if (error) return error;
 
-  return { ok: true, params, clientName: client.clientName || "An MCP client", resource };
+  return { ok: true, params, clientName: clientLabel(client.clientName), resource };
 }
 
 /** Query string that reproduces an authorization request (used to re-render after a wrong password). */

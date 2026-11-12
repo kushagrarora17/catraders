@@ -8,6 +8,7 @@
 import {randomUUID} from 'node:crypto'
 import {getCliClient} from 'sanity/cli'
 import {apiVersion} from '../env'
+import {ENGINE_OIL_CATEGORY} from './catalog/taxonomy'
 
 const client = getCliClient({apiVersion})
 
@@ -43,25 +44,7 @@ async function ensure(
 type CategoryNode = {title: string; slug: string; children?: CategoryNode[]}
 
 const CATEGORY_TREE: CategoryNode[] = [
-  {
-    title: 'Engine Oils',
-    slug: 'engine-oils',
-    children: [
-      {
-        title: 'Passenger Car Motor Oil',
-        slug: 'passenger-car-motor-oil',
-        children: [
-          {title: 'Fully Synthetic', slug: 'pcmo-fully-synthetic'},
-          {title: 'Semi Synthetic', slug: 'pcmo-semi-synthetic'},
-        ],
-      },
-      {
-        title: 'Heavy Duty Diesel Oil',
-        slug: 'heavy-duty-diesel-oil',
-        children: [{title: 'Mineral', slug: 'hddo-mineral'}],
-      },
-    ],
-  },
+  ENGINE_OIL_CATEGORY,
   {
     title: 'Coolants',
     slug: 'coolants',
@@ -167,9 +150,8 @@ async function seedCategories(nodes: CategoryNode[], level: number, parentId?: s
     })
     ids.set(node.slug, id)
     if (node.children) {
-      for (const [childSlug, childId] of await seedCategories(node.children, level + 1, id)) {
-        ids.set(childSlug, childId)
-      }
+      const children = await seedCategories(node.children, level + 1, id)
+      children.forEach((childId, childSlug) => ids.set(childSlug, childId))
     }
   }
   return ids

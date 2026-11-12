@@ -4,20 +4,10 @@ import type { Route } from "next";
 import Link from "next/link";
 import { useId, useRef, useState } from "react";
 import type { FACETS_QUERY_RESULT } from "@/sanity/types";
-import type { CatalogFilters } from "../filters";
+import { catalogFilterParams as filterParams, type CatalogFilters } from "../filters";
 
 type Props = { facets: FACETS_QUERY_RESULT; filters: CatalogFilters };
 
-function filterParams(filters: CatalogFilters) {
-  const params = new URLSearchParams();
-  if (filters.category) params.set("category", filters.category);
-  if (filters.q) params.set("q", filters.q);
-  if (filters.available) params.set("available", "1");
-  for (const [key, values] of Object.entries(filters.attributes)) {
-    for (const value of values) params.append(key, value);
-  }
-  return params;
-}
 
 function href(params: URLSearchParams) {
   return `/products${params.size ? `?${params}` : ""}` as Route;
@@ -39,6 +29,16 @@ export function ProductSearch({ filters }: { filters: CatalogFilters }) {
   );
 }
 
+function categoryParams(filters: CatalogFilters) {
+  const params = new URLSearchParams();
+  if (filters.category) params.set("category", filters.category);
+  return params;
+}
+
+type Facet = FACETS_QUERY_RESULT[number];
+const facetTitle = (facet: Facet | undefined, key: string) => facet?.title ?? key;
+const facetValue = (facet: Facet | undefined, value: string) => facet?.values.find((item) => item.key === value)?.label ?? value;
+
 export function AppliedFilters({ facets, filters }: Props) {
   const params = filterParams(filters);
   const chips = [
@@ -46,12 +46,11 @@ export function AppliedFilters({ facets, filters }: Props) {
     ...(filters.available ? [{ key: "available", value: "1", label: "In stock" }] : []),
     ...Object.entries(filters.attributes).flatMap(([key, values]) => {
       const facet = facets.find((item) => item.key === key);
-      return values.map((value) => ({ key, value, label: `${facet?.title ?? key}: ${facet?.values.find((item) => item.key === value)?.label ?? value}` }));
+      return values.map((value) => ({ key, value, label: `${facetTitle(facet, key)}: ${facetValue(facet, value)}` }));
     }),
   ];
   if (!chips.length) return null;
-  const clear = new URLSearchParams();
-  if (filters.category) clear.set("category", filters.category);
+  const clear = categoryParams(filters);
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2" aria-label="Applied filters">
       <span className="text-sm font-medium">Applied filters</span>
@@ -69,6 +68,20 @@ export function AppliedFilters({ facets, filters }: Props) {
   );
 }
 
+function FilterToggle({count, expanded, id, onToggle}: {count: number; expanded: boolean; id: string; onToggle: () => void}) {
+  return <>
+      {count > 6 && <button type="button" aria-expanded={expanded} aria-controls={id} onClick={onToggle} className="mt-2 min-h-9 text-primary underline underline-offset-4">{expanded ? "Show less" : `Show all (${count})`}</button>}
+  </>;
+}
+
+function FacetSearch({facet, search, onSearch}: {facet: Facet; search: string; onSearch: (value: string) => void}) {
+  return <>
+      {facet.values.length > 10 && (
+        <input type="search" aria-label={`Search ${facet.title}`} placeholder={`Search ${facet.title.toLowerCase()}`} value={search} onChange={(event) => onSearch(event.target.value)} className="mt-3 w-full rounded-xs border border-border bg-background px-3 py-2" />
+      )}
+  </>;
+}
+
 function FilterGroup({ facet, selected }: { facet: FACETS_QUERY_RESULT[number]; selected: string[] }) {
   const [expanded, setExpanded] = useState(false);
   const [search, setSearch] = useState("");
@@ -78,9 +91,7 @@ function FilterGroup({ facet, selected }: { facet: FACETS_QUERY_RESULT[number]; 
   return (
     <details open className="border-t border-border py-3">
       <summary className="cursor-pointer font-medium">{facet.title}{selected.length > 0 && <span className="ml-2 text-primary">{selected.length} selected</span>}</summary>
-      {facet.values.length > 10 && (
-        <input type="search" aria-label={`Search ${facet.title}`} placeholder={`Search ${facet.title.toLowerCase()}`} value={search} onChange={(event) => setSearch(event.target.value)} className="mt-3 w-full rounded-xs border border-border bg-background px-3 py-2" />
-      )}
+      <FacetSearch facet={facet} search={search} onSearch={setSearch} />
       <fieldset id={id} className="mt-2 space-y-1">
         <legend className="sr-only">{facet.title}</legend>
         {facet.values.map((value) => (
@@ -91,15 +102,14 @@ function FilterGroup({ facet, selected }: { facet: FACETS_QUERY_RESULT[number]; 
         ))}
       </fieldset>
       {!matching.length && <p className="py-2 text-muted-foreground">No matching options.</p>}
-      {matching.length > 6 && <button type="button" aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(!expanded)} className="mt-2 min-h-9 text-primary underline underline-offset-4">{expanded ? "Show less" : `Show all (${matching.length})`}</button>}
+      <FilterToggle count={matching.length} expanded={expanded} id={id} onToggle={() => setExpanded(!expanded)} />
     </details>
   );
 }
 
 function FilterForm({ facets, filters }: Props) {
   const [draft, setDraft] = useState(filters);
-  const clear = new URLSearchParams();
-  if (filters.category) clear.set("category", filters.category);
+  const clear = categoryParams(filters);
   const dirty = filterParams(draft).toString() !== filterParams(filters).toString();
   return (
     <form action="/products" className="flex min-h-0 flex-1 flex-col text-sm" onChange={(event) => {
@@ -123,22 +133,25 @@ function FilterForm({ facets, filters }: Props) {
   );
 }
 
+const filterTitle = (count: number) => `Filters${count > 0 ? ` (${count})` : ""}`;
+
 export function FacetFilters(props: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const titleId = useId();
   const count = Number(props.filters.available) + Object.values(props.filters.attributes).reduce((total, values) => total + values.length, 0);
+  const title = filterTitle(count);
   return (
     <>
       <div className="sticky top-[calc(var(--header-height)+1rem)] hidden max-h-[calc(100dvh-var(--header-height)-2rem)] flex-col overflow-hidden rounded-xs border border-border bg-background md:flex">
-        <h2 className="p-4 font-semibold">Filters{count > 0 ? ` (${count})` : ""}</h2>
+        <h2 className="p-4 font-semibold">{title}</h2>
         <FilterForm {...props} />
       </div>
-      <button type="button" onClick={() => { setMobileOpen(true); dialog.current?.showModal(); }} className="min-h-11 w-full rounded-xs border border-border px-4 py-2 text-left font-medium md:hidden">Filters{count > 0 ? ` (${count})` : ""}</button>
+      <button type="button" onClick={() => { setMobileOpen(true); dialog.current?.showModal(); }} className="min-h-11 w-full rounded-xs border border-border px-4 py-2 text-left font-medium md:hidden">{title}</button>
       <dialog ref={dialog} onClose={() => setMobileOpen(false)} aria-labelledby={titleId} className="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-dvh w-full max-w-sm border-l border-border bg-background p-0 text-foreground backdrop:bg-black/50" onClick={(event) => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between p-4">
-            <h2 id={titleId} className="font-semibold">Filters{count > 0 ? ` (${count})` : ""}</h2>
+            <h2 id={titleId} className="font-semibold">{title}</h2>
             <button type="button" onClick={() => dialog.current?.close()} className="min-h-11 px-3" aria-label="Close filters">✕</button>
           </div>
           {mobileOpen && <FilterForm {...props} />}

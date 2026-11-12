@@ -5,8 +5,8 @@ import { type AvailabilityResponse, MAX_QUOTE_ITEMS } from "@/features/quote-car
 const ID_PATTERN = /^[A-Za-z0-9._-]{1,128}$/;
 
 /** GET /api/availability?ids=a,b — current stock status for quote-cart items. */
-export async function GET(req: NextRequest) {
-  const ids = [
+function requestedIds(req: NextRequest) {
+  return [
     ...new Set(
       (req.nextUrl.searchParams.get("ids") ?? "")
         .split(",")
@@ -14,6 +14,10 @@ export async function GET(req: NextRequest) {
         .filter(Boolean),
     ),
   ];
+}
+
+export async function GET(req: NextRequest) {
+  const ids = requestedIds(req);
   if (ids.length > MAX_QUOTE_ITEMS || !ids.every((id) => ID_PATTERN.test(id))) {
     return NextResponse.json({ message: "Invalid ids" }, { status: 400 });
   }

@@ -1,7 +1,7 @@
 import type {ProductInput} from '../types'
 
 // source: retailer fitment listings (e.g. https://finditparts.com) matched by part number; entries without a fitment line could not be verified.
-export const products: ProductInput[] = [
+export const engineAirFilters: ProductInput[] = [
   {
     title: 'Engine Air Filter AF 12061',
     sku: 'AF 12061',

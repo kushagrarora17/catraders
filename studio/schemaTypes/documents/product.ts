@@ -1,27 +1,32 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
 import {apiVersion} from '../../env'
+import {titleField, slugField} from '../shared/fields'
 import {verticalField} from '../shared/vertical'
 
 type AttributeRow = {_id: string; attributeId: string; attributeTitle: string; allowMultiple: boolean}
+
+function attributeReferences(value: unknown) {
+  return (value as {_ref?: string}[] | undefined)?.flatMap((ref) => ref._ref ? [ref._ref] : []) ?? []
+}
+
+function attributeClashes(rows: AttributeRow[]) {
+  const counts = new Map<string, {title: string; n: number}>()
+  for (const row of rows) {
+    if (row.allowMultiple) continue
+    const entry = counts.get(row.attributeId) ?? {title: row.attributeTitle, n: 0}
+    entry.n += 1
+    counts.set(row.attributeId, entry)
+  }
+  return [...counts.values()].filter((entry) => entry.n > 1).map((entry) => entry.title)
+}
 
 export const product = defineType({
   name: 'product',
   title: 'Product',
   type: 'document',
   fields: [
-    defineField({
-      name: 'title',
-      title: 'Title',
-      type: 'string',
-      validation: (rule) => rule.required(),
-    }),
-    defineField({
-      name: 'slug',
-      title: 'Slug',
-      type: 'slug',
-      options: {source: 'title', maxLength: 96},
-      validation: (rule) => rule.required(),
-    }),
+    titleField,
+    slugField,
     verticalField,
     defineField({name: 'suppressDefaultFaqs', title: 'Suppress default FAQs', type: 'boolean', initialValue: false}),
     defineField({name: 'faqs', title: 'Custom FAQs', type: 'array', of: [defineArrayMember({
@@ -76,8 +81,8 @@ export const product = defineType({
       ],
       validation: (rule) =>
         rule.unique().custom(async (value, context) => {
-          const ids = (value as {_ref?: string}[] | undefined)?.flatMap((v) => (v._ref ? [v._ref] : []))
-          if (!ids?.length) return true
+          const ids = attributeReferences(value)
+          if (!ids.length) return true
           const rows = await context.getClient({apiVersion}).fetch<AttributeRow[]>(
             `*[_type == "attributeValue" && _id in $ids]{
               _id,
@@ -87,14 +92,7 @@ export const product = defineType({
             }`,
             {ids},
           )
-          const counts = new Map<string, {title: string; n: number}>()
-          for (const row of rows) {
-            if (row.allowMultiple) continue
-            const entry = counts.get(row.attributeId) ?? {title: row.attributeTitle, n: 0}
-            entry.n += 1
-            counts.set(row.attributeId, entry)
-          }
-          const clashes = [...counts.values()].filter((c) => c.n > 1).map((c) => c.title)
+          const clashes = attributeClashes(rows)
           return clashes.length
             ? `Only one value allowed for: ${clashes.join(', ')}`
             : true

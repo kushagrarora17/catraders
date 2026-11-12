@@ -58,6 +58,7 @@ export class FakeSanity {
 
   // --- reads ---------------------------------------------------------------------------------
 
+  // fallow-ignore-next-line unused-class-member -- Invoked through the injected Sanity client interface in MCP tool tests.
   async fetch(query: string, params: Record<string, any> = {}) { // eslint-disable-line @typescript-eslint/no-explicit-any
     if (query === CATEGORIES_QUERY) {
       return this.byType("category").map((c) => ({
@@ -96,22 +97,26 @@ export class FakeSanity {
     throw new Error(`FakeSanity: unhandled query ${query.slice(0, 60)}`);
   }
 
+  // fallow-ignore-next-line unused-class-member -- Invoked through the injected Sanity client interface in MCP tool tests.
   async getDocument(id: string) {
     return structuredClone(this.docs.get(id)) ?? undefined;
   }
 
+  // fallow-ignore-next-line unused-class-member -- Invoked through the injected Sanity client interface in MCP tool tests.
   async getDocuments(ids: string[]) {
     return ids.map((id) => structuredClone(this.docs.get(id)) ?? null);
   }
 
   // --- writes --------------------------------------------------------------------------------
 
+  // fallow-ignore-next-line unused-class-member -- Invoked through the injected Sanity client interface in MCP tool tests.
   async create(doc: Omit<Doc, "_id"> & { _id?: string }) {
     const created = { ...doc, _id: doc._id ?? `fake-${++this.counter}` } as Doc;
     this.run([{ kind: "create", doc: created }]);
     return structuredClone(created);
   }
 
+  // fallow-ignore-next-line unused-class-member -- Invoked through the injected Sanity client interface in MCP tool tests.
   patch(id: string) {
     const patch = new FakePatch();
     return Object.assign(patch, {
@@ -119,6 +124,7 @@ export class FakeSanity {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member -- Invoked through the injected Sanity client interface in MCP tool tests.
   transaction() {
     const ops: Op[] = [];
     const tx = {

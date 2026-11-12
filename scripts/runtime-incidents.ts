@@ -87,16 +87,30 @@ function command(binary: string, args: string[]) {
   return execFileSync(binary, args, { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], maxBuffer: 16 * 1024 * 1024 });
 }
 
-async function main() {
-  const repository = process.env.GITHUB_REPOSITORY;
-  const owner = process.env.RUNTIME_INCIDENT_OWNER;
-  const resourceGroup = process.env.AZURE_RESOURCE_GROUP;
-  const rulePrefix = process.env.RUNTIME_RULE_PREFIX || "catraders-prod";
-  if (!repository || !/^[\w.-]+\/[\w.-]+$/.test(repository) || !owner || !/^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(owner) || !resourceGroup || !/^[\w.-]+$/.test(resourceGroup)) throw new Error("Runtime routing configuration is missing or invalid");
+function requiredSetting(name: string, pattern: RegExp) {
+  const value = process.env[name];
+  if (!value || !pattern.test(value)) throw new Error("Runtime routing configuration is missing or invalid");
+  return value;
+}
+
+function runtimeScope(resourceGroup: string, rulePrefix: string) {
   const subscription = command("az", ["account", "show", "--query", "id", "-o", "tsv"]).trim();
   if (!/^[0-9a-f-]{36}$/i.test(subscription)) throw new Error("Invalid subscription");
-  const scope = { subscription, resourceGroup, rulePrefix };
-  const base = `https://management.azure.com/subscriptions/${subscription}/resourceGroups/${resourceGroup}/providers/Microsoft.AlertsManagement/alerts`;
+  return { subscription, resourceGroup, rulePrefix };
+}
+
+function validNextLink(value: unknown) {
+  return value == null || typeof value === "string";
+}
+
+function readAlertPage(url: string) {
+  const page = JSON.parse(command("az", ["rest", "--method", "get", "--url", url, "-o", "json"]));
+  if (!Array.isArray(page.value) || !validNextLink(page.nextLink)) throw new Error("Invalid alert response");
+  return { alerts: page.value as Alert[], next: (page.nextLink || undefined) as string | undefined };
+}
+
+function readAlerts(scope: RuntimeScope) {
+  const base = `https://management.azure.com/subscriptions/${scope.subscription}/resourceGroups/${scope.resourceGroup}/providers/Microsoft.AlertsManagement/alerts`;
   let next: string | undefined = `${base}?api-version=2019-03-01&timeRange=1d&includeContext=false`;
   const alerts: Alert[] = [];
   const visited = new Set<string>();
@@ -104,24 +118,34 @@ async function main() {
     next = normalizeAlertPageUrl(next, base);
     if (visited.has(next) || visited.size >= 100) throw new Error("Invalid alert pagination");
     visited.add(next);
-    const page = JSON.parse(command("az", ["rest", "--method", "get", "--url", next, "-o", "json"]));
-    if (!Array.isArray(page.value) || (page.nextLink !== undefined && page.nextLink !== null && typeof page.nextLink !== "string")) throw new Error("Invalid alert response");
-    alerts.push(...page.value);
-    next = page.nextLink || undefined;
+    const page = readAlertPage(next);
+    alerts.push(...page.alerts);
+    next = page.next;
   }
+  return alerts;
+}
+
+function createIncident(incident: Incident, repository: string, owner: string) {
+  const directory = mkdtempSync(join(tmpdir(), "runtime-incident-"));
+  const bodyFile = join(directory, "incident.md");
+  try {
+    writeFileSync(bodyFile, incident.body, { mode: 0o600 });
+    command("gh", ["issue", "create", "--repo", repository, "--title", incident.title, "--label", "incident", "--label", "infra", "--assignee", owner, "--body-file", bodyFile]);
+  } finally {
+    unlinkSync(bodyFile);
+    rmdirSync(directory);
+  }
+}
+
+async function main() {
+  const repository = requiredSetting("GITHUB_REPOSITORY", /^[\w.-]+\/[\w.-]+$/);
+  const owner = requiredSetting("RUNTIME_INCIDENT_OWNER", /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i);
+  const resourceGroup = requiredSetting("AZURE_RESOURCE_GROUP", /^[\w.-]+$/);
+  const scope = runtimeScope(resourceGroup, process.env.RUNTIME_RULE_PREFIX || "catraders-prod");
+  const alerts = readAlerts(scope);
   const pages = JSON.parse(command("gh", ["api", "--paginate", "--slurp", `repos/${repository}/issues?state=all&labels=incident&per_page=100`]));
   const issues: Issue[] = pages.flat().filter((issue: { pull_request?: unknown }) => !issue.pull_request);
-  const count = await routeRuntimeAlerts(alerts, scope, issues, async incident => {
-    const directory = mkdtempSync(join(tmpdir(), "runtime-incident-"));
-    const bodyFile = join(directory, "incident.md");
-    try {
-      writeFileSync(bodyFile, incident.body, { mode: 0o600 });
-      command("gh", ["issue", "create", "--repo", repository!, "--title", incident.title, "--label", "incident", "--label", "infra", "--assignee", owner!, "--body-file", bodyFile]);
-    } finally {
-      unlinkSync(bodyFile);
-      rmdirSync(directory);
-    }
-  });
+  const count = await routeRuntimeAlerts(alerts, scope, issues, async incident => createIncident(incident, repository, owner));
   console.log(`Runtime incident routing completed: ${count} new incident(s).`);
 }
 

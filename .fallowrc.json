@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  "workspaces": { "patterns": ["studio", "video"] },
+  "entry": ["workers/content-review/index.ts"],
+  "framework": [
+    {
+      "name": "repository-support-scripts",
+      "detection": { "type": "fileExists", "pattern": "playwright.config.ts" },
+      "entryPointRole": "support",
+      "entryPoints": [
+        "e2e/flush-coverage.mjs",
+        "e2e/turnstile-mock.mjs",
+        "e2e/sanity-mock/server.ts",
+        "scripts/publish-landing-pages.ts"
+      ]
+    }
+  ],
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.next/**",
+    "**/coverage/**",
+    "playwright-report/**",
+    "test-results/**",
+    "src/sanity/types.ts",
+    "next-env.d.ts",
+    ".agents/skills/**"
+  ]
+}

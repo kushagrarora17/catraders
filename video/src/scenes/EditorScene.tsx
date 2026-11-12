@@ -1,7 +1,7 @@
 import type React from "react";
 import { AbsoluteFill, Easing, Interactive, interpolate, Sequence, useCurrentFrame, useVideoConfig, type InteractivitySchema } from "remotion";
 import { Backdrop } from "../components/Backdrop";
-import { BrowserFrame } from "../components/BrowserFrame";
+import { AnimatedBrowserFrame } from "../components/BrowserFrame";
 import { Cursor } from "../components/Cursor";
 import { Highlight } from "../components/Highlight";
 import { Shot } from "../components/Shot";
@@ -46,20 +46,11 @@ const EditorSceneInner: React.FC<Props> = ({ headline, style }) => {
         Publish customer reviews
       </Bullet>
 
-      <BrowserFrame
+      <AnimatedBrowserFrame
         url={frame >= 415 ? SITE_URL : "CA Traders · Sanity Studio"}
         width={W}
         height={H}
-        style={{
-          left: 600,
-          top: 250,
-          opacity: interpolate(frame, [0, 15], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
-          translate: interpolate(frame, [0, 25], ["80px 0px", "0px 0px"], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-            easing: Easing.bezier(0.16, 1, 0.3, 1),
-          }),
-        }}
+        top={250}
       >
         <Sequence name="Desk" durationInFrames={90} premountFor={fps}>
           <Shot
@@ -224,7 +215,7 @@ const EditorSceneInner: React.FC<Props> = ({ headline, style }) => {
             style={{ right: 36, bottom: 30, opacity: fadeIn(frame, 428) }}
           />
         </Sequence>
-      </BrowserFrame>
+      </AnimatedBrowserFrame>
     </AbsoluteFill>
   );
 };

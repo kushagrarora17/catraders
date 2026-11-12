@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../test";
+import { expectVerificationRequired, retryableSubmission } from "../helpers";
 
 type Item = { productId: string; title: string; sku?: string; slug: string; quantity: number };
 
@@ -34,6 +35,11 @@ async function fillDetails(page: Page) {
   await page.getByLabel("Notes (optional)").fill("Deliver Monday");
 }
 
+async function submitQuote(page: Page) {
+  await fillDetails(page);
+  await page.getByRole("button", { name: "Submit quote request" }).click();
+}
+
 test("empty quote links back to the catalog", async ({ page }) => {
   await page.goto("/quote");
   await expect(page.getByText("Your quote is empty.")).toBeVisible();
@@ -58,8 +64,7 @@ test("edits quantities, removes items and submits a quote", async ({ page }) => 
   await expect(page.getByText("Name is required")).toBeVisible();
   await expect(page.getByLabel("Name", { exact: true })).toHaveAttribute("aria-invalid", "true");
 
-  await fillDetails(page);
-  await page.getByRole("button", { name: "Submit quote request" }).click();
+  await submitQuote(page);
   await expect(page.getByText(/Your quote request RFQ-\d{4}-\d{5} has been submitted/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Quote list", exact: true })).toBeVisible();
 
@@ -113,9 +118,7 @@ test("shows server validation and network errors", async ({ page }) => {
       : route.abort(),
   );
   await openWithCart(page, [castrol]);
-  await fillDetails(page);
-
-  await page.getByRole("button", { name: "Submit quote request" }).click();
+  await submitQuote(page);
   await expect(page.locator("form").getByRole("alert")).toContainText("Each product may only appear once");
   await expect(page.getByText("Enter your city")).toBeVisible();
   await expect(page.getByText("Too long")).toBeVisible();
@@ -131,23 +134,14 @@ test("a failing availability check doesn't block the cart", async ({ page }) => 
 });
 
 for (const status of [429, 503]) test(`requires verification and preserves the submission key when retrying after ${status}`, async ({ page }) => {
-  const keys: (string | undefined)[] = [];
-  await page.route("/api/quotes", async (route) => {
-    keys.push(route.request().headers()["idempotency-key"]);
-    if (keys.length === 1) {
-      await route.fulfill({ status, headers: { "Retry-After": "1" }, json: { success: false, error: status === 429 ? "RATE_LIMITED" : "UNAVAILABLE", message: "Please retry." } });
-    } else {
-      await route.continue();
-    }
-  });
+  const keys = await retryableSubmission(page, "/api/quotes", status);
   await openWithCart(page, [castrol]);
   await fillDetails(page);
   const token = page.locator('[name="cf-turnstile-response"]');
   await expect(token).toHaveValue("e2e-quote");
   await token.evaluate((input: HTMLInputElement) => { input.value = ""; });
   const submit = page.getByRole("button", { name: "Submit quote request" });
-  await submit.click();
-  await expect(page.locator("form").getByRole("alert")).toHaveText("Please complete the verification before submitting.");
+  await expectVerificationRequired(page, submit);
   expect(keys).toHaveLength(0);
 
   await token.evaluate((input: HTMLInputElement) => { input.value = "e2e-quote"; });

@@ -15,19 +15,28 @@ export async function POST(req: Request) {
   }
 
   const raw = await req.text();
-  if (raw.length > MAX_BODY_BYTES) return oauthError("invalid_client_metadata", "Request too large", 413);
+  return registerText(raw);
+}
 
+function registrationBody(raw: string) {
   let body: unknown;
   try {
     body = JSON.parse(raw);
   } catch {
-    return oauthError("invalid_client_metadata", "Body must be JSON");
+    return { response: oauthError("invalid_client_metadata", "Body must be JSON") };
   }
   const parsed = registrationSchema.safeParse(body);
   if (!parsed.success) {
-    return oauthError("invalid_client_metadata", parsed.error.issues.map((i) => i.message).join("; "));
+    return { response: oauthError("invalid_client_metadata", parsed.error.issues.map((i) => i.message).join("; ")) };
   }
 
+  return { data: parsed.data };
+}
+
+async function registerText(raw: string) {
+  if (raw.length > MAX_BODY_BYTES) return oauthError("invalid_client_metadata", "Request too large", 413);
+  const parsed = registrationBody(raw);
+  if (parsed.response) return parsed.response;
   const { redirect_uris, client_name } = parsed.data;
   const clientId = await registerClient(getDb(), { clientName: client_name, redirectUris: redirect_uris });
   return oauthJson(

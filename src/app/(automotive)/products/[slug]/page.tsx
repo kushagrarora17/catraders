@@ -13,6 +13,26 @@ import { AddToQuote } from "@/features/quote-cart/components/AddToQuote";
 import { JsonLd } from "@/features/seo/content";
 import { urlFor } from "@/sanity/image";
 
+type Product = NonNullable<Awaited<ReturnType<typeof getProduct>>>;
+type ProductImages = NonNullable<Product['images']>;
+type Faqs = ReturnType<typeof productFaqs>;
+const productImages = (product: Product) => product.images?.filter((image) => image.asset) ?? [];
+const serviceCities = (area: Awaited<ReturnType<typeof getServiceArea>>) => area?.cities ?? [];
+
+function productFallbackText(product: Product) {
+  const details = product.attributeValues?.flatMap((value) => value?.label ? [value.label] : []).join(", ");
+  return `${product.title}${details ? ` — ${details}` : ""}. Request wholesale pricing from CA EliteLube in Southwestern Ontario.`;
+}
+const fallbackDescription = (product: Product) => (product.descriptionText?.trim() || productFallbackText(product)).replace(/\s+/g, " ").slice(0, 180);
+const metadataDescription = (product: Product) => product.seo?.description?.trim() || fallbackDescription(product);
+const metadataTitle = (product: Product) => product.seo?.title?.trim() || product.title;
+const imageAlt = (image: ProductImages[number], title: string) => image.alt ?? title;
+function metadataImages(product: Product) {
+  const image = product.images?.[0];
+  if (!image?.asset) return {};
+  return {images: [{url: urlFor(image).width(1200).url(), alt: imageAlt(image, product.title)}]};
+}
+
 // Render product pages on first request, then serve them from the ISR cache
 // until the Sanity webhook revalidates the catalog tag.
 export function generateStaticParams() {
@@ -22,33 +42,20 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/products/[slug]">): Promise<Metadata> {
   const product = await getProduct((await params).slug);
   if (!product) return { title: "Product not found", robots: { index: false } };
-  const details = product.attributeValues?.flatMap((value) => value?.label ? [value.label] : []).join(", ");
-  const fallback = `${product.title}${details ? ` — ${details}` : ""}. Request wholesale pricing from CA EliteLube in Southwestern Ontario.`;
-  const description = product.seo?.description?.trim() || (product.descriptionText?.trim() || fallback).replace(/\s+/g, " ").slice(0, 180);
-  const title = product.seo?.title?.trim() || product.title;
+  const description = metadataDescription(product);
+  const title = metadataTitle(product);
   return {
     title, description,
     alternates: { canonical: `/products/${product.slug}` },
     openGraph: {
       title, description, url: `/products/${product.slug}`,
-      ...(product.images?.[0]?.asset ? { images: [{ url: urlFor(product.images[0]).width(1200).url(), alt: product.images[0].alt ?? product.title }] } : {}),
+      ...metadataImages(product),
     },
   };
 }
 
-export default async function ProductPage({ params }: PageProps<"/products/[slug]">) {
-  const product = await getProduct((await params).slug);
-  if (!product) notFound();
-
-  const attributes = groupAttributeValues(product.attributeValues);
-  const categoryPath = product.categoryPath.flatMap((c) => (c ? [c] : []));
-  const images = product.images?.filter((image) => image.asset) ?? [];
-  const area = await getServiceArea();
-  const faqs = productFaqs(product, area?.cities ?? []);
-
-  return (
-    <Container className="py-8">
-      <article>
+function FaqJsonLd({faqs}: {faqs: Faqs}) {
+  return <>
       {faqs.length > 0 && <JsonLd value={{
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -58,16 +65,25 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           acceptedAnswer: { "@type": "Answer", text: answer },
         })),
       }} />}
-      <Breadcrumbs
-        items={[
-          { title: "Home", href: "/" },
-          { title: "Products", href: "/products" },
-          ...categoryPath.map((c) => ({ title: c.title, href: `/products?category=${encodeURIComponent(c.slug)}` })),
-          { title: product.title },
-        ]}
-      />
+  </>;
+}
 
-      <div className="grid gap-8 md:grid-cols-2">
+function ProductFaqs({faqs}: {faqs: Faqs}) {
+  return <>
+      {faqs.length > 0 && <section aria-labelledby="product-faq-heading" className="mt-12 max-w-3xl">
+        <h2 id="product-faq-heading" className="mb-4 text-xl font-semibold">Frequently asked questions</h2>
+        {faqs.map(({ question, answer }) => (
+          <details key={question} className="border-t border-border py-5">
+            <summary className="cursor-pointer font-medium">{question}</summary>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{answer}</p>
+          </details>
+        ))}
+      </section>}
+  </>;
+}
+
+function ProductGallery({images, title}: {images: ProductImages; title: string}) {
+  return (
         <div className="min-w-0 space-y-4">
           {images.length ? (
             images.map((image, index) =>
@@ -75,7 +91,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
                 <div key={image._key} className="relative aspect-square w-full rounded-xs bg-white">
                   <Image
                     src={urlFor(image.asset).width(1200).height(1200).fit("max").url()}
-                    alt={image.alt ?? product.title}
+                    alt={image.alt ?? title}
                     loading={index === 0 ? "eager" : "lazy"}
                     fill
                     sizes="(min-width: 1280px) 584px, (min-width: 768px) 50vw, 100vw"
@@ -88,7 +104,13 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             <div className="aspect-square w-full rounded-xs bg-card" />
           )}
         </div>
+  );
+}
 
+const quoteProduct = (product: Product) => ({productId: product._id, title: product.title, sku: product.sku ?? undefined, slug: product.slug});
+
+function ProductDetails({product, attributes}: {product: Product; attributes: ReturnType<typeof groupAttributeValues>}) {
+  return (
         <div className="space-y-4">
           <h1 className="text-2xl font-semibold">{product.title}</h1>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -97,12 +119,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           </div>
 
           <AddToQuote
-            product={{
-              productId: product._id,
-              title: product.title,
-              sku: product.sku ?? undefined,
-              slug: product.slug,
-            }}
+            product={quoteProduct(product)}
           />
 
           {attributes.length > 0 && (
@@ -124,16 +141,38 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             </div>
           )}
         </div>
+  );
+}
+
+export default async function ProductPage({ params }: PageProps<"/products/[slug]">) {
+  const product = await getProduct((await params).slug);
+  if (!product) notFound();
+
+  const attributes = groupAttributeValues(product.attributeValues);
+  const categoryPath = product.categoryPath.flatMap((c) => (c ? [c] : []));
+  const images = productImages(product);
+  const area = await getServiceArea();
+  const faqs = productFaqs(product, serviceCities(area));
+
+  return (
+    <Container className="py-8">
+      <article>
+      <FaqJsonLd faqs={faqs} />
+      <Breadcrumbs
+        items={[
+          { title: "Home", href: "/" },
+          { title: "Products", href: "/products" },
+          ...categoryPath.map((c) => ({ title: c.title, href: `/products?category=${encodeURIComponent(c.slug)}` })),
+          { title: product.title },
+        ]}
+      />
+
+      <div className="grid gap-8 md:grid-cols-2">
+        <ProductGallery images={images} title={product.title} />
+
+        <ProductDetails product={product} attributes={attributes} />
       </div>
-      {faqs.length > 0 && <section aria-labelledby="product-faq-heading" className="mt-12 max-w-3xl">
-        <h2 id="product-faq-heading" className="mb-4 text-xl font-semibold">Frequently asked questions</h2>
-        {faqs.map(({ question, answer }) => (
-          <details key={question} className="border-t border-border py-5">
-            <summary className="cursor-pointer font-medium">{question}</summary>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{answer}</p>
-          </details>
-        ))}
-      </section>}
+      <ProductFaqs faqs={faqs} />
       </article>
     </Container>
   );

@@ -25,6 +25,15 @@ const PERMANENT_ERROR_CODES = new Set(["28P01", "3D000"]);
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
+function permanentError(error: unknown) {
+  const code = (error as { code?: string }).code;
+  return code ? PERMANENT_ERROR_CODES.has(code) : false;
+}
+
+function shouldRetry(error: unknown, deadline: number) {
+  return !permanentError(error) && !(Date.now() >= deadline);
+}
+
 async function waitForDatabase(pool: Pool, timeoutSeconds: number) {
   const deadline = Date.now() + timeoutSeconds * 1000;
   for (;;) {
@@ -32,8 +41,7 @@ async function waitForDatabase(pool: Pool, timeoutSeconds: number) {
       await pool.query("select 1");
       return;
     } catch (error) {
-      const code = (error as { code?: string }).code;
-      if ((code && PERMANENT_ERROR_CODES.has(code)) || Date.now() >= deadline) throw error;
+      if (!shouldRetry(error, deadline)) throw error;
       console.log(`Database not reachable yet (${message(error)}); retrying in ${RETRY_DELAY_MS / 1000}s`);
       await sleep(RETRY_DELAY_MS);
     }
@@ -53,6 +61,13 @@ async function appliedCount(pool: Pool) {
   }
 }
 
+async function migrationStatus(pool: Pool) {
+  const total = (JSON.parse(readFileSync(`${MIGRATIONS_FOLDER}/meta/_journal.json`, "utf8")) as { entries: unknown[] }).entries.length;
+  const pending = Math.max(total - (await appliedCount(pool)), 0);
+  console.log(pending ? `Applying ${pending} pending migration(s)…` : "No pending migrations.");
+  return pending;
+}
+
 async function main() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL is not set");
@@ -61,9 +76,7 @@ async function main() {
   try {
     await waitForDatabase(pool, Number(process.env.MIGRATE_CONNECT_TIMEOUT_SECONDS ?? 0));
 
-    const total = (JSON.parse(readFileSync(`${MIGRATIONS_FOLDER}/meta/_journal.json`, "utf8")) as { entries: unknown[] }).entries.length;
-    const pending = Math.max(total - (await appliedCount(pool)), 0);
-    console.log(pending ? `Applying ${pending} pending migration(s)…` : "No pending migrations.");
+    const pending = await migrationStatus(pool);
 
     await migrate(drizzle(pool), { migrationsFolder: MIGRATIONS_FOLDER });
     if (pending) console.log("Migrations applied.");

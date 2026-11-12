@@ -11,8 +11,70 @@ import { HONEYPOT_FIELD, INQUIRY_CATEGORIES, type InquiryResponse, inquirySchema
 
 const FIELD_ORDER = ["name", "business", "city", "phone", "email", "category", "message"] as const;
 
+const formText = (form: FormData, key: string) => String(form.get(key) ?? "");
+const verificationMissing = (siteKey: string | undefined, token: string) => siteKey && !token;
+const createdInquiry = (status: number, data: Record<string, string>) => status === 201 && !data[HONEYPOT_FIELD];
+const responseIssues = (body: Exclude<InquiryResponse, {success: true}>) => body.issues ?? [];
+
 /** Value of the drop-down's last option. Choosing it swaps in a free-text field named `city`. */
 const OTHER_CITY = "__other__";
+
+type CityProps = {cityOptions: string[]; otherCity: boolean; setOtherCity: (value: boolean) => void; error?: string};
+
+function CitySelect({cityOptions, otherCity, setOtherCity, error}: CityProps) {
+  return (
+          <Field id="inquiry-city" label="City" required error={otherCity ? undefined : error}>
+            {(props) => (
+              <select
+                {...props}
+                name={otherCity ? undefined : "city"}
+                defaultValue=""
+                onChange={(event) => setOtherCity(event.target.value === OTHER_CITY)}
+              >
+                <option value="">— Select your city —</option>
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+                <option value={OTHER_CITY}>Others</option>
+              </select>
+            )}
+          </Field>
+  );
+}
+
+function InquiryCity({cityOptions, otherCity, setOtherCity, error}: CityProps) {
+  return <>
+      {cityOptions.length ? (
+        <>
+          <CitySelect cityOptions={cityOptions} otherCity={otherCity} setOtherCity={setOtherCity} error={error} />
+          {/* Mounted by picking "Others", so autofocus follows the user's own action. */}
+          {otherCity && (
+            <Field id="inquiry-city-other" label="Your City" required error={error}>
+              {(props) => <input {...props} name="city" type="text" autoComplete="address-level2" autoFocus />}
+            </Field>
+          )}
+        </>
+      ) : (
+        <Field id="inquiry-city" label="City" required error={error}>
+          {(props) => <input {...props} name="city" type="text" autoComplete="address-level2" placeholder="Windsor" />}
+        </Field>
+      )}
+  </>;
+}
+
+const submitLabel = (hydrated: boolean, pending: boolean) => !hydrated ? "Loading…" : pending ? "Sending…" : "Send Inquiry";
+
+function InquirySubmit({hydrated, pending}: {hydrated: boolean; pending: boolean}) {
+  const ready = hydrated && !pending;
+  return (
+      <Button type="submit" variant="secondary" size="lg" disabled={!ready} className="w-full">
+        {submitLabel(hydrated, pending)}
+        {ready && <span aria-hidden="true">→</span>}
+      </Button>
+  );
+}
 
 /** `cities` are the service-area cities from Sanity; without any, City is a plain text field. */
 export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; turnstileSiteKey?: string }) {
@@ -46,7 +108,7 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
     const data = Object.fromEntries(
       [...FIELD_ORDER, HONEYPOT_FIELD].map((key) => [
         key,
-        String(new FormData(form).get(key) ?? ""),
+        formText(new FormData(form), key),
       ]),
     );
 
@@ -58,25 +120,31 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
       return;
     }
 
-    const token = String(new FormData(form).get("cf-turnstile-response") ?? "");
-    if (turnstileSiteKey && !token) {
+    const token = formText(new FormData(form), "cf-turnstile-response");
+    if (verificationMissing(turnstileSiteKey, token)) {
       analytics.capture("form_submit_failed", { error_type: "verification" });
       setError("Please complete the verification before submitting.");
       return;
     }
 
+    await submitInquiry(form, data, token);
+  }
+
+  const submissionKey = () => idempotencyKey.current ??= crypto.randomUUID();
+
+  async function submitInquiry(form: HTMLFormElement, data: Record<string, string>, token: string) {
     setPending(true);
     setIssues([]);
-    idempotencyKey.current ??= crypto.randomUUID();
+    const key = submissionKey();
     try {
       const res = await fetch("/api/inquiries", {
         method: "POST",
-        headers: { ...analytics.headers(), "content-type": "application/json", [IDEMPOTENCY_HEADER]: idempotencyKey.current },
+        headers: { ...analytics.headers(), "content-type": "application/json", [IDEMPOTENCY_HEADER]: key },
         body: JSON.stringify({ ...data, "cf-turnstile-response": token }),
       });
       const body = (await res.json()) as InquiryResponse;
       if (body.success) {
-        if (res.status === 201 && !data[HONEYPOT_FIELD]) analytics.lead();
+        if (createdInquiry(res.status, data)) analytics.lead();
         setReference(body.referenceNumber);
         idempotencyKey.current = null;
         form.reset();
@@ -84,7 +152,7 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
         return;
       }
       analytics.capture("form_submit_failed", { error_type: body.error, status: res.status });
-      showIssues(body.issues ?? []);
+      showIssues(responseIssues(body));
       setError(body.message);
     } catch {
       analytics.capture("form_submit_failed", { error_type: "network" });
@@ -135,38 +203,7 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
           )}
         </Field>
       </div>
-      {cityOptions.length ? (
-        <>
-          <Field id="inquiry-city" label="City" required error={otherCity ? undefined : issueFor("city")}>
-            {(props) => (
-              <select
-                {...props}
-                name={otherCity ? undefined : "city"}
-                defaultValue=""
-                onChange={(event) => setOtherCity(event.target.value === OTHER_CITY)}
-              >
-                <option value="">— Select your city —</option>
-                {cityOptions.map((city) => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-                <option value={OTHER_CITY}>Others</option>
-              </select>
-            )}
-          </Field>
-          {/* Mounted by picking "Others", so autofocus follows the user's own action. */}
-          {otherCity && (
-            <Field id="inquiry-city-other" label="Your City" required error={issueFor("city")}>
-              {(props) => <input {...props} name="city" type="text" autoComplete="address-level2" autoFocus />}
-            </Field>
-          )}
-        </>
-      ) : (
-        <Field id="inquiry-city" label="City" required error={issueFor("city")}>
-          {(props) => <input {...props} name="city" type="text" autoComplete="address-level2" placeholder="Windsor" />}
-        </Field>
-      )}
+      <InquiryCity cityOptions={cityOptions} otherCity={otherCity} setOtherCity={setOtherCity} error={issueFor("city")} />
       <Field id="inquiry-category" label="Product Category" error={issueFor("category")}>
         {(props) => (
           <select {...props} name="category" defaultValue="">
@@ -205,10 +242,7 @@ export function InquiryForm({ cities, turnstileSiteKey }: { cities: string[]; tu
         </p>
       )}
 
-      <Button type="submit" variant="secondary" size="lg" disabled={!hydrated || pending} className="w-full">
-        {!hydrated ? "Loading…" : pending ? "Sending…" : "Send Inquiry"}
-        {hydrated && !pending && <span aria-hidden="true">→</span>}
-      </Button>
+      <InquirySubmit hydrated={hydrated} pending={pending} />
     </form>
   );
 }

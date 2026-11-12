@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { type OAuthTokenVerifier, OAuthError, OAuthErrorCode } from "@modelcontextprotocol/server";
-import { jwtVerify, SignJWT } from "jose";
+import { jwtVerify, SignJWT, type JWTPayload } from "jose";
 import { ACCESS_TOKEN_TTL_SECONDS, getIssuer, getJwtSecret, MCP_SCOPE } from "./config";
 import { isActiveOperator, normalizeOperatorEmail } from "./operators";
 
@@ -26,6 +26,25 @@ export async function signAccessToken(params: { clientId: string; resource: stri
     .sign(getJwtSecret());
 }
 
+type OperatorClaims = JWTPayload & { client_id: string; operator_email: string; operator_revision: string };
+
+function operatorClaims(payload: JWTPayload): OperatorClaims {
+  for (const field of ["client_id", "operator_email", "operator_revision"]) {
+    if (typeof payload[field] !== "string") throw new Error("Malformed token");
+  }
+  return payload as OperatorClaims;
+}
+
+function accessClaims(payload: JWTPayload) {
+  const audience = Array.isArray(payload.aud) ? payload.aud[0] : payload.aud;
+  if (!audience || !payload.exp) throw new Error("Malformed token");
+  return { claims: operatorClaims(payload), audience, expiresAt: payload.exp };
+}
+
+function tokenScopes(payload: JWTPayload) {
+  return typeof payload.scope === "string" ? payload.scope.split(" ") : [];
+}
+
 /** Verifies signature, issuer, expiry and that the token was minted for the MCP resource. */
 export function createAccessTokenVerifier(checkOperator: typeof isActiveOperator = isActiveOperator): OAuthTokenVerifier {
   return {
@@ -35,17 +54,14 @@ export function createAccessTokenVerifier(checkOperator: typeof isActiveOperator
         algorithms: ["HS256"],
         issuer: getIssuer(),
       });
-      const audience = Array.isArray(payload.aud) ? payload.aud[0] : payload.aud;
-      if (!audience || !payload.exp || typeof payload.client_id !== "string" || typeof payload.operator_email !== "string" || typeof payload.operator_revision !== "string") {
-        throw new Error("Malformed token");
-      }
-      const operatorEmail = normalizeOperatorEmail(payload.operator_email);
-      if (payload.sub !== operatorEmail || !(await checkOperator(operatorEmail, payload.operator_revision))) throw new Error("Operator access revoked");
+      const { claims, audience, expiresAt } = accessClaims(payload);
+      const operatorEmail = normalizeOperatorEmail(claims.operator_email);
+      if (payload.sub !== operatorEmail || !(await checkOperator(operatorEmail, claims.operator_revision))) throw new Error("Operator access revoked");
       return {
         token,
-        clientId: payload.client_id,
-        scopes: typeof payload.scope === "string" ? payload.scope.split(" ") : [],
-        expiresAt: payload.exp,
+        clientId: claims.client_id,
+        scopes: tokenScopes(payload),
+        expiresAt,
         resource: new URL(audience),
         extra: { operatorEmail },
       };

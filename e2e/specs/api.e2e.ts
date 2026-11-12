@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { CRON_SECRET, MOCK_URL, SITE_URL, WEBHOOK_SECRET } from "../env";
-import { postRaw, resetContent, sendWebhook } from "../helpers";
+import { expectCreatedReference, postRaw, resetContent, sendWebhook } from "../helpers";
 import { expect, test } from "../test";
 
 test("internal revalidation requires authentication and a known cache tag", async ({ request }) => {
@@ -109,9 +109,7 @@ test.describe("POST /api/quotes", () => {
     const key = randomUUID();
     const body = { "cf-turnstile-response": "e2e-quote", customer, items: [castrolItem], notes: "Deliver Monday" };
     const first = await request.post("/api/quotes", { headers: { "Idempotency-Key": key }, data: body });
-    expect(first.status()).toBe(201);
-    const { referenceNumber } = await first.json();
-    expect(referenceNumber).toMatch(/^RFQ-\d{4}-\d{5}$/);
+    const referenceNumber = await expectCreatedReference(first, /^RFQ-\d{4}-\d{5}$/);
 
     const again = await request.post("/api/quotes", { headers: { "Idempotency-Key": key }, data: body });
     expect(again.status()).toBe(200);
@@ -196,9 +194,7 @@ test.describe("POST /api/inquiries", () => {
   test("stores an inquiry once per idempotency key", async ({ request }) => {
     const key = randomUUID();
     const first = await request.post("/api/inquiries", { headers: { "Idempotency-Key": key }, data: inquiry });
-    expect(first.status()).toBe(201);
-    const { referenceNumber } = await first.json();
-    expect(referenceNumber).toMatch(/^INQ-\d{4}-\d{5}$/);
+    const referenceNumber = await expectCreatedReference(first, /^INQ-\d{4}-\d{5}$/);
 
     const again = await request.post("/api/inquiries", { headers: { "Idempotency-Key": key }, data: inquiry });
     expect(again.status()).toBe(200);

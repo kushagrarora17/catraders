@@ -87,10 +87,7 @@ export function QuoteCart({ turnstileSiteKey }: { turnstileSiteKey?: string }) {
                   <Link href={`/products/${item.slug}`} className="hover:text-highlight">
                     {item.title}
                   </Link>
-                  {!reason && availability[item.productId]?.inStock === false && (
-                    <span className="ml-1 text-muted-foreground">(out of stock)</span>
-                  )}
-                  {reason && <span className="ml-2 text-destructive">— {reason}, please remove</span>}
+                  <ItemStatus reason={reason} status={availability[item.productId]} />
                 </td>
                 <td className="py-2 text-muted-foreground">{item.sku ?? "—"}</td>
                 <td className="py-2">
@@ -122,9 +119,7 @@ export function QuoteCart({ turnstileSiteKey }: { turnstileSiteKey?: string }) {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Your details</h2>
-        {hasUnavailable && (
-          <p className="text-sm text-destructive">Remove unavailable products before submitting.</p>
-        )}
+        <UnavailableNotice unavailable={hasUnavailable} />
         <QuoteForm
           turnstileSiteKey={turnstileSiteKey}
           items={items}
@@ -143,4 +138,14 @@ export function QuoteCart({ turnstileSiteKey }: { turnstileSiteKey?: string }) {
       </section>
     </div>
   );
+}
+
+function UnavailableNotice({unavailable}: {unavailable: boolean}) {
+  return unavailable ? <p className="text-sm text-destructive">Remove unavailable products before submitting.</p> : null;
+}
+
+function ItemStatus({reason, status}: {reason: string | null; status: Availability[string] | undefined}) {
+  if (reason) return <span className="ml-2 text-destructive">— {reason}, please remove</span>;
+  if (status?.inStock === false) return <span className="ml-1 text-muted-foreground">(out of stock)</span>;
+  return null;
 }

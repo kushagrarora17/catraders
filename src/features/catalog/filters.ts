@@ -28,7 +28,7 @@ export function parseCatalogPage(searchParams: SearchParams) {
   return Number.isSafeInteger(page) && page > 0 && Number.isSafeInteger(page * PRODUCTS_PER_PAGE) ? page : 1;
 }
 
-export function catalogPageHref(filters: CatalogFilters, page: number) {
+export function catalogFilterParams(filters: CatalogFilters) {
   const params = new URLSearchParams();
   if (filters.category) params.set("category", filters.category);
   if (filters.q) params.set("q", filters.q);
@@ -36,6 +36,11 @@ export function catalogPageHref(filters: CatalogFilters, page: number) {
   for (const [key, values] of Object.entries(filters.attributes)) {
     for (const value of values) params.append(key, value);
   }
+  return params;
+}
+
+export function catalogPageHref(filters: CatalogFilters, page: number) {
+  const params = catalogFilterParams(filters);
   if (page > 1) params.set("page", String(page));
   return `/products${params.size ? `?${params}` : ""}`;
 }

@@ -18,6 +18,12 @@ const referenceSchema = z
     "Use an RFQ-YYYY-NNNNN or INQ-YYYY-NNNNN reference",
   );
 
+function parsedSince(since: string | undefined) {
+  const date = since ? new Date(since) : undefined;
+  if (date && Number.isNaN(date.getTime())) return {error: `"${since}" is not a valid date`};
+  return {date};
+}
+
 export function registerRequestTools(server: McpServer) {
   server.registerTool(
     "list_requests",
@@ -34,9 +40,9 @@ export function registerRequestTools(server: McpServer) {
       annotations: READ_ONLY,
     },
     async ({ kind, status, since, limit }) => {
-      const sinceDate = since ? new Date(since) : undefined;
-      if (sinceDate && Number.isNaN(sinceDate.getTime())) return fail(`"${since}" is not a valid date`);
-      const filter = { status, since: sinceDate, limit };
+      const parsed = parsedSince(since);
+      if (parsed.error) return fail(parsed.error);
+      const filter = { status, since: parsed.date, limit };
       return ok(kind === "quote" ? await listQuotes(getDb(), filter) : await listInquiries(getDb(), filter));
     },
   );

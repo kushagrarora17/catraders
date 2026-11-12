@@ -1,25 +1,27 @@
-import {defineField, defineType} from 'sanity'
+import {defineField, defineType, type SanityDocument} from 'sanity'
 import {apiVersion} from '../../env'
+import {titleField, slugField} from '../shared/fields'
 import {verticalField} from '../shared/vertical'
+
+const categoryLevel = (document: SanityDocument | undefined) => document?.level as number | undefined
+
+const parentLevel = (document: SanityDocument | undefined) =>
+  ((document?.level as number | undefined) ?? 1) - 1
+
+function checkParentLevel(level: number | undefined, actual: number | null) {
+  if (level && actual !== level - 1) return `An L${level} category needs an L${level - 1} parent`
+  return true
+}
+
+const topLevelParent = (value: unknown) => value ? 'L1 categories cannot have a parent' : true
 
 export const category = defineType({
   name: 'category',
   title: 'Category',
   type: 'document',
   fields: [
-    defineField({
-      name: 'title',
-      title: 'Title',
-      type: 'string',
-      validation: (rule) => rule.required(),
-    }),
-    defineField({
-      name: 'slug',
-      title: 'Slug',
-      type: 'slug',
-      options: {source: 'title', maxLength: 96},
-      validation: (rule) => rule.required(),
-    }),
+    titleField,
+    slugField,
     verticalField,
     defineField({name: 'landing', title: 'Category landing page', type: 'landingContent', hidden: ({document}) => document?.level !== 1}),
     defineField({
@@ -50,22 +52,19 @@ export const category = defineType({
           filter: 'vertical == $vertical && level == $parentLevel',
           params: {
             vertical: document?.vertical ?? 'automotive',
-            parentLevel: ((document?.level as number | undefined) ?? 1) - 1,
+            parentLevel: parentLevel(document),
           },
         }),
       },
       validation: (rule) =>
         rule.custom(async (value, context) => {
-          const level = context.document?.level as number | undefined
-          if (level === 1) return value ? 'L1 categories cannot have a parent' : true
+          const level = categoryLevel(context.document)
+          if (level === 1) return topLevelParent(value)
           if (!value?._ref) return 'L2 and L3 categories need a parent'
           const parentLevel = await context
             .getClient({apiVersion})
             .fetch<number | null>('*[_id in [$id, "drafts." + $id]][0].level', {id: value._ref})
-          if (level && parentLevel !== level - 1) {
-            return `An L${level} category needs an L${level - 1} parent`
-          }
-          return true
+          return checkParentLevel(level, parentLevel)
         }),
     }),
     defineField({

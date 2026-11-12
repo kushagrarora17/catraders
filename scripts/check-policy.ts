@@ -63,100 +63,226 @@ if (base) {
 function guarantees(node: ExprNode, predicate: (node: ExprNode) => boolean): boolean {
   if (predicate(node)) return true;
   if (node.type === "Group") return guarantees(node.base, predicate);
-  if (node.type === "And") return guarantees(node.left, predicate) || guarantees(node.right, predicate);
-  if (node.type === "Or") return guarantees(node.left, predicate) && guarantees(node.right, predicate);
+  return combinedGuarantee(node, predicate);
+}
+
+function combinedGuarantee(node: ExprNode, predicate: (node: ExprNode) => boolean): boolean {
+  if (node.type === "And") return [node.left, node.right].some(child => guarantees(child, predicate));
+  if (node.type === "Or") return [node.left, node.right].every(child => guarantees(child, predicate));
   return false;
 }
 
+type AttributeNode = Extract<ExprNode, { type: "AccessAttribute" }>;
+function attribute(node: ExprNode | undefined, name: string): node is AttributeNode {
+  if (!node) return false;
+  return node.type === "AccessAttribute" && node.name === name;
+}
+
+function rootAttribute(node: ExprNode | undefined, name: string) {
+  return attribute(node, name) && !node.base;
+}
+
+function parentAttribute(node: ExprNode | undefined, name: string) {
+  return attribute(node, name) && node.base?.type === "Parent";
+}
+
+function literal(node: ExprNode | undefined, value: string) {
+  if (!node) return false;
+  return node.type === "Value" && node.value === value;
+}
+
+function isEquality(node: ExprNode): node is Extract<ExprNode, { type: "OpCall" }> {
+  return node.type === "OpCall" && node.op === "==";
+}
+
 function equality(node: ExprNode, field: string, value: string): boolean {
-  if (node.type !== "OpCall" || node.op !== "==") return false;
+  if (!isEquality(node)) return false;
   return [[node.left, node.right], [node.right, node.left]].some(([left, right]) =>
-    left.type === "AccessAttribute" && !left.base && left.name === field && right.type === "Value" && right.value === value);
+    rootAttribute(left, field) && literal(right, value));
+}
+
+function inheritedReference(node: ExprNode) {
+  return attribute(node, "_ref") && rootAttribute(node.base, "attribute");
 }
 
 function inheritedAttribute(expr: ExprNode, scoped: boolean) {
   return scoped && guarantees(expr, n => equality(n, "_type", "attributeValue")) &&
-        guarantees(expr, n => n.type === "OpCall" && n.op === "==" &&
-          n.left.type === "AccessAttribute" && n.left.name === "_ref" &&
-          n.left.base?.type === "AccessAttribute" && n.left.base.name === "attribute" && !n.left.base.base &&
-          n.right.type === "AccessAttribute" && n.right.name === "_id" && n.right.base?.type === "Parent");
+    guarantees(expr, n => {
+      if (!isEquality(n)) return false;
+      return inheritedReference(n.left) && parentAttribute(n.right, "_id");
+    });
+}
+
+function stringSplit(node: ExprNode): node is Extract<ExprNode, { type: "FuncCall" }> {
+  if (node.type !== "FuncCall") return false;
+  return node.namespace === "string" && node.name === "split";
+}
+
+function draftSplit(node: ExprNode) {
+  if (!stringSplit(node)) return false;
+  return parentAttribute(node.args[0], "_id") && literal(node.args[1], "drafts.");
+}
+
+function publishedId(node: ExprNode) {
+  if (node.type !== "AccessElement") return false;
+  return node.index === 1 && draftSplit(node.base);
 }
 
 function publishedCounterpart(expr: ExprNode, scoped: boolean) {
-  return scoped && guarantees(expr, n => n.type === "OpCall" && n.op === "==" &&
-        n.left.type === "AccessAttribute" && n.left.name === "_id" && !n.left.base &&
-        n.right.type === "AccessElement" && n.right.index === 1 && n.right.base.type === "FuncCall" &&
-        n.right.base.namespace === "string" && n.right.base.name === "split" &&
-        n.right.base.args[0]?.type === "AccessAttribute" && n.right.base.args[0].name === "_id" &&
-        n.right.base.args[0].base?.type === "Parent" &&
-        n.right.base.args[1]?.type === "Value" && n.right.base.args[1].value === "drafts.");
+  return scoped && guarantees(expr, n => {
+    if (!isEquality(n)) return false;
+    return rootAttribute(n.left, "_id") && publishedId(n.right);
+  });
+}
+
+function everythingFilter(node: ExprNode): node is Extract<ExprNode, { type: "Filter" }> {
+  return node.type === "Filter" && node.base.type === "Everything";
+}
+
+function scopedInput(node: ExprNode): boolean {
+  if (everythingFilter(node)) return guarantees(node.expr, n => equality(n, "vertical", "automotive"));
+  return baseScope(node);
+}
+
+function baseScope(node: ExprNode): boolean {
+  if (!("base" in node)) return false;
+  if (!node.base) return false;
+  return typeof node.base === "object" ? scopedInput(node.base as ExprNode) : false;
+}
+
+function privateOperatorDirectory(expr: ExprNode, label: string) {
+  return label === "src/server/oauth/operators.ts" && guarantees(expr, n => equality(n, "_type", "mcpOperator"));
+}
+
+function allowedSelector(expr: ExprNode, scoped: boolean, label: string, vertical: boolean) {
+  return [
+    () => vertical,
+    () => privateOperatorDirectory(expr, label),
+    () => inheritedAttribute(expr, scoped),
+    () => publishedCounterpart(expr, scoped),
+  ].some(check => check());
+}
+
+function selectorScope(node: ExprNode, scoped: boolean, label: string) {
+  if (!everythingFilter(node)) return scoped;
+  const vertical = guarantees(node.expr, n => equality(n, "vertical", "automotive"));
+  if (!allowedSelector(node.expr, scoped, label, vertical)) fail(`${label}: document selector does not guarantee vertical == "automotive"`);
+  return scoped || vertical;
+}
+
+type ProjectionNode = Extract<ExprNode, { type: "Projection" | "Map" | "FlatMap" }>;
+function isProjection(node: ExprNode): node is ProjectionNode {
+  return ["Projection", "Map", "FlatMap"].includes(node.type);
 }
 
 function validateQuery(query: string, label: string) {
-  const scopedInput = (node: ExprNode): boolean => {
-    if (node.type === "Filter" && node.base.type === "Everything") return guarantees(node.expr, n => equality(n, "vertical", "automotive"));
-    if ("base" in node && node.base && typeof node.base === "object") return scopedInput(node.base as ExprNode);
-    return false;
-  };
   const visit = (value: unknown, scoped = false) => {
     if (!value || typeof value !== "object") return;
-    const node = value as ExprNode;
-      if (node.type === "Filter" && node.base.type === "Everything") {
-      const vertical = guarantees(node.expr, n => equality(n, "vertical", "automotive"));
-      const privateOperatorDirectory = label === "src/server/oauth/operators.ts" && guarantees(node.expr, n => equality(n, "_type", "mcpOperator"));
-      if (!vertical && !privateOperatorDirectory && !inheritedAttribute(node.expr, scoped) && !publishedCounterpart(node.expr, scoped)) fail(`${label}: document selector does not guarantee vertical == "automotive"`);
-      scoped ||= vertical;
-    }
-    if (node.type === "Projection" || node.type === "Map" || node.type === "FlatMap") {
+    visitNode(value as ExprNode, scoped);
+  };
+  const visitNode = (node: ExprNode, scoped: boolean) => {
+    scoped = selectorScope(node, scoped, label);
+    if (isProjection(node)) {
       visit(node.base, scoped);
       // A projection receives the scope established by its input selector.
       visit(node.expr, scoped || scopedInput(node.base));
       return;
     }
-    for (const child of Object.values(value)) {
-      if (Array.isArray(child)) child.forEach(item => visit(item, scoped));
-      else visit(child, scoped);
-    }
+    for (const child of Object.values(node)) visitChild(child, scoped);
+  };
+  const visitChild = (child: unknown, scoped: boolean) => {
+    if (Array.isArray(child)) child.forEach(item => visit(item, scoped));
+    else visit(child, scoped);
   };
   visit(parse(query, { params: { start: 0, end: 1 } }));
 }
 
 const names = new Map<string, string>();
 
+function importsCreateClient(element: ts.ImportSpecifier) {
+  return !element.isTypeOnly && (element.propertyName ?? element.name).text === "createClient";
+}
+
+function createsClient(clause: ts.ImportClause) {
+  if (clause.name) return true;
+  const bindings = clause.namedBindings;
+  if (!bindings) return false;
+  if (ts.isNamespaceImport(bindings)) return true;
+  return bindings.elements.some(importsCreateClient);
+}
+
+function valueCreatesClient(clause: ts.ImportClause | undefined) {
+  if (!clause) return false;
+  return !clause.isTypeOnly && createsClient(clause);
+}
+
+function clientImportAllowed(specifier: string, file: string) {
+  return !["@sanity/client", "next-sanity"].includes(specifier) ||
+    ["src/sanity/client.ts", "src/sanity/write-client-core.ts"].includes(file);
+}
+
 function checkClientImport(node: ts.Node, specifier: string, file: string) {
-      if (["@sanity/client", "next-sanity"].includes(specifier) && !["src/sanity/client.ts", "src/sanity/write-client-core.ts"].includes(file) && ts.isImportDeclaration(node)) {
-        const bindings = node.importClause?.namedBindings;
-        if (!node.importClause?.isTypeOnly && (node.importClause?.name ||
-          (bindings && ts.isNamespaceImport(bindings)) ||
-          (bindings && ts.isNamedImports(bindings) && bindings.elements.some(e => !e.isTypeOnly && (e.propertyName ?? e.name).text === "createClient")))) fail(`${file}: use the shared Sanity clients`);
-      }
+  if (!ts.isImportDeclaration(node)) return;
+  if (clientImportAllowed(specifier, file)) return;
+  if (valueCreatesClient(node.importClause)) fail(`${file}: use the shared Sanity clients`);
+}
+
+function importOrExport(node: ts.Node): node is ts.ImportDeclaration | ts.ExportDeclaration {
+  return ts.isImportDeclaration(node) || ts.isExportDeclaration(node);
+}
+
+function moduleSpecifier(node: ts.Node) {
+  if (!importOrExport(node)) return;
+  if (!node.moduleSpecifier) return;
+  return ts.isStringLiteral(node.moduleSpecifier) ? node.moduleSpecifier.text : undefined;
+}
+
+function importTarget(specifier: string, file: string) {
+  const target = specifier.startsWith("@/") ? resolve("src", specifier.slice(2)) : resolve(dirname(file), specifier);
+  return target.replace(/\.[cm]?[jt]sx?$/, "");
+}
+
+const boundaries = [
+  { path: "src/sanity/client", allowed: ["src/features/catalog/api.ts", "src/features/landing/api.ts", "src/server/oauth/operators.ts"], message: "use the catalog/landing API instead of the read client" },
+  { path: "src/features/catalog/queries", allowed: ["src/features/catalog/api.ts"], message: "use the catalog API instead of catalog queries" },
+  { path: "src/sanity/write-client-core", allowed: ["src/sanity/write-client.ts"], message: "use src/sanity/write-client" },
+];
+function checkBoundaries(target: string, file: string) {
+  for (const rule of boundaries) {
+    if (target === resolve(rule.path) && !rule.allowed.includes(file)) fail(`${file}: ${rule.message}`);
+  }
 }
 
 function checkImport(node: ts.Node, file: string) {
-    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
-      const specifier = node.moduleSpecifier.text;
-      const target = specifier.startsWith("@/") ? resolve("src", specifier.slice(2)) : resolve(dirname(file), specifier);
-      const at = (path: string) => target.replace(/\.[cm]?[jt]sx?$/, "") === resolve(path);
-      if (at("src/sanity/client") && !["src/features/catalog/api.ts", "src/features/landing/api.ts", "src/server/oauth/operators.ts"].includes(file)) fail(`${file}: use the catalog/landing API instead of the read client`);
-      if (at("src/features/catalog/queries") && file !== "src/features/catalog/api.ts") fail(`${file}: use the catalog API instead of catalog queries`);
-      if (at("src/sanity/write-client-core") && file !== "src/sanity/write-client.ts") fail(`${file}: use src/sanity/write-client`);
-      checkClientImport(node, specifier, file);
+  const specifier = moduleSpecifier(node);
+  if (specifier === undefined) return;
+  checkBoundaries(importTarget(specifier, file), file);
+  checkClientImport(node, specifier, file);
+}
 
-    }
+function defineQueryCall(node: ts.Node): node is ts.CallExpression {
+  if (!ts.isCallExpression(node)) return false;
+  return ts.isIdentifier(node.expression) && node.expression.text === "defineQuery";
+}
+
+function queryName(node: ts.Node, file: string) {
+  if (!ts.isVariableDeclaration(node) || !ts.isIdentifier(node.name)) {
+    fail(`${file}: defineQuery must have a unique variable name`);
+    return;
+  }
+  return node.name.text;
+}
+
+function recordQueryName(name: string, file: string) {
+  if (names.has(name)) fail(`${file}: duplicate query name ${name} (also in ${names.get(name)})`);
+  names.set(name, file);
 }
 
 function recordQuery(node: ts.Node, file: string) {
-  let found = false;
-    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "defineQuery") {
-      found = true;
-      if (!ts.isVariableDeclaration(node.parent) || !ts.isIdentifier(node.parent.name)) fail(`${file}: defineQuery must have a unique variable name`);
-      else {
-        const name = node.parent.name.text;
-        if (names.has(name)) fail(`${file}: duplicate query name ${name} (also in ${names.get(name)})`);
-        names.set(name, file);
-      }
-    }
-  return found;
+  if (!defineQueryCall(node)) return false;
+  const name = queryName(node.parent, file);
+  if (name !== undefined) recordQueryName(name, file);
+  return true;
 }
 
 

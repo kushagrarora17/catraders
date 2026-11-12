@@ -29,6 +29,10 @@ export async function readFormBody(req: Request, maxBodyLength: number) {
   }
 }
 
+function turnstileToken(json: unknown) {
+  return typeof json === "object" && json !== null ? (json as Record<string, unknown>)["cf-turnstile-response"] : undefined;
+}
+
 export async function validateFormSubmission<T>(json: unknown, schema: z.ZodType<T>, action: "inquiry" | "quote") {
   const parsed = schema.safeParse(json);
   if (!parsed.success) {
@@ -42,9 +46,7 @@ export async function validateFormSubmission<T>(json: unknown, schema: z.ZodType
       }, { status: 400 }),
     } as const;
   }
-  const token = typeof json === "object" && json !== null
-    ? (json as Record<string, unknown>)["cf-turnstile-response"]
-    : undefined;
+  const token = turnstileToken(json);
   if (!(await verifyTurnstile(token, action))) {
     console.warn(`[form-abuse] form=${action} outcome=verification_failed`);
     return {

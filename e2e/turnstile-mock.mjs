@@ -1,10 +1,11 @@
 import { createRequire } from "node:module";
 
 const originalFetch = globalThis.fetch;
+const actions = new Map([["e2e-inquiry", "inquiry"], ["e2e-quote", "quote"]]);
 globalThis.fetch = async function (input, init) {
   if (String(input) === "https://challenges.cloudflare.com/turnstile/v0/siteverify") {
     const { secret, response } = JSON.parse(init.body);
-    const action = response === "e2e-inquiry" ? "inquiry" : response === "e2e-quote" ? "quote" : undefined;
+    const action = actions.get(response);
     return Response.json({
       success: secret === "e2e-turnstile-secret" && Boolean(action),
       hostname: "localhost",
